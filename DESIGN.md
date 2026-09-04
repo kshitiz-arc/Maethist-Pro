@@ -1,0 +1,285 @@
+# Design System — Inkyscib
+
+Preview of this system rendered: https://claude.ai/code/artifact/a28264c7-a3ff-4e5f-ae59-6fe268ae10f1
+
+## Product Context
+
+- **What this is:** A browser workspace for studying from your own material. Import a PDF or a deck, write on it by hand, construct real geometry, export clean vector PDF.
+- **Who it's for:** Students and teachers. The device to design against is a budget Android tablet, roughly 960 CSS px wide, with a slow CPU and a capacitive stylus. Desktop and laptop are real but secondary.
+- **Space:** Handwriting and annotation (GoodNotes, Notability), infinite canvas (Excalidraw, Obsidian Canvas), and maths instruments (Desmos, GeoGebra).
+- **Project type:** Web app with a marketing site attached.
+
+## Positioning
+
+**Serious technical instrument.** Chosen deliberately over "calm study room" on 2026-09-03.
+
+The consequence, and it is the point of this whole document: **real instruments are quiet.**
+Desmos and GeoGebra are the maths instruments schools actually trust, and both are
+near-white, single-accent, thin-ruled, small-typed. An instrument earns "serious" by not
+competing with the measurement. A neon HUD with a starfield and `SYSTEM ONLINE` is what
+a game about engineering looks like, not what an engineer's tool looks like.
+
+Every rule below follows from that one sentence.
+
+**Open tension:** the README currently tells a warm, personal story about being priced out
+of an iPad. That is a different voice from this positioning. One of the two needs to move.
+
+## Aesthetic Direction
+
+- **Direction:** Industrial / utilitarian. Precision instrument.
+- **Decoration level:** Minimal. The graph paper the app already draws *is* the texture. No starfields, no glows, no gradient fills.
+- **Mood:** A drafting table under good light. Nothing on screen is trying to impress you.
+- **References:** desmos.com/calculator, geogebra.org/geometry, excalidraw.com
+
+## Color
+
+**Approach:** restrained-achromatic. Chrome is graphite. One accent, and it marks exactly
+one thing: the tool currently in your hand. Everything else saturated on screen was drawn
+by the person using the app.
+
+Thirteen tokens. This is the entire palette.
+
+| Token | Light | Dark | Role | Contrast (light · dark) |
+|---|---|---|---|---|
+| `--paper` | `#F7F7F5` | `#141413` | App ground | ground |
+| `--surface` | `#FFFFFF` | `#1C1C1A` | Panels, cards, islands | ground |
+| `--raised` | `#EFEFEB` | `#242422` | Hover, wells, inset | ground |
+| `--ink` | `#1B1B18` | `#F2F2EE` | Primary text | 16.09 · 16.42 AAA |
+| `--ink-2` | `#55554E` | `#A8A8A0` | Secondary text | 7.00 · 7.70 AAA |
+| `--ink-3` | `#84847C` | `#77776F` | Muted labels, non-load-bearing | 3.51 · 4.08 AA-large |
+| `--rule` | `#DFDFD9` | `#2E2E2B` | Hairlines. Never text. | — |
+| `--rule-2` | `#ECECE6` | `#232321` | Inner dividers | — |
+| `--accent` | `#B4530A` | `#F0913C` | Active tool, primary action | 4.68 · 7.74 AA+ |
+| `--accent-wash` | `#FBF0E4` | `#2A1D10` | Active tool background | — |
+| `--error` | `#B3261E` | `#F2857C` | Save failed, import failed | 6.09 · 7.39 AA |
+| `--ok` | `#166534` | `#4ADE80` | Saved | 6.65 · 10.58 AA+ |
+| `--on-accent` | `#FFFFFF` | `#141413` | Text on an accent fill | 5.02 · 7.74 AA+ |
+
+Contrast figures are measured WCAG relative-luminance ratios against both `--paper` and
+`--surface`, taking the worse of the two. `--ink-3` is AA-large on purpose: it is for
+labels that carry no load. Never put required information in it.
+
+**There is no warning colour.** This product has no forms to validate, and an amber
+warning would fight the ochre accent for the same visual meaning. Saved and failed are
+the only two states worth a colour.
+
+**Why ochre.** Desmos blue, GeoGebra purple, Excalidraw indigo, GoodNotes blue, OneNote
+purple. The category is entirely blue and purple. A burnt ochre reads as drafting
+equipment rather than software, and it is instantly not them.
+
+**Ink colours are the user's, not the system's.** The pen palette is content, not chrome,
+and is exempt from this table. The *default* pen follows the ground in both directions:
+`#ffffff` on dark, `#1b1b18` on light. An earlier version of this line said the app
+"already does" this. It did not. It only ever flipped to white for a dark canvas, which
+was harmless while the editor was hardcoded dark and became invisible ink the moment the
+editor started following the operating system. Only those two defaults swap for each
+other; a colour the user picked is never touched.
+
+### Migration
+
+The nine stylesheets currently hold **938 distinct colour literals**, including 65 different
+white-at-alpha values, 61 black-at-alpha, and 26 slate-at-alpha, plus **eight parallel
+token vocabularies**: `--chrome-`, `--planner-`, `--ribbon-`, `--tour-`, `--pomo-`,
+`--sheet-`, and loose `--bg-` / `--panel-` sets. Roughly 150 real decisions expressed 938 ways.
+
+This is not cosmetic debt. Those vocabularies are private to their feature and scoped to a
+breakpoint: `--chrome-*` is declared on `body.chrome-rail`, which only exists at ≥1180px.
+A panel built against it renders with **no background at all** on the target tablet. That
+shipped, and it shipped because there was no single vocabulary to reach for.
+
+Migrate in this order, one file per pass, so a regression is easy to place:
+1. ~~`editor-chrome.css`~~ (done 2026-09-03) and the `--sheet-*` set
+2. ~~`file-ribbon.css`~~ (done 2026-09-03)
+3. `write.css` — **still outstanding.** Accent, radii and the alpha overlays are
+   swept. It still holds **439 distinct colour literals** (980 declarations).
+   An earlier version of this line said "~50", which was wrong: 50 was what
+   renders on one screen, not what the file contains. The 439 are the real
+   palette, and migrating them means deciding what each one means, which is the
+   rewrite this migration keeps deferring
+4. ~~`marketing.css`~~ (done 2026-09-03) and `style.css`
+5. `planner.css`, `onboarding.css`, `not-found.css`
+
+Translucent overlays collapse onto the wash ladder in `tokens.css`: `--w-1..5`
+(lighten) and `--d-1..5` (darken). Solid surfaces use the theme-aware
+`--rule`, `--rule-2`, `--raised`, `--accent-wash`. Any alpha outside those is drift.
+
+**Caveat on the sweep that produced the ladder.** Mapping 338 declarations onto
+10 rungs snapped some alphas by up to 0.100 (25/255), well past the ~2/255 this
+project treats as imperceptible. The mass of values sat at 0.04-0.14 and moved
+under 5/255, but roughly 13 white and 16 dark overlays could have shifted
+visibly. The editor's main screen was compared before and after and is
+indistinguishable; the other panels were not checked. Before extending this
+ladder to another file, measure the worst-case snap first and add rungs until
+it is under 0.02.
+
+## Typography
+
+- **Display, headings, UI, body:** **Archivo** (400/500/600/700). Already loaded. A grotesque with enough technical character for an instrument and enough warmth to read for an hour.
+- **Numbers, measurements, keyboard hints, labels:** **JetBrains Mono** (400/500/700). Already loaded.
+- **Loading:** Google Fonts, `display=swap`, Latin subset only. Two families is the budget. A third costs a download on a slow connection and buys nothing.
+
+**The choice was never the problem.** `Inter`, `Segoe UI`, `Arial` and three bare system
+stacks currently leak in alongside Archivo across the stylesheets. Fix the leaks; do not
+change the families.
+
+**Every number sits on `font-variant-numeric: tabular-nums`.** A radius readout that shifts
+sideways as it changes is the tell of a toy rather than an instrument. This applies to
+measurement readouts, coordinates, angle marks, page numbers, timers, and file sizes.
+
+**Scale** (rem, 16px root):
+
+| Step | Size | Use |
+|---|---|---|
+| `--t-1` | 0.75 | Mono labels, keyboard hints |
+| `--t-2` | 0.8125 | Secondary UI, chips |
+| `--t-3` | 0.9375 | Body, default UI |
+| `--t-4` | 1.0625 | Lede, section intro |
+| `--t-5` | 1.375 | Card and panel headings |
+| `--t-6` | 1.875 | Section headings |
+| `--t-7` | 2.75 | Page display |
+
+Tracking: `-0.022em` at `--t-7`, `-0.015em` at `--t-6`, `-0.008em` at `--t-4`, `0` below.
+Mono labels get `+0.1em` and uppercase.
+
+## Spacing
+
+- **Base unit:** 4px. Nothing off the scale.
+- **Density:** comfortable-compact. An instrument is dense; a toy is airy.
+- **Scale:** `--s1` 4 · `--s2` 8 · `--s3` 12 · `--s4` 16 · `--s5` 24 · `--s6` 32 · `--s7` 48 · `--s8` 64
+
+## Layout
+
+- **Approach:** hybrid. Grid-disciplined in the editor, editorial on marketing, both on the same 4px module so the two read as one product.
+- **Minimum touch target:** 44px, via `var(--tap)`. **Not yet met.** An earlier
+  version of this file claimed it was, based on measuring `.tool` buttons only.
+  A full sweep of the live editor found **44 controls under 44px**. Fixed so far:
+  `.file-rail-btn` (was 33), `.menu-item` (41), `.toolbar-location-btn` (38),
+  `.feature-tour-close` (33), and the tour progress dots (29x17, now carrying a
+  44px `::after` hit area while the dot itself stays small). Still outstanding:
+  the whole `.pomo-*` family (14 controls, 33-43px), `.feature-tour-btn` (2),
+  `.clear-confirm-close` (36), and 6 raw checkbox inputs at 13-19px.
+- **Radius:** `--r-sm` 3px (controls, chips) · `--r-md` 6px (panels, cards) · `--r-lg` 10px (sheets, modals). Hierarchical, never uniform.
+  Plus two shapes that are not scale values and are allowed: `--r-pill` 999px and `--r-circle` 50%.
+- **Max reading width:** 62ch for prose, 74rem for page shells.
+
+### Editor chrome
+
+The editor chrome is **three islands, grouped by what a control acts on**, not one.
+An earlier version of this line called for a single island, reasoned from an 800px phone
+where three tool rows plus the File ribbon ate about 30% of the screen. That reasoning
+holds below the 1180px rail breakpoint, where the chrome does collapse to one wrapping
+bar. Above it, a single island holding 25 controls is worse than the problem it solves.
+
+The three, at ≥1180px:
+
+1. **The top bar** — one object spanning the band, in three zones. *Document* at the left
+   (menu, File / Insert / Export, the name and save state, plus the two contextual export
+   buttons that appear in notebook and deck modes). *The work* centred (undo, redo).
+   *The view* at the right (zoom out, a live percentage, zoom in, pan, fit), then a
+   divider, then the workspace controls (theme, YouTube, Pomodoro).
+2. **The tool rail** — the nine drawing tools and the help button, left edge.
+3. **The tool dock** — the current tool's own options, beside the rail.
+
+What this replaced: everything that was not a drawing tool ended up in a single strip
+pinned top-right, because that strip was defined as the residue after `editor-chrome.js`
+pulled the tools out into the rail. It held history, a destructive action, two features,
+a preference and three view controls in one row, and at 1400px it left **444px of empty
+band** between itself and the File ribbon. **Clear canvas sat one control from Undo** —
+the least safe and the safest thing in the interface, side by side. Clear now lives in
+the File backstage.
+
+**A zone is defined by what its controls act on, not by what was left over.** Any new
+control belongs to the document, the work, the view, the workspace, or the tool in your
+hand. If it belongs to none of those, it does not go in the bar.
+
+**Every tool button carries its keyboard letter, printed permanently in the corner** at
+`--t-1` mono in `--ink-3`, going `--accent` when the tool is active. This is how Excalidraw
+handles it, and it is strictly better than the alternative: the help card built in the
+previous session lived in a dock that only exists at ≥1180px, so the target device never
+saw it. Nothing that teaches the instrument may hide behind a `?`.
+
+Gestures that have no button (two-finger tap to undo, three-finger tap to redo) are listed
+in an inline hint under the island and in the help sheet, never only in one of them.
+
+## Motion
+
+- **Approach:** minimal-functional. Instruments do not bounce.
+- **Duration:** 120–180ms. Nothing over 200ms except a navigation transition (see below).
+- **Easing:** `ease-out` entering, `ease-in` leaving, `ease-in-out` moving.
+- **Never animate:** the ink. It must feel immediate, and it currently does.
+- Respect `prefers-reduced-motion: reduce` everywhere.
+
+### Boot and navigation
+
+The editor used to open behind a full-screen splash: a brand mark, a drawn
+illustration of a canvas, two rotating captions and a progress bar, carrying
+**nine looping animations across thirteen elements**. It was shown for as
+little as 320ms, so none of them ever completed, and on a slow tablet it ran
+long enough for the progress bar to fill, reset to zero and fill again. Five
+rules, each one written from a specific thing that screen got wrong.
+
+- **The editor is never covered by a picture of itself.** The splash drew a
+  fake canvas with a fake toolbar, sitting between a real canvas preview on
+  the landing page and the real canvas being opened. Three canvases, two of
+  them fictional.
+- **A progress indicator reflects real load state, or it is not shown.** The
+  old bar was a 1.85s CSS loop with no connection to loading. A bar that
+  restarts is worse than no bar: it tells the user the wait just began again.
+- **Nothing decorative animates while someone is waiting.** If an animation
+  cannot finish inside the time the screen is up, it is noise. Measure the
+  screen's real lifetime before timing anything on it.
+- **Chrome that is ready is shown as ready.** The toolbar and the grid are
+  static markup and paint in about 90ms. Every script tag is `defer`, so
+  nothing blocks that paint. Holding usable chrome behind a curtain until the
+  scripts finish is a lie about what works.
+- **The walk from `/` into `/write` is one move, not two screens.** Same
+  origin, so a cross-document view transition carries the landing page's
+  canvas into the editor's canvas. Where it is unsupported the browser does a
+  plain navigation, which is the same result without the move. Because the
+  transition fires at the new page's first paint, this only reads correctly
+  once the covering layer is gone: otherwise it morphs into the splash.
+
+The **budget is 90ms to a usable editor**, on any device, because that is when
+the markup paints. Restoring a saved document is allowed to take longer, and
+says so in the filename chip at `--ink-3` rather than behind an overlay.
+
+## Decisions Log
+
+| Date | Decision | Rationale |
+|---|---|---|
+| 2026-09-03 | Positioning: serious technical instrument | User choice, taken over "calm study room" |
+| 2026-09-03 | Instrument means quieter, not louder | Desmos, GeoGebra and Excalidraw are all near-white and single-accent; an instrument must not compete with the measurement |
+| 2026-09-03 | Restrained-achromatic colour; user's ink is the only colour | Differentiates from a category whose chrome is full of colour, and keeps the student's work the brightest thing on their screen |
+| 2026-09-03 | Ochre accent `#B4530A` / `#F0913C` | Whole category is blue or purple; ochre reads as drafting equipment |
+| 2026-09-03 | No warning colour | No forms to validate; amber would fight the accent |
+| 2026-09-03 | Keep Archivo + JetBrains Mono | Already loaded and correct; the failure was leakage, not the choice. Swapping costs a download on a slow connection |
+| 2026-09-03 | Shortcut letters printed permanently on tools | The ≥1180px help card never reached the target device; the instrument must teach itself in place |
+| 2026-09-03 | One editor island | Three rows plus ribbon cost ~30% of an 800px phone screen |
+| 2026-09-03 | Pen style grid: 2x22px debris removed | The ragged 2-2-1 of near-touching icons came from `.tool-dock .pen-styles { grid-template-columns: repeat(2, 22px) }` with 22px buttons, left over from a 48px vertical dock that no longer exists. Deleted rather than overridden. Now a 3-column grid of 72x44 cells with 8px gaps, and the stroke preview went 30px to 52px so the five pens actually read apart. **Three separate rules were setting width on this button across two files; a fix that looks ignored usually means a more specific rule you have not found yet.** |
+| 2026-09-03 | Pen style icons redrawn from the render code | The five were uniform-width squiggles differing only in thickness, so nothing showed how width varies ALONG the stroke, which is the only thing separating these pens. Variable-width nibs are now filled shapes; calligraphy is a curve, not a zigzag, because it was reading as a second fountain pen |
+| 2026-09-03 | Colour picker never actually closed | The real fault, found on the third report. `.color-studio` sets `display: flex`, which outranks the browser's `[hidden] { display: none }`, so every close path set the attribute and the panel stayed on screen at full size, still swallowing clicks with its own hue slider. `.color-studio[hidden]` now forces `display: none`. **I twice reported this as working because I measured `root.hidden` rather than the computed display. Check what renders, not the flag that is supposed to make it render.** An audit of every `[hidden]` element found the same defect on `.compass-new-arc`; also fixed |
+| 2026-09-03 | Hex field given a real label, and honest slider names | The code was an unlabelled mono scrap with `#` as its only label, which stops being a label the moment you type. Now a visible HEX label, a readable field, paste tolerance for a leading `#`, select-on-focus, an invalid-input note, and a copy button. Sliders renamed from Hue / **Amount** / **Light** to Hue / Saturation / Lightness |
+| 2026-09-03 | Colour picker close button: 19x22 to 44x44 | Reported as "the close button does not work". It always worked: `closedByRealPointerClick: true`. It was a 19px glyph at 0.6 opacity that people could not hit. Now `var(--tap)` with hover and focus states |
+| 2026-09-03 | Overlay wash ladder `--w-1..5` / `--d-1..5` | 338 alpha declarations in write.css collapsed onto 10 rungs. **Caveat:** the top rungs absorbed a wide band, so up to 13 white and 16 dark overlays shifted by more than the 2/255 threshold used elsewhere. Verified visually identical on the editor's main screen; not verified on every panel |
+| 2026-09-03 | Editor theme follows the OS when unchosen | `<html>` carried a hardcoded `data-theme="dark"`, same bug as the marketing shell. Stamped before paint so there is no flash |
+| 2026-09-03 | Default pen colour follows the ground both ways | Exposed by the change above. The flip to white only ever ran for a dark canvas, so a stored white default on a light page was invisible ink. Only the two defaults swap; a colour the user picked is never touched |
+| 2026-09-03 | Pomodoro controls raised to `var(--tap)` | icon buttons 34, tabs 36, presets 40, sound chips 34. The volume slider keeps its 4px track and gains a 44px box |
+| 2026-09-03 | Tool panel hint: 20 words to 6 | "Tap the tool again to close." The compass exception is something you meet, not something you get briefed on |
+| 2026-09-03 | `tokens.css` is now the single vocabulary | Loaded first on every page. Marketing and the editor both read from it, so the two halves cannot drift apart again. `marketing.css` no longer carries its own copy |
+| 2026-09-03 | `--chrome-*` aliases the core tokens and moved to `:root` | It was declared on `body.chrome-rail`, which only exists at >=1180px. That is the bug that shipped an unstyled panel on tablet. The names are kept so 800 lines of editor CSS needed no edit |
+| 2026-09-03 | Editor accent: indigo to ochre | 116 literals of `#5a5aff` / `#a5a5ff` / `#3d3dc4` across 5 stylesheets. The editor and the site now share one accent |
+| 2026-09-03 | Radii collapsed 23 values to 4 | 279 declarations rewritten onto `--r-sm/md/lg/pill`. Live editor went from 17 distinct radii to 5 |
+| 2026-09-03 | `html` had no font-family | The cascade root fell back to Times New Roman; anything outside `body`'s subtree inherited serif. Now set in `tokens.css` |
+| 2026-09-03 | Marketing pages rebuilt on the token set | First application of this system. `marketing.css` rewritten from the HUD version; `home.html` hero rebuilt; the starfield, nebula parallax and "SYSTEM READY" ticker deleted from template, CSS and JS |
+| 2026-09-03 | Marketing copy stops narrating the software | `INITIALIZE CANVAS` to `Open the canvas`, `MOD_01.3 // PAGES` to `Pages`, `OPERATOR_01 // TEACHER` to `Teacher`, `SYSTEM ONLINE // INKYSCIB OS v1.0` to `Free / offline / no account`. An instrument states what it does; it does not announce that it has booted |
+| 2026-09-03 | Marketing now honours the system colour scheme | `<html>` carried a hardcoded `data-theme="dark"` and the CSS had no `prefers-color-scheme` block, so a light-mode visitor was always served dark. Three states now: system default, plus explicit light and dark |
+| 2026-09-03 | Hero holds two columns down to 54rem | 62rem stacked at 992px, which caught the ~960px tablet and pushed the drawing below the fold. The drawing is the one thing on the page the product actually made |
+| 2026-09-03 | 13 tokens replace 938 literals and 8 vocabularies | Feature-private, breakpoint-scoped tokens already shipped an invisible panel on tablet |
+| 2026-09-04 | Boot splash deleted | It was the HUD era surviving on the one screen the migration never opened. `marketing.js` already carries the principle in a comment: an instrument does not announce that it has booted. That deletion took the starfield, the nebula parallax and the SYSTEM READY ticker off the marketing pages on 2026-09-03 and never reached `/write`. Nine looping animations, a fake canvas, a fake toolbar and a fake progress bar, on a screen whose real lifetime is however long the page takes to load: 320ms on localhost, seconds on the target tablet. Two behaviours, neither designed. ~600 lines removed |
+| 2026-09-04 | Time to usable editor: 1030ms to 90ms | The chrome and the grid are static markup and were always ready; the splash was holding them back. Measured on the four-way prototype at https://claude.ai/code/artifact/e5ca74dd-7592-4cce-a1f5-3d427f078d37 |
+| 2026-09-04 | Landing to editor is one view transition | `@view-transition { navigation: auto }` with a shared `view-transition-name` on `home.html .canvas` and `write.html #canvas-container`. Removes the blank navigation frame entirely, since the old page holds until the new one paints. Degrades to a plain navigation where unsupported. Needs an `:active` state on `.primary` so a slow load does not read as a dead click |
+| 2026-09-04 | Third un-migrated cyan pocket found | The splash carried `#67e8f9` on the pen tip, `rgba(103,232,249,.7)` on a stroke and `#67e8f9` in the progress gradient, plus a `#facc15` yellow in a system that states it has no warning colour, and `font-weight: 850` against an Archivo that loads 400/500/600/700. The colour picker held five `#6ee7dd` rings. Assume more remain: the ochre migration was done per-file, and the files it did not open still carry the old accent |
+| 2026-09-04 | Editor chrome: one top bar in three zones, not one island | The top-right strip was defined as "everything that is not a drawing tool", which is why it held history, a destructive action, two features, a preference and three view controls at once. Zones now group by what a control acts on. At 1400px this closed 444px of empty band. The one-island line in this document was reasoned from an 800px phone and still applies below the 1180px breakpoint, where the chrome collapses to one wrapping bar |
+| 2026-09-04 | Clear canvas moved from the top bar into the File backstage | It sat one control from Undo. `ui.js` bound it with an unguarded `getElementById(...).onclick`, so the behaviour moved to `window.clearCanvasAction` and the ribbon calls that |
+| 2026-09-04 | Zoom controls gained a live percentage and a fit button | Three view controls with no readout: no way to know your zoom or return to 100%. The readout polls `appState.transform.scale` rather than counting clicks, because wheel and pinch zoom write the transform directly and never go through `window.zoom`. Fit reuses `resetView()`, which the `0` key already used. Set in `--ink-2`, not `--ink-3`: measured 3.8:1 on the bar, and this document says `--ink-3` is non-load-bearing only |
+| 2026-09-04 | Support / Buy me a coffee removed from the menu | User request. Took the last `#ffd36a` and `rgba(244, 180, 67, ...)` literals in `write.css` with it |

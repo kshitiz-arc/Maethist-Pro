@@ -1,0 +1,141 @@
+/* Inkyscib design tokens — the single vocabulary.
+ *
+ * Source of truth: DESIGN.md. Load this FIRST, before every other stylesheet,
+ * on every page. Marketing and the editor both read from here so the two
+ * halves of the product cannot drift apart again.
+ *
+ * Rules:
+ *   - Do not declare a `--yourfeature-*` palette. Add to this file instead.
+ *   - Do not scope tokens to a breakpoint or a body class. `--chrome-*` used
+ *     to live on `body.chrome-rail`, which only exists at >=1180px, so a panel
+ *     built against it rendered with no background at all on a tablet.
+ *   - Every colour below is measured for contrast; see the table in DESIGN.md.
+ */
+
+:root {
+  /* --- surfaces --- */
+  --paper:   #F7F7F5;
+  --surface: #FFFFFF;
+  --raised:  #EFEFEB;
+
+  /* --- ink --- */
+  --ink:     #1B1B18;   /* 16.09 : 1  AAA */
+  --ink-2:   #55554E;   /*  7.00 : 1  AAA */
+  --ink-3:   #84847C;   /*  3.51 : 1  AA-large, non-load-bearing only */
+
+  /* --- lines --- */
+  --rule:    #DFDFD9;
+  --rule-2:  #ECECE6;
+
+  /* --- the one accent: the tool in your hand, and primary actions --- */
+  --accent:      #B4530A;  /* 4.68 : 1  AA */
+  --accent-wash: #FBF0E4;
+  --on-accent:   #FFFFFF;  /* 5.02 : 1  AA on the accent fill */
+
+  /* --- the only other saturated things --- */
+  --error: #B3261E;
+  --ok:    #166534;
+  /* There is no warning colour. Nothing here has a form to validate, and
+     amber would fight the accent for the same meaning. */
+
+  /* --- the user's ink. Content, not chrome, and exempt from the 13. --- */
+  --draw:       #2F6FD0;
+  --draw-point: #B3261E;
+
+  /* --- 4px module. Nothing off this scale. --- */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px;
+
+  /* --- radius. Hierarchical, never uniform. --- */
+  --r-sm: 3px;    /* controls, chips, swatches */
+  --r-md: 6px;    /* panels, cards, islands */
+  --r-lg: 10px;   /* sheets, modals, the canvas frame */
+  --r-pill: 999px;
+  --r-circle: 50%;
+
+  /* --- type --- */
+  --sans: "Archivo", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Consolas", monospace;
+
+  --t-1: 0.75rem;   --t-2: 0.8125rem; --t-3: 0.9375rem; --t-4: 1.0625rem;
+  --t-5: 1.375rem;  --t-6: 1.875rem;  --t-7: 2.75rem;
+
+  /* --- motion. Instruments do not bounce. --- */
+  --fast: 140ms;
+  --slow: 180ms;
+
+  /* --- the smallest thing a finger can reliably hit --- */
+  --tap: 44px;
+
+  /* --- overlay washes ---
+     Translucent fills that sit ON something rather than replacing it: hover
+     tints, hairlines, inset wells. write.css alone held 258 white-alpha and
+     167 dark-alpha declarations spread across 65 and 61 distinct alpha values.
+     Nobody can see the difference between 5.5% and 6%; that ladder is drift,
+     not decision. Five rungs per direction is more than enough.
+     These deliberately do NOT flip with the theme: a rule that says
+     "lighten what is under me" must keep meaning that. --raised and --rule
+     are the theme-aware pair for solid surfaces. */
+  --w-1: rgba(255, 255, 255, 0.04);
+  --w-2: rgba(255, 255, 255, 0.07);
+  --w-3: rgba(255, 255, 255, 0.10);
+  --w-4: rgba(255, 255, 255, 0.14);
+  --w-5: rgba(255, 255, 255, 0.22);
+
+  --d-1: rgba(15, 23, 42, 0.05);
+  --d-2: rgba(15, 23, 42, 0.08);
+  --d-3: rgba(15, 23, 42, 0.12);
+  --d-4: rgba(15, 23, 42, 0.18);
+  --d-5: rgba(15, 23, 42, 0.30);
+
+  /* --- page shell --- */
+  --shell: 74rem;                        /* max width of a marketing page */
+  --pad: clamp(16px, 4vw, 48px);         /* its gutter */
+  --measure: 62ch;                       /* max width of running prose */
+}
+
+/* Three theme states, not two. An explicit choice stamps data-theme; the
+   default "no choice yet" case follows the operating system. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:   #141413;
+    --surface: #1C1C1A;
+    --raised:  #242422;
+    --ink:     #F2F2EE;
+    --ink-2:   #A8A8A0;
+    --ink-3:   #77776F;
+    --rule:    #2E2E2B;
+    --rule-2:  #232321;
+    --accent:      #F0913C;
+    --accent-wash: #2A1D10;
+    --on-accent:   #141413;
+    --error: #F2857C;
+    --ok:    #4ADE80;
+    --draw:       #6FA8F5;
+    --draw-point: #F2857C;
+  }
+}
+
+[data-theme="dark"] {
+  --paper:   #141413;
+  --surface: #1C1C1A;
+  --raised:  #242422;
+  --ink:     #F2F2EE;
+  --ink-2:   #A8A8A0;
+  --ink-3:   #77776F;
+  --rule:    #2E2E2B;
+  --rule-2:  #232321;
+  --accent:      #F0913C;
+  --accent-wash: #2A1D10;
+  --on-accent:   #141413;
+  --error: #F2857C;
+  --ok:    #4ADE80;
+  --draw:       #6FA8F5;
+  --draw-point: #F2857C;
+}
+
+/* The cascade root had no font, so anything outside body's subtree fell back
+   to the browser default serif. */
+html {
+  font-family: var(--sans);
+}

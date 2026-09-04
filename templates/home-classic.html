@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#10131d" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Inkyscib" />
+  <meta name="description" content="Inkyscib is a free, ad-free study canvas for handwritten notes, algebra tiles, geometry constructions, PDF & PPT annotation, and focused studying — all in your browser, on any device." />
+  <title>Inkyscib</title>
+  <script>
+    try {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "light" || savedTheme === "dark") {
+        document.documentElement.dataset.theme = savedTheme;
+      }
+    } catch (error) {
+      // Keep the server-rendered theme when storage is unavailable.
+    }
+  </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='home-3') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/icons.css') }}" />
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest', v='pwa-1') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/inkyscib-180.png', v='pwa-1') }}">
+  <link rel="icon" href="{{ url_for('static', filename='logo.ico') }}" type="image/x-icon">
+  <script src="{{ url_for('static', filename='js/icons.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/home.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/fx.js') }}" defer></script>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-5SW3NRK6X6"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-5SW3NRK6X6');
+  </script>
+
+  <style>
+    html,
+    body,
+    .site-header,
+    .feature-card,
+    .demo-board,
+    .launch-band,
+    .primary-action,
+    .secondary-action {
+      transition:
+        background-color 0.45s ease,
+        color 0.45s ease,
+        border-color 0.45s ease,
+        box-shadow 0.45s ease;
+    }
+
+    .theme-toggle {
+      transition: transform 0.35s ease;
+    }
+
+    .theme-toggle.theme-spin {
+      animation: themeSpin 0.55s ease;
+    }
+
+    @keyframes themeSpin {
+      0% {
+        transform: rotate(0deg) scale(1);
+      }
+
+      50% {
+        transform: rotate(180deg) scale(1.18);
+      }
+
+      100% {
+        transform: rotate(360deg) scale(1);
+      }
+    }
+  </style>
+  <style>
+    #themeTransition {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      pointer-events: none;
+
+      opacity: 0;
+      clip-path: circle(0vmax at var(--theme-x, 50%) var(--theme-y, 50%));
+
+      background:
+        radial-gradient(
+          circle at var(--theme-x, 50%) var(--theme-y, 50%),
+          var(--theme-c1),
+          var(--theme-c2) 45%,
+          var(--theme-c3) 100%
+        );
+
+      transition:
+        clip-path 0.9s cubic-bezier(.2, .8, .2, 1),
+        opacity 0.35s ease;
+
+      will-change: clip-path, opacity;
+    }
+
+    #themeTransition.theme-running {
+      opacity: 1;
+    }
+
+    #themeTransition.theme-open {
+      clip-path: circle(150vmax at var(--theme-x, 50%) var(--theme-y, 50%));
+    }
+
+    #themeTransition.theme-fade {
+      opacity: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="themeTransition" aria-hidden="true"></div>
+  <canvas id="heroCanvas" aria-hidden="true"></canvas>
+
+  <header class="site-header" data-home-header>
+    <a class="brand" href="/" aria-label="Inkyscib home">
+      <span class="brand-mark" aria-hidden="true">
+        <img 
+          class="brand-icon"
+          src="https://img.icons8.com/?size=100&amp;id=8172&amp;format=png&amp;color=000000" 
+          alt=""
+        >
+      </span>
+      <span>Inkyscib</span>
+    </a>
+
+    <nav class="site-nav" aria-label="Primary">
+      <a href="#features">Features</a>
+      <a href="#live-canvas">Canvas</a>
+      <a href="#launch-bottom">Launch</a>
+    </nav>
+
+    <div class="header-actions">
+      <button id="themeToggle" class="theme-toggle" title="Toggle theme" aria-label="Toggle theme" type="button">
+        <i class="fas fa-adjust"></i>
+      </button>
+      <a class="header-write" href="{{ url_for('write') }}">Write</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="home-hero">
+      <div class="hero-ambient" aria-hidden="true">
+        <div class="hero-toolrail">
+          <span class="tool-dot active"></span>
+          <span class="tool-dot"></span>
+          <span class="tool-dot warm"></span>
+          <span class="tool-dot cool"></span>
+        </div>
+        <div class="floating-sheet sheet-one">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="floating-sheet sheet-two">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="ink-ribbon ribbon-one"></div>
+        <div class="ink-ribbon ribbon-two"></div>
+      </div>
+
+      <div class="hero-content reveal">
+        <h1>Inkyscib</h1><br>
+        <p class="hero-copy">A fast digital canvas for writing, teaching, and solving problems — with algebra tiles, geometry constructions, slide import, and clean exports built in.</p>
+        <div class="hero-actions">
+          <a class="primary-action magnetic" href="{{ url_for('write') }}">
+            <span>Start writing</span>
+            <span class="action-icon" aria-hidden="true">
+              <i class="fas fa-pen"></i>
+            </span>
+          </a>
+          <a class="secondary-action" href="https://github.com/SalajPro" target="_blank" rel="noopener noreferrer">
+            <i class="fab fa-github"></i>
+            <span>GitHub</span>
+          </a>
+        </div>
+
+        <div class="hero-meta">
+          <span>&#128208; Algebra tiles &amp; geometry</span>
+          <span>&#127813; Focus timer + study stats</span>
+          <span>&#127783;&#65039; Built-in focus sounds</span>
+          <span>&#128293; Daily streaks</span>
+          <span>Free forever</span>
+        </div>
+      </div>
+
+      <a class="scroll-cue" href="#features" aria-label="Scroll to features">
+        <span></span>
+      </a>
+    </section>
+
+    <section id="features" class="feature-band" aria-label="Inkyscib features">
+      <div class="section-inner">
+        <div class="section-heading reveal">
+          <h2>Built for the moment ideas start moving.</h2>
+          <p>With features that are free!</p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card reveal">
+            <span class="feature-icon"><i class="fas fa-pen"></i></span>
+            <h3>Natural writing</h3>
+            <p>Multiple pen feels, smooth strokes, highlighter, eraser, shapes, selection, and fast undo.</p>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon accent-warm"><i class="fas fa-file-powerpoint"></i></span>
+            <h3>Teach from slides</h3>
+            <p>Import PPT decks, mark them live, move slide by slide, and export the annotated result.</p>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon accent-cool"><i class="fas fa-ruler-horizontal"></i></span>
+            <h3>Notebook mode</h3>
+            <p>Switch from infinite canvas to page-based notes and save handwritten work as a PDF.</p>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon accent-coral"><i class="fas fa-clock"></i></span>
+            <h3>Focus studio</h3>
+            <p>A pomodoro timer with session streaks, task lists, focus sounds, and daily study stats.</p>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon accent-ink"><i class="fas fa-play"></i></span>
+            <h3>Watch &amp; learn</h3>
+            <p>Watch a floating YouTube lecture, save timestamped frames to the canvas, and jump back with a double-tap.</p>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon accent-green"><i class="fas fa-camera"></i></span>
+            <h3>AR Inky</h3>
+            <p>Bring the camera into the workspace when a live teaching setup needs it.</p>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon accent-violet"><i class="fas fa-compass"></i></span>
+            <h3>Algebra tiles &amp; geometry</h3>
+            <p>Drag out unit, x, x², and xy tiles that stay linked to your variables, or construct radii, chords, tangents, and angles on a circle with snapping and live measurements.</p>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon accent-cool"><i class="fas fa-file-pdf"></i></span>
+            <h3>Import your textbook</h3>
+            <p>Bring in a PDF — a textbook chapter, a worksheet, a past paper — and write directly on top of it.</p>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon accent-warm"><i class="fas fa-book-open"></i></span>
+            <h3>One notebook per subject</h3>
+            <p>Physics, Chemistry, Math — keep each subject in its own notebook, with its own canvas and a live preview card.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="live-canvas" class="demo-section">
+      <div class="section-inner demo-layout">
+        <div class="demo-copy reveal">
+          <h2>Feels alive before you even open the editor.</h2>
+          <a class="text-link" href="{{ url_for('write') }}">Open the real canvas</a>
+        </div>
+
+        <div class="demo-board reveal" aria-label="Interactive Inkyscib preview">
+          <div class="demo-toolbar">
+            <button class="demo-tool active" data-demo-tool="ink" type="button" aria-label="Ink preview">
+              <i class="fas fa-pen"></i>
+            </button>
+            <button class="demo-tool" data-demo-tool="highlight" type="button" aria-label="Highlight preview">
+              <i class="fas fa-highlighter"></i>
+            </button>
+            <button class="demo-tool" data-demo-tool="erase" type="button" aria-label="Eraser preview">
+              <i class="fas fa-eraser"></i>
+            </button>
+          </div>
+          <canvas id="demoCanvas" width="860" height="480"></canvas>
+          <div class="demo-status">
+            <span>Live preview</span>
+            <span>Drag here</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="launch-bottom" class="launch-band">
+      <div class="section-inner launch-inner reveal">
+        <h2>Open the canvas and start.</h2>
+        <a class="primary-action magnetic" href="{{ url_for('write') }}">
+          <span>Write now</span>
+          <span class="action-icon" aria-hidden="true">
+            <i class="fas fa-pen"></i>
+          </span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>&copy; 2025 INKYSCIB</span>
+    <a href="https://github.com/SalajPro" target="_blank" rel="noopener noreferrer">
+      <i class="fab fa-github"></i>
+      <span>GitHub</span>
+    </a>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,309 @@
+{% extends "_marketing.html" %}
+
+{% block title %}About &mdash; Inkyscib{% endblock %}
+{% block description %}Who builds Inkyscib: a mathematics educator and applied-ML researcher in Ranchi, building the classroom tools he needed in front of his own students.{% endblock %}
+{% block body_class %}page-content{% endblock %}
+
+{#
+  Profile facts come from Kshitiz's own CV. Deliberately kept off this public
+  page: phone number, personal email, home address.
+
+  portrait: drop a file into static/img/ and name it here to replace the
+  monogram with the photo.
+#}
+{% set portrait = None %}
+
+{% block content %}
+    <div class="page-head">
+      <div class="system-label">Who builds it</div>
+      <h2>About</h2>
+    </div>
+
+    <p class="statement">
+      Studying shouldn't cost more than the tablet you study on. Inkyscib is
+      <em>one calm, free place</em> to write, teach and think — in a browser, on
+      whatever device you already own.
+    </p>
+
+    <div class="principles">
+
+      <div class="principle panel clip-hud">
+        <b>0</b>
+        <strong>Ads</strong>
+        <span>Nothing competing for your attention while you are trying to learn.</span>
+      </div>
+
+      <div class="principle panel clip-hud">
+        <b>0</b>
+        <strong>Accounts</strong>
+        <span>No sign-up, no email, no password. Open the page and start writing.</span>
+      </div>
+
+      <div class="principle panel clip-hud">
+        <b>₹0</b>
+        <strong>Forever</strong>
+        <span>No trial, no upgrade, no feature waiting behind a payment.</span>
+      </div>
+
+      <div class="principle panel clip-hud">
+        <b>1</b>
+        <strong>Browser tab</strong>
+        <span>Books, slides, lectures, notes and a focus timer, all in one place.</span>
+      </div>
+
+    </div>
+
+    <section class="section">
+      <div class="section-title">
+        <i>01</i>
+        <h3>Who builds it</h3>
+      </div>
+
+      <article class="profile panel clip-hud">
+
+        <div class="profile-portrait">
+          {% if portrait %}
+          <img src="{{ url_for('static', filename='img/' ~ portrait) }}"
+            alt="Kshitiz Kumar Sinha" width="186" height="186" />
+          {% else %}
+          <div class="profile-monogram" aria-hidden="true">KS</div>
+          {% endif %}
+        </div>
+
+        <div>
+          <span class="profile-tier">Teacher</span>
+          <h4 class="profile-name">Kshitiz Kumar Sinha</h4>
+          <p class="profile-role">
+            EdTech developer · Applied ML researcher · Mathematics educator
+          </p>
+
+          <p class="profile-bio">
+            He teaches CBSE mathematics to Classes IX and X at Sarala Birla
+            Public School in Ranchi, coordinates its IT &amp; Coding Club and
+            Composite Skill Lab, and is reading for a Ph.D. in mathematics —
+            applied machine learning for fluid dynamics — at Sarala Birla
+            University.
+          </p>
+
+          <p class="profile-bio">
+            Inkyscib comes out of that overlap. It is built by someone who has to
+            stand in front of a class and use it the next morning.
+          </p>
+
+          <div class="profile-tags">
+            <span>PH.D. MATHEMATICS (APPLIED ML)</span>
+            <span>M.SC. MATHEMATICS</span>
+            <span>B.ED. — TOP-10 UNIVERSITY RANK</span>
+            <span>CTET PAPER I &amp; II</span>
+            <span>PYTHON · PYTORCH · FLASK · REACT</span>
+          </div>
+
+          <div class="profile-stats">
+            <div class="profile-stat">
+              <b>390+</b>
+              <span>STUDENTS TAUGHT</span>
+            </div>
+            <div class="profile-stat">
+              <b>175+</b>
+              <span>FACULTY SCHEDULED BY HIS SOLVER</span>
+            </div>
+            <div class="profile-stat">
+              <b>#1</b>
+              <span>PH.D. COURSEWORK RANK · 9/10 CGPA</span>
+            </div>
+            <div class="profile-stat">
+              <b>7.4K+</b>
+              <span>READERS OF HIS EDTECH WRITING</span>
+            </div>
+          </div>
+
+          <div class="maker-links">
+            <a href="https://www.linkedin.com/in/kshitiz47/" target="_blank" rel="noopener noreferrer">LINKEDIN ↗</a>
+            <a href="https://github.com/kshitiz-arc" target="_blank" rel="noopener noreferrer">GITHUB ↗</a>
+          </div>
+        </div>
+
+      </article>
+
+      {#
+        Salaj's details come from his own public GitHub profile and profile
+        README — nothing beyond what he publishes about himself there.
+        salaj_portrait: same swap as above, a filename in static/img/.
+      #}
+      {% set salaj_portrait = None %}
+
+      <article class="profile panel clip-hud">
+
+        <div class="profile-portrait">
+          {% if salaj_portrait %}
+          <img src="{{ url_for('static', filename='img/' ~ salaj_portrait) }}"
+            alt="Salaj Shekhar" width="186" height="186" />
+          {% else %}
+          <div class="profile-monogram" aria-hidden="true">SS</div>
+          {% endif %}
+        </div>
+
+        <div>
+          <span class="profile-tier">Student</span>
+          <h4 class="profile-name">Salaj Shekhar</h4>
+          <p class="profile-role">
+            Student · Developer · Security enthusiast
+          </p>
+
+          <p class="profile-bio">
+            One of Kshitiz's students at Sarala Birla Public School, and head of
+            the school's Innovation &amp; Robotics team. He works on web security
+            and exploitation, machine learning, and robotics — the kind of
+            student who would rather take the system apart than be handed it.
+          </p>
+
+          <div class="profile-tags">
+            <span>ETHICAL HACKING</span>
+            <span>PENTESTING · RED TEAMING</span>
+            <span>WEB SECURITY</span>
+            <span>AI &amp; MACHINE LEARNING</span>
+            <span>ROBOTICS &amp; IOT</span>
+          </div>
+
+          <ul class="profile-list">
+            <li><b>PneumoX</b> — chest X-ray classification on EfficientNetB0, with Grad-CAM visualisation</li>
+            <li><b>SPP</b> — an interpreted programming language written in Python</li>
+            <li><b>Real-FruitNinja</b> — motion-controlled game on an ESP32 and MPU6050 over Wi-Fi</li>
+            <li><b>Study-Floss</b> — a browser extension to help students hold focus</li>
+            <li><b>Canon-Catch-AI</b> — a reinforcement-learning agent trained to catch objects</li>
+          </ul>
+
+          <p class="profile-quote">
+            “Break systems. Understand them. Rebuild better.”
+          </p>
+
+          <div class="maker-links">
+            <a href="https://github.com/SalajPro" target="_blank" rel="noopener noreferrer">GITHUB ↗</a>
+            <a href="https://salajtech.com" target="_blank" rel="noopener noreferrer">SALAJTECH.COM ↗</a>
+            <a href="https://www.linkedin.com/in/salajs/" target="_blank" rel="noopener noreferrer">LINKEDIN ↗</a>
+            <a href="https://tryhackme.com/p/SalajS" target="_blank" rel="noopener noreferrer">TRYHACKME ↗</a>
+          </div>
+        </div>
+
+      </article>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <i>02</i>
+        <h3>Built before this</h3>
+      </div>
+
+      <div class="panel clip-hud">
+
+        <div class="track-row">
+          <div class="track-when">2025 — PRESENT</div>
+          <div class="track-what">
+            <strong>Tungston Theory</strong>
+            <p>
+              A full-stack, AI-powered CBSE Class X mathematics platform taken
+              from concept to production — 13 chapters, 50+ concepts, an XP and
+              streak engine with a real-time leaderboard, and HMAC-SHA256 OTP
+              verification hardened from day one.
+            </p>
+            <div class="track-stack">FLASK · REACT · MYSQL · GOOGLE CLOUD · NGINX · GUNICORN</div>
+          </div>
+        </div>
+
+        <div class="track-row">
+          <div class="track-when">2025 — PRESENT</div>
+          <div class="track-what">
+            <strong>Institutional timetable automation</strong>
+            <p>
+              A hybrid constraint-satisfaction solver — a Python backtracking
+              engine alongside Google OR-Tools' CP-SAT — that replaced fully
+              manual timetabling for 175+ faculty across 60 sections, handling
+              parallel classes, combined-section teacher sharing and period
+              frequency. The school's first conflict-free automated schedule.
+            </p>
+            <div class="track-stack">PYTHON · JAVASCRIPT · OR-TOOLS CP-SAT · OPENPYXL</div>
+          </div>
+        </div>
+
+        <div class="track-row">
+          <div class="track-when">RESEARCH</div>
+          <div class="track-what">
+            <strong>Handwriting emotion detection</strong>
+            <p>
+              An end-to-end ML pipeline classifying emotion from online
+              handwriting trajectories on the EMOTHAW dataset — extracting
+              pressure, velocity, acceleration and stroke features from raw pen
+              data. The same question Inkyscib's canvas sits next to: what a
+              stroke tells you about the person making it.
+            </p>
+            <div class="track-stack">PYTHON · SCIKIT-LEARN · NUMPY · PANDAS · SCIPY</div>
+          </div>
+        </div>
+
+        <div class="track-row">
+          <div class="track-when">RESEARCH</div>
+          <div class="track-what">
+            <strong>Vision Fusion</strong>
+            <p>
+              A multi-model computer-vision pipeline fusing OpenCV, YOLOv8 and
+              MediaPipe for real-time scene understanding and pose estimation —
+              the groundwork behind Inkyscib's experimental hand-tracking canvas.
+            </p>
+            <div class="track-stack">PYTHON · OPENCV · YOLOV8 · MEDIAPIPE</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <i>03</i>
+        <h3>How it works</h3>
+      </div>
+
+      <div class="card-grid">
+
+        <article class="card panel clip-hud">
+          <span class="card-index">On your device</span>
+          <h4>Your work stays on your device</h4>
+          <p>
+            There is no login and no cloud. Notebooks are stored in your own
+            browser, and you can export the whole library as a single file and
+            carry it anywhere. Capture work never leaves your machine.
+          </p>
+        </article>
+
+        <article class="card panel clip-hud">
+          <span class="card-index">Free</span>
+          <h4>Free, and staying free</h4>
+          <p>
+            Nothing to upgrade to, no trial that runs out, and no ads paying for
+            it behind your back.
+          </p>
+        </article>
+
+        <article class="card panel clip-hud">
+          <span class="card-index">Open source</span>
+          <h4>Open on GitHub</h4>
+          <p>
+            Bugs, ideas and pull requests are all welcome — if something is
+            missing for the way you study or teach, say so.
+          </p>
+          <div class="maker-links">
+            <a href="https://github.com/SalajPro" target="_blank" rel="noopener noreferrer">REPOSITORY ↗</a>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <div class="page-cta panel clip-hud">
+      <p>
+        The fastest way to see whether it suits you is to open it and write
+        something.
+      </p>
+      <a class="primary" href="{{ url_for('write') }}">Open the canvas</a>
+      <a class="secondary" href="{{ url_for('features') }}">See what it does</a>
+    </div>
+{% endblock %}

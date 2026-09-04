@@ -1,0 +1,610 @@
+/* Inkyscib marketing pages: home, features, about.
+ *
+ * Built on the token set in DESIGN.md. Thirteen colours, a 4px module, two
+ * families. Nothing here invents a private palette.
+ *
+ * The direction is "serious technical instrument", and the research behind
+ * that (Desmos, GeoGebra, Excalidraw) says instruments are quiet: near-white,
+ * single accent, thin rules. The previous version of this file was a sci-fi
+ * HUD, which is what a game about engineering looks like rather than what an
+ * engineer's tool looks like. The drawing is the only thing here allowed to
+ * be colourful, because the drawing is what the product makes.
+ */
+
+/* Tokens live in tokens.css, loaded before this file. Do not redeclare them
+   here: two copies is how the eight parallel vocabularies started. */
+
+/* ---------- base ---------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--t-3);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Every number on the site sits on tabular figures. A readout that shifts
+   sideways as it changes is the tell of a toy. */
+.mono, .system-label, .card-index, .zoom, .hud, code, kbd {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+a { color: inherit; }
+
+img, svg { max-width: 100%; }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+.page {
+  max-width: var(--shell);
+  margin: 0 auto;
+  padding: 0 var(--pad);
+}
+
+/* ---------- header ---------- */
+
+header {
+  display: flex;
+  align-items: center;
+  gap: var(--s5);
+  padding: var(--s5) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: var(--t-4);
+  letter-spacing: -0.015em;
+  margin-right: auto;
+}
+
+.logo-icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--r-sm);
+  color: var(--accent);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.logo small { display: none; }
+
+.nav {
+  display: flex;
+  gap: var(--s1);
+}
+
+.nav a {
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-sm);
+  color: var(--ink-2);
+  text-decoration: none;
+  font-size: var(--t-2);
+  font-weight: 500;
+  transition: color var(--fast) ease-out, background-color var(--fast) ease-out;
+}
+
+.nav a:hover { color: var(--ink); background: var(--raised); }
+
+.nav a.active { color: var(--ink); font-weight: 600; }
+
+.actions { display: flex; align-items: center; gap: var(--s2); }
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 15px;
+  cursor: pointer;
+  transition: color var(--fast) ease-out, border-color var(--fast) ease-out;
+}
+
+.icon-btn:hover { color: var(--ink); border-color: var(--ink-3); }
+
+.write-btn {
+  padding: var(--s2) var(--s4);
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--on-accent);
+  text-decoration: none;
+  font-size: var(--t-2);
+  font-weight: 600;
+  white-space: nowrap;
+  transition: opacity var(--fast) ease-out;
+}
+
+.write-btn:hover { opacity: 0.88; }
+
+/* ---------- home hero ---------- */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: clamp(var(--s5), 5vw, var(--s8));
+  align-items: center;
+  padding: var(--s8) 0;
+  min-height: calc(100vh - 190px);
+}
+
+.hero-copy { display: grid; gap: var(--s4); align-content: center; max-width: 34rem; }
+
+.system-label {
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0;
+}
+
+.eyebrow { display: none; }
+
+.hero h1 {
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.028em;
+  margin: 0;
+}
+
+.tagline {
+  font-size: var(--t-5);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+  margin: 0;
+  max-width: 20ch;
+}
+
+.tagline em { font-style: normal; color: var(--accent); }
+
+.description {
+  font-size: var(--t-4);
+  color: var(--ink-2);
+  margin: 0;
+  max-width: 46ch;
+}
+
+.description strong { color: var(--ink); font-weight: 600; }
+
+.cta { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s2); }
+
+.primary, .secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s3) var(--s5);
+  border-radius: var(--r-sm);
+  font-family: var(--sans);
+  font-size: var(--t-3);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: opacity var(--fast) ease-out, border-color var(--fast) ease-out,
+              background-color var(--fast) ease-out;
+}
+
+.primary { background: var(--accent); color: var(--on-accent); }
+.primary:hover { opacity: 0.88; }
+
+.secondary { background: transparent; color: var(--ink); border-color: var(--rule); }
+.secondary:hover { border-color: var(--ink-3); background: var(--raised); }
+
+/* Capability list. A plain list of what it does, not a grid of numbered
+   modules: the numbering implied a sequence that was never real. */
+.feature-grid-label { margin-top: var(--s4); }
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--s1) var(--s5);
+  margin: 0;
+}
+
+.feature {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  padding: var(--s1) 0;
+  color: var(--ink-2);
+  text-decoration: none;
+  font-size: var(--t-2);
+  transition: color var(--fast) ease-out;
+}
+
+.feature:hover { color: var(--ink); }
+
+.feature b {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  font-weight: 500;
+}
+
+/* ---------- the drawing ---------- */
+
+.canvas-container { display: grid; }
+
+.canvas {
+  position: relative;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  padding: var(--s4);
+  display: grid;
+  gap: var(--s3);
+  overflow: hidden;
+}
+
+/* The app's own dot grid, at the scale it draws it. This is the texture; it
+   is why there is no starfield. */
+.canvas-grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, var(--rule) 1px, transparent 0);
+  background-size: 22px 22px;
+  pointer-events: none;
+}
+
+.canvas-header, .canvas-footer, .hud, .status { display: none; }
+
+.toolbar {
+  position: relative;
+  justify-self: start;
+  display: inline-flex;
+  gap: 2px;
+  padding: var(--s1);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.tool {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--fast) ease-out, background-color var(--fast) ease-out;
+}
+
+.tool:hover { background: var(--raised); color: var(--ink); }
+.tool.selected { background: var(--accent-wash); color: var(--accent); }
+
+.geometry {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: var(--s2) 0 var(--s4);
+}
+
+.geometry svg {
+  width: 100%;
+  height: auto;
+  max-height: 46vh;
+  transition: transform 320ms ease-out;
+}
+
+.geo { fill: none; stroke: var(--draw); stroke-width: 2; stroke-linejoin: round; }
+.geo.circle { stroke-width: 2; }
+.geo.dash { stroke-width: 1.4; stroke-dasharray: 5 5; }
+.point { fill: var(--draw-point); }
+
+.label {
+  fill: var(--ink-2);
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.zoom {
+  position: relative;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  font-size: var(--t-1);
+  color: var(--ink-3);
+}
+
+.zoom button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--fast) ease-out, border-color var(--fast) ease-out;
+}
+
+.zoom button:hover { color: var(--ink); border-color: var(--ink-3); }
+.zoom span { min-width: 3.6em; text-align: center; }
+
+/* ---------- features / about ---------- */
+
+.page-head {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s8) 0 var(--s6);
+  border-bottom: 1px solid var(--rule);
+}
+
+.page-head h2 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.024em;
+  margin: 0;
+}
+
+.page-head p { margin: 0; max-width: 58ch; color: var(--ink-2); font-size: var(--t-4); }
+
+.section { padding: var(--s8) 0 0; }
+
+.section-title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+  margin-bottom: var(--s5);
+}
+
+.section-title i {
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: var(--t-1);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.section-title h3 {
+  font-size: var(--t-6);
+  font-weight: 700;
+  letter-spacing: -0.018em;
+  margin: 0;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: var(--s4);
+}
+
+/* The panel is one flat surface with a hairline. The old version stacked a
+   blur, an inset highlight, a drop shadow and a clipped corner on every one
+   of these, which is four effects doing the job of one border. */
+.panel {
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+/* Kept so the markup does not need editing. The angled corner cut was HUD
+   decoration; DESIGN.md calls for minimal, so it is now nothing. */
+.clip-hud { clip-path: none; }
+
+.card { padding: var(--s5); display: grid; gap: var(--s2); align-content: start; }
+
+.card-index {
+  font-size: var(--t-1);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.card h4 {
+  font-size: var(--t-4);
+  font-weight: 600;
+  letter-spacing: -0.008em;
+  margin: 0;
+}
+
+.card p { margin: 0; color: var(--ink-2); }
+
+.card ul { margin: var(--s1) 0 0; padding-left: var(--s4); color: var(--ink-2); }
+.card li { margin-bottom: var(--s1); }
+
+.page-cta {
+  display: grid;
+  gap: var(--s3);
+  justify-items: start;
+  padding: var(--s6);
+  margin: var(--s8) 0;
+}
+
+.page-cta p { margin: 0; font-size: var(--t-4); max-width: 46ch; }
+.page-cta .primary, .page-cta .secondary { margin-top: var(--s1); }
+
+.statement {
+  font-size: var(--t-5);
+  line-height: 1.45;
+  color: var(--ink);
+  max-width: 52ch;
+  margin: 0 0 var(--s5);
+}
+
+/* A stat, so the number is the thing you see first. The markup is
+   <b>0</b><strong>Ads</strong><span>...</span>. */
+.principle {
+  padding: var(--s5);
+  display: grid;
+  gap: var(--s1);
+  align-content: start;
+}
+
+.principle b {
+  font-family: var(--mono);
+  font-size: var(--t-7);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--accent);
+}
+
+.principle strong {
+  font-size: var(--t-4);
+  font-weight: 600;
+  letter-spacing: -0.008em;
+}
+
+.principle span { color: var(--ink-2); font-size: var(--t-2); line-height: 1.5; }
+
+.principle-grid, .principles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--s4);
+}
+
+.track-row {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: var(--s3) var(--s5);
+  padding: var(--s4) 0;
+  border-bottom: 1px solid var(--rule-2);
+}
+
+.track-when {
+  font-family: var(--mono);
+  font-size: var(--t-2);
+  color: var(--accent);
+}
+
+.track-what h4 { margin: 0 0 var(--s1); font-size: var(--t-4); font-weight: 600; }
+.track-what p { margin: 0; color: var(--ink-2); }
+
+.track-stack {
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  color: var(--ink-3);
+  margin-top: var(--s2);
+}
+
+.profile { padding: var(--s6); display: grid; gap: var(--s4); }
+.profile-portrait { display: grid; place-items: center; }
+
+.profile-monogram {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--r-md);
+  color: var(--accent);
+  font-size: var(--t-6);
+  font-weight: 700;
+}
+
+.profile-name { margin: 0; font-size: var(--t-5); font-weight: 700; letter-spacing: -0.015em; }
+.profile-role { margin: 0; color: var(--ink-2); }
+.profile-tier, .profile-tags {
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+}
+.profile-bio { margin: 0; color: var(--ink-2); max-width: 58ch; }
+.profile-quote {
+  margin: 0;
+  padding-left: var(--s4);
+  border-left: 2px solid var(--accent);
+  color: var(--ink);
+  font-size: var(--t-4);
+}
+.profile-stats { display: flex; flex-wrap: wrap; gap: var(--s5); }
+.profile-stat { display: grid; gap: 2px; }
+.profile-stat b { font-family: var(--mono); font-size: var(--t-5); font-weight: 700; }
+.profile-stat span { font-size: var(--t-1); color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; }
+
+.maker-links { display: flex; flex-wrap: wrap; gap: var(--s4); }
+.maker-links a { color: var(--accent); text-decoration: none; font-size: var(--t-2); font-weight: 500; }
+.maker-links a:hover { text-decoration: underline; }
+
+/* ---------- footer ---------- */
+
+.site-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s6) 0;
+  margin-top: var(--s8);
+  border-top: 1px solid var(--rule);
+  color: var(--ink-3);
+  font-size: var(--t-2);
+}
+
+.site-foot a { color: var(--ink-2); text-decoration: none; }
+.site-foot a:hover { color: var(--ink); }
+
+/* ---------- retired ---------- */
+/* The starfield, nebulas, orbit and system bar were the sci-fi frame. The
+   markup for some of them may still exist; none of them render. */
+.space, .nebula, .star, .orbit, .system-bar { display: none !important; }
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 54rem) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: var(--s6);
+    min-height: 0;
+    padding: var(--s6) 0 var(--s8);
+  }
+  .hero-copy { max-width: none; }
+  .geometry svg { max-height: 38vh; }
+}
+
+@media (max-width: 44rem) {
+  header {
+    flex-wrap: wrap;
+    gap: var(--s3);
+    padding: var(--s4) 0;
+  }
+  .nav { order: 3; width: 100%; border-top: 1px solid var(--rule); padding-top: var(--s2); }
+  .nav a { padding: var(--s2); }
+  .track-row { grid-template-columns: 1fr; gap: var(--s1); }
+  .page-cta { padding: var(--s5); }
+  .profile { padding: var(--s5); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  .geometry svg { transition: none; }
+}

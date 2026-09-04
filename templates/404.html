@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404 - Inkyscib</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/not-found.css') }}" />
+  <link rel="icon" href="{{ url_for('static', filename='logo.ico') }}" type="image/x-icon">
+</head>
+<body>
+  <main class="lost-page" aria-labelledby="lost-title">
+    <section class="lost-copy">
+      <a class="brand-link" href="{{ url_for('home') }}" aria-label="Back to Inkyscib home">
+        <span class="brand-mark" aria-hidden="true">I</span>
+        <span>Inkyscib</span>
+      </a>
+
+      <div class="status-code" aria-label="404">
+        <span>4</span>
+        <span class="ink-zero">0</span>
+        <span>4</span>
+      </div>
+
+      <h1 id="lost-title">I think you are lost.</h1>
+      <p>This page slipped off the canvas. Go back to Inkyscib and keep writing where the notes actually live.</p>
+
+      <a class="return-button" href="{{ url_for('home') }}">
+        <span class="button-icon" aria-hidden="true">
+          <span></span>
+        </span>
+        <span>Back to Inkyscib</span>
+      </a>
+    </section>
+
+    <section class="lost-art" aria-hidden="true">
+      <div class="canvas-card">
+        <div class="canvas-toolbar">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="wandering-line"></div>
+        <div class="pen">
+          <span></span>
+        </div>
+        <div class="page-chip chip-one"></div>
+        <div class="page-chip chip-two"></div>
+      </div>
+      <div class="floating-note note-one">?</div>
+      <div class="floating-note note-two">404</div>
+    </section>
+  </main>
+</body>
+</html>

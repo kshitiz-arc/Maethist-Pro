@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#F7F7F5" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Inkyscib" />
+  <meta name="description" content="{% block description %}Inkyscib is a free, ad-free study canvas for handwritten notes, algebra tiles, geometry constructions, PDF &amp; PPT annotation, and focused studying — all in your browser, on any device.{% endblock %}" />
+  <title>{% block title %}Inkyscib{% endblock %}</title>
+
+  <script>
+    // Adopt the saved theme before first paint, so a light-mode visitor never
+    // sees a flash of the dark palette.
+    try {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "light" || savedTheme === "dark") {
+        document.documentElement.dataset.theme = savedTheme;
+      }
+    } catch (error) {
+      // Keep the server-rendered theme when storage is unavailable.
+    }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/marketing.css', v='hud-3') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest', v='pwa-1') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/inkyscib-180.png', v='pwa-1') }}">
+  <link rel="icon" href="{{ url_for('static', filename='logo.ico') }}" type="image/x-icon">
+
+  <script src="{{ url_for('static', filename='js/marketing.js', v='hud-3') }}" defer></script>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-5SW3NRK6X6"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-5SW3NRK6X6');
+  </script>
+</head>
+
+<body class="{% block body_class %}{% endblock %}">
+
+  <div class="page">
+
+    <header>
+
+      <a class="logo" href="{{ url_for('home') }}" aria-label="Inkyscib home">
+        <span class="logo-icon" aria-hidden="true">◇</span>
+        <span>Inkyscib</span>
+      </a>
+
+      {# Real routes, not scroll targets: every one of these goes to a page. #}
+      <nav class="nav" aria-label="Primary">
+        <a href="{{ url_for('home') }}"
+          class="{% if nav_active == 'home' %}active{% endif %}"
+          {% if nav_active == 'home' %}aria-current="page"{% endif %}>Home</a>
+        <a href="{{ url_for('features') }}"
+          class="{% if nav_active == 'features' %}active{% endif %}"
+          {% if nav_active == 'features' %}aria-current="page"{% endif %}>Features</a>
+        <a href="{{ url_for('about') }}"
+          class="{% if nav_active == 'about' %}active{% endif %}"
+          {% if nav_active == 'about' %}aria-current="page"{% endif %}>About</a>
+      </nav>
+
+      <div class="actions">
+        <button class="icon-btn" id="themeButton" type="button"
+          title="Toggle interface theme" aria-label="Switch to light interface">◐</button>
+        <a class="write-btn" href="{{ url_for('write') }}">Open the canvas</a>
+      </div>
+
+    </header>
+
+    {% block content %}{% endblock %}
+
+    {% block footer %}
+    <footer class="site-foot">
+      <span>Free, ad-free, no account. Your work stays on your device.</span>
+      <span>
+        <a href="{{ url_for('home') }}">Home</a> ·
+        <a href="{{ url_for('features') }}">Features</a> ·
+        <a href="{{ url_for('about') }}">About</a>
+      </span>
+    </footer>
+    {% endblock %}
+
+  </div>
+
+  {% block after_main %}{% endblock %}
+
+</body>
+</html>

@@ -1,0 +1,557 @@
+/* The File ribbon and its backstage.
+ *
+ * A compact tab strip pinned top-left, and a full-overlay backstage behind it
+ * for the commands themselves. The overlay is deliberate rather than a
+ * drop-down: the editor already pins a toolbar to the top centre and an action
+ * bar to the top right, and a panel dropping out of the ribbon would collide
+ * with both at some window width. Taking over the screen also gives the
+ * commands room to be labelled properly, which is what makes them findable.
+ *
+ * Colours follow the editor's existing glass chrome — translucent slate with a
+ * hairline border and a blur — so this reads as part of the app rather than a
+ * bolted-on panel.
+ */
+
+:root {
+  --ribbon-glass: rgba(18, 18, 18, 0.55);
+  --ribbon-glass-strong: rgba(14, 17, 24, 0.94);
+  --ribbon-line: rgba(255, 255, 255, 0.12);
+  --ribbon-line-soft: rgba(255, 255, 255, 0.07);
+  --ribbon-ink: #f1f5f9;
+  --ribbon-ink-dim: rgba(226, 232, 240, 0.62);
+  --ribbon-accent: #6ee7dd;
+  --ribbon-accent-ink: #0b3b3a;
+  --ribbon-hover: rgba(255, 255, 255, 0.08);
+  --ribbon-shadow: 0 18px 48px -18px rgba(0, 0, 0, 0.8);
+}
+
+[data-theme="light"] {
+  --ribbon-glass: rgba(255, 255, 255, 0.78);
+  --ribbon-glass-strong: rgba(248, 250, 253, 0.97);
+  --ribbon-line: rgba(15, 23, 42, 0.12);
+  --ribbon-line-soft: rgba(15, 23, 42, 0.07);
+  --ribbon-ink: #0f172a;
+  --ribbon-ink-dim: rgba(30, 41, 59, 0.62);
+  --ribbon-accent: #0d7d78;
+  --ribbon-accent-ink: #ffffff;
+  --ribbon-hover: rgba(15, 23, 42, 0.06);
+  --ribbon-shadow: 0 18px 44px -20px rgba(15, 23, 42, 0.4);
+}
+
+/* ---------- the bar ---------- */
+
+.file-ribbon {
+  position: fixed;
+  top: 1.2rem;
+  left: calc(1.2rem + 46px + 10px);
+  /* Above the backstage scrim: while the backstage is open the tabs must stay
+     live, so you can switch panes or click the same tab again to close —
+     which is how the File tab behaves in every application that has one. */
+  z-index: 9996;
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--r-lg);
+  background: var(--ribbon-glass);
+  border: 1px solid var(--ribbon-line);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px -14px rgba(0, 0, 0, 0.7);
+  color: var(--ribbon-ink);
+  font-family: Archivo, 'Segoe UI', system-ui, sans-serif;
+  max-width: calc(100vw - 2.4rem - 56px);
+}
+
+.file-ribbon-tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.83rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 7px 13px;
+  /* Measured 29px tall in the design audit, under the 44px touch floor. */
+  min-height: 44px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.file-ribbon-tab:hover { background: var(--ribbon-hover); }
+
+.file-ribbon-tab[aria-expanded="true"] {
+  background: var(--ribbon-accent);
+  color: var(--ribbon-accent-ink);
+}
+
+.file-ribbon-tab svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
+.file-ribbon-sep {
+  width: 1px;
+  background: var(--ribbon-line);
+  margin: 6px 2px;
+  flex: none;
+}
+
+/* Document identity: name plus whether it is saved. */
+.file-ribbon-doc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px 0 8px;
+  min-width: 0;
+}
+
+.file-ribbon-name {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ribbon-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 15ch;
+}
+
+.file-ribbon-state {
+  /* 0.68rem computed to 10.9px. */
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ribbon-ink-dim);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.file-ribbon-state::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ribbon-accent);
+  flex: none;
+}
+
+.file-ribbon[data-state="unsaved"] .file-ribbon-state::before {
+  background: #f0b429;
+}
+
+.file-ribbon[data-state="working"] .file-ribbon-state::before {
+  background: #f0b429;
+  animation: ribbonPulse 1s ease-in-out infinite;
+}
+
+@keyframes ribbonPulse {
+  50% { opacity: 0.25; }
+}
+
+/* ---------- backstage ---------- */
+
+.file-backstage-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 9994;
+  background: rgba(3, 6, 12, 0.5);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+[data-theme="light"] .file-backstage-scrim {
+  background: rgba(15, 23, 42, 0.24);
+}
+
+.file-backstage-scrim.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.file-backstage {
+  position: fixed;
+  top: calc(1.2rem + 52px);
+  left: 1.2rem;
+  z-index: 9995;
+  width: min(660px, calc(100vw - 2.4rem));
+  max-height: min(560px, calc(100vh - 1.2rem - 52px - 1.2rem));
+  border-radius: var(--r-lg);
+  background: var(--ribbon-glass-strong);
+  border: 1px solid var(--ribbon-line);
+  box-shadow: var(--ribbon-shadow);
+  backdrop-filter: blur(18px);
+  color: var(--ribbon-ink);
+  font-family: Archivo, 'Segoe UI', system-ui, sans-serif;
+  display: grid;
+  grid-template-columns: 168px 1fr;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.985);
+  transform-origin: top left;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.file-backstage.is-open {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .file-backstage,
+  .file-backstage-scrim,
+  .file-ribbon-tab,
+  .file-ribbon-state::before {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* left rail */
+
+.file-backstage-rail {
+  background: rgba(0, 0, 0, 0.18);
+  border-right: 1px solid var(--ribbon-line-soft);
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+[data-theme="light"] .file-backstage-rail {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.file-backstage-kicker {
+  font-size: 0.63rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ribbon-ink-dim);
+  padding: 4px 10px 8px;
+  margin: 0;
+}
+
+.file-rail-btn {
+  /* 44px is the smallest a finger reliably hits; this was 33. */
+  min-height: var(--tap);
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.86rem;
+  text-align: left;
+  padding: 9px 11px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  transition: background 0.14s ease;
+}
+
+.file-rail-btn:hover { background: var(--ribbon-hover); }
+
+.file-rail-btn[aria-selected="true"] {
+  background: var(--ribbon-hover);
+  font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--ribbon-accent);
+}
+
+.file-rail-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.85;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+  opacity: 0.85;
+}
+
+/* content pane */
+
+.file-backstage-pane {
+  padding: 18px 20px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.file-pane-head { display: flex; flex-direction: column; gap: 3px; }
+
+.file-pane-head h2 {
+  margin: 0;
+  font-size: 1.12rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.file-pane-head p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ribbon-ink-dim);
+  line-height: 1.45;
+}
+
+.file-command-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
+}
+
+.file-command {
+  appearance: none;
+  border: 1px solid var(--ribbon-line-soft);
+  background: rgba(255, 255, 255, 0.035);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  padding: 11px 12px;
+  border-radius: var(--r-lg);
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  transition: background 0.14s ease, border-color 0.14s ease, transform 0.14s ease;
+}
+
+[data-theme="light"] .file-command {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.file-command:hover:not(:disabled) {
+  background: var(--ribbon-hover);
+  border-color: var(--ribbon-line);
+  transform: translateY(-1px);
+}
+
+.file-command:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.file-command-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-md);
+  display: grid;
+  place-items: center;
+  background: rgba(110, 231, 221, 0.14);
+  color: var(--ribbon-accent);
+  flex: none;
+}
+
+[data-theme="light"] .file-command-icon {
+  background: rgba(13, 125, 120, 0.12);
+}
+
+.file-command-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.file-command-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.file-command-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.file-command-key {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.66rem;
+  color: var(--ribbon-ink-dim);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.file-command-note {
+  font-size: 0.76rem;
+  color: var(--ribbon-ink-dim);
+  line-height: 1.4;
+}
+
+/* quality readout — the export pane's honesty line */
+
+.file-quality {
+  border: 1px solid var(--ribbon-line-soft);
+  border-radius: var(--r-lg);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(110, 231, 221, 0.07);
+}
+
+.file-quality[data-tone="warn"] {
+  background: rgba(240, 180, 41, 0.1);
+  border-color: rgba(240, 180, 41, 0.34);
+}
+
+.file-quality-label {
+  font-size: 0.63rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ribbon-ink-dim);
+}
+
+.file-quality-text { font-size: 0.8rem; line-height: 1.45; }
+
+/* recent list */
+
+.file-recent { display: flex; flex-direction: column; gap: 4px; }
+
+.file-recent-item {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  padding: 9px 10px;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: background 0.14s ease;
+}
+
+.file-recent-item:hover { background: var(--ribbon-hover); }
+
+.file-recent-name {
+  font-size: 0.86rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-recent-meta {
+  font-size: 0.72rem;
+  color: var(--ribbon-ink-dim);
+  white-space: nowrap;
+  flex: none;
+}
+
+.file-recent-item[aria-current="true"] .file-recent-name { font-weight: 600; }
+
+.file-recent-empty {
+  font-size: 0.82rem;
+  color: var(--ribbon-ink-dim);
+  padding: 8px 10px;
+}
+
+/* status line */
+
+.file-backstage-status {
+  font-size: 0.79rem;
+  min-height: 1.2em;
+  color: var(--ribbon-ink-dim);
+  padding-top: 2px;
+  border-top: 1px solid var(--ribbon-line-soft);
+  margin-top: auto;
+}
+
+.file-backstage-status[data-tone="success"] { color: var(--ribbon-accent); }
+.file-backstage-status[data-tone="error"] { color: #f6a08f; }
+[data-theme="light"] .file-backstage-status[data-tone="error"] { color: #b03d29; }
+
+/* keyboard focus must stay visible everywhere in here */
+.file-ribbon-tab:focus-visible,
+.file-rail-btn:focus-visible,
+.file-command:focus-visible,
+.file-recent-item:focus-visible {
+  outline: 2px solid var(--ribbon-accent);
+  outline-offset: 2px;
+}
+
+/* ---------- narrow screens ---------- */
+
+@media (max-width: 900px) {
+  .file-backstage {
+    grid-template-columns: 1fr;
+    max-height: calc(100vh - 1.2rem - 52px - 1.2rem);
+  }
+
+  .file-backstage-rail {
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--ribbon-line-soft);
+    padding: 8px;
+  }
+
+  .file-backstage-kicker { display: none; }
+  .file-rail-btn { white-space: nowrap; }
+  .file-rail-btn[aria-selected="true"] { box-shadow: inset 0 -2px 0 var(--ribbon-accent); }
+}
+
+/* Below the 1180px rail breakpoint the drawing toolbar is a full-width bar
+   pinned to the top of the window, and the ribbon was landing on top of it —
+   245px of overlap at 375px wide, 403px at 768px. Both became unclickable,
+   on the phones and cheap tablets this app is built for. Drop below the bar
+   instead of fighting it. */
+@media (max-width: 1179px) {
+  .file-ribbon { top: 146px; }
+
+  /* Toolbar moved to the bottom: the top is free again. */
+  body.toolbar-location-down .file-ribbon { top: 1.2rem; }
+
+  .file-backstage { top: calc(146px + 52px); }
+  body.toolbar-location-down .file-backstage { top: calc(1.2rem + 52px); }
+}
+
+@media (max-width: 640px) {
+  /* The hamburger drops to the bottom on phones, so the ribbon takes the
+     left edge it vacates — still clear of the toolbar above it. */
+  .file-ribbon {
+    left: 1rem;
+    max-width: calc(100vw - 2rem);
+  }
+
+  body.toolbar-location-down .file-ribbon { top: 1rem; }
+
+  .file-ribbon-doc { display: none; }
+
+  .file-backstage {
+    left: 1rem;
+    right: 1rem;
+    width: auto;
+  }
+}
+
+/* The side menu slides over everything; keep the ribbon out of its way. */
+body.menu-open .file-ribbon {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}

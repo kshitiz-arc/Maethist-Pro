@@ -1,0 +1,102 @@
+{% extends "_marketing.html" %}
+
+{% block title %}Inkyscib — the geometry is real{% endblock %}
+
+{% block content %}
+    <main class="hero">
+
+      <section class="hero-copy">
+
+        {# What it costs, first. That is the thing the person who got priced
+           out of GoodNotes needs to know before anything else. #}
+        <p class="system-label">Free &middot; offline &middot; no account</p>
+
+        <h1>Inkyscib</h1>
+
+        <h2 class="tagline">The <em>geometry is real</em>.</h2>
+
+        <p class="description">
+          Set a compass, sweep an arc, cross it with another. The point where
+          they meet <strong>stays live</strong>: hang a line off it an hour
+          later and it still holds when you drag the circle. Write on your own
+          textbook. Drag algebra tiles that know your variables. Export clean
+          vector PDF.
+        </p>
+
+        <div class="cta">
+          {# routes straight into the real editor, not a scroll to a mockup #}
+          <a class="primary" href="{{ url_for('write') }}">Open the canvas</a>
+          <button class="secondary" id="demoButton" type="button">See it move</button>
+        </div>
+
+        <p class="system-label feature-grid-label">What it does</p>
+        <div class="feature-grid">
+          <a class="feature" href="{{ url_for('features') }}#geometry"><b>&rarr;</b> Live geometry constructions</a>
+          <a class="feature" href="{{ url_for('features') }}#geometry"><b>&rarr;</b> Algebra tiles</a>
+          <a class="feature" href="{{ url_for('features') }}#material"><b>&rarr;</b> Write on your PDFs and slides</a>
+          <a class="feature" href="{{ url_for('features') }}#material"><b>&rarr;</b> Clean vector export</a>
+          <a class="feature" href="{{ url_for('features') }}#focus"><b>&rarr;</b> Notebook mode and library</a>
+          <a class="feature" href="{{ url_for('features') }}#focus"><b>&rarr;</b> Works offline, on a cheap tablet</a>
+        </div>
+
+      </section>
+
+
+      <section class="canvas-container">
+        <div class="canvas">
+
+          <div class="canvas-grid" aria-hidden="true"></div>
+
+          <div class="toolbar" role="group" aria-label="Preview tools">
+            <button class="tool selected" data-tool="select" type="button" title="Select" aria-pressed="true">&#8598;</button>
+            <button class="tool" data-tool="pen" type="button" title="Pen" aria-pressed="false">&#9998;</button>
+            <button class="tool" data-tool="circle" type="button" title="Circle" aria-pressed="false">&#9675;</button>
+            <button class="tool" data-tool="line" type="button" title="Line" aria-pressed="false">&#9585;</button>
+            <button class="tool" data-tool="triangle" type="button" title="Triangle" aria-pressed="false">&#9651;</button>
+            <button class="tool" data-tool="rectangle" type="button" title="Rectangle" aria-pressed="false">&#9633;</button>
+          </div>
+
+          {# The drawing is the hero asset: it is the one thing on the page
+             the product actually made. Everything around it stays grey. #}
+          <div class="geometry">
+            <svg viewBox="0 0 500 420" id="geometrySvg" role="img"
+              aria-label="A triangle inscribed in a circle with its altitude and right angle marked">
+
+              <circle class="geo circle" cx="250" cy="210" r="145" />
+
+              <line class="geo" x1="250" y1="65" x2="120" y2="285" />
+              <line class="geo" x1="250" y1="65" x2="380" y2="285" />
+              <line class="geo" x1="120" y1="285" x2="380" y2="285" />
+
+              <line class="geo dash" x1="250" y1="65" x2="250" y2="285" />
+
+              <path class="geo circle" d="M120 285 Q250 105 380 285" />
+
+              <path class="geo" d="M250 260 L270 260 L270 285" />
+
+              <circle class="point" cx="250" cy="65" r="6" />
+              <circle class="point" cx="120" cy="285" r="6" />
+              <circle class="point" cx="380" cy="285" r="6" />
+
+              <text class="label" x="243" y="42">A</text>
+              <text class="label" x="96" y="308">B</text>
+              <text class="label" x="385" y="308">C</text>
+
+            </svg>
+          </div>
+
+          <div class="zoom">
+            <button type="button" id="zoomOut" aria-label="Zoom out">&minus;</button>
+            <span id="zoomValue" aria-live="polite">100%</span>
+            <button type="button" id="zoomIn" aria-label="Zoom in">+</button>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+{% endblock %}
+
+{# The hero is exactly one screen; a footer below it would only be reachable
+   by scrolling past nothing. #}
+{% block footer %}{% endblock %}

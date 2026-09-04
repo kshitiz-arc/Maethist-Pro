@@ -1,0 +1,47 @@
+{
+  "id": "/write",
+  "name": "Inkyscib",
+  "short_name": "Inkyscib",
+  "description": "Fast local-first notes, documents, focus tools, and daily planning.",
+  "start_url": "/write",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#10131d",
+  "theme_color": "#6366f1",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/static/icons/inkyscib-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icons/inkyscib-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icons/inkyscib-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Planner",
+      "short_name": "Planner",
+      "description": "Open today's local plan.",
+      "url": "/write?planner=1",
+      "icons": [
+        {
+          "src": "/static/icons/inkyscib-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}

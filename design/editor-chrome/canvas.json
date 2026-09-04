@@ -1,0 +1,38 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Option A · Top bar + popover", "x": 0, "y": 0, "w": 1040, "h": 660 },
+    { "file": "OptionB.dc.html", "title": "Option B · One morphing dock", "x": 1120, "y": 0, "w": 1040, "h": 660 },
+    { "file": "OptionC.dc.html", "title": "Option C · Rail + open panel", "x": 2240, "y": 0, "w": 1040, "h": 660 }
+  ],
+  "annotations": [
+    {
+      "id": "brief",
+      "x": 0,
+      "y": -210,
+      "w": 700,
+      "text": "Inkyscib editor chrome — three directions.\n\nThe axis is where tool options live. Everything else is held constant so the comparison is fair: same eight tools, same names, same colour set, same accent (#5a5aff), your real dark/light canvas backgrounds, 44px tap targets throughout.\n\nEach artboard has a Theme switch (dark/light) above it, and the tools are clickable — pick one and the options follow."
+    },
+    {
+      "id": "note-a",
+      "x": 0,
+      "y": 700,
+      "w": 460,
+      "text": "Options open in a detached popover under the bar.\n\nCalmest of the three and the smallest change to ship — closest to what you already have.\n\nTrade-off: the popover covers the canvas while it is open, and the bar runs out of width as tools are added."
+    },
+    {
+      "id": "note-b",
+      "x": 1120,
+      "y": 700,
+      "w": 460,
+      "text": "Options live inside the bar itself, which grows a second row. Nothing else is on screen — no top bar at all.\n\nMost canvas visible, thumb-reachable on a tablet, and only one surface to learn.\n\nTrade-off: the bar changes height as you switch tools, which can feel jumpy, and the document title is buried in the dock."
+    },
+    {
+      "id": "note-c",
+      "x": 2240,
+      "y": 700,
+      "w": 460,
+      "text": "Options are always visible in a panel that never opens or closes, plus page thumbnails on the right.\n\nFastest to work in once learned — nothing is hidden, and it suits the algebra-tiles and geometry tools that have many settings.\n\nTrade-off: densest of the three, and it eats horizontal room on a small tablet."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

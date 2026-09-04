@@ -1,0 +1,32 @@
+.local-fa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  font-style: normal;
+  vertical-align: -0.125em;
+}
+
+.local-fa > svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+  overflow: visible;
+}
+
+.fa-spin {
+  animation: localFaSpin 0.9s linear infinite;
+}
+
+@keyframes localFaSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fa-spin {
+    animation-duration: 2.5s;
+  }
+}
