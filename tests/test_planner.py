@@ -7,6 +7,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from app import app
+from browser_server import make_browser_server
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -94,7 +95,6 @@ class PlannerIntegrationTests(unittest.TestCase):
 
 try:
     from playwright.sync_api import sync_playwright
-    from werkzeug.serving import make_server
 
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
@@ -105,7 +105,7 @@ except ImportError:
 class PlannerBrowserTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.server = make_server("127.0.0.1", 0, app, threaded=True)
+        cls.server = make_browser_server(app)
         cls.server_thread = threading.Thread(
             target=cls.server.serve_forever,
             daemon=True,
@@ -126,8 +126,17 @@ class PlannerBrowserTests(unittest.TestCase):
         context = self.browser.new_context(
             viewport=viewport or {"width": 1366, "height": 768},
             timezone_id="Asia/Kolkata",
+            # The planner renders dates through Intl with an undefined locale,
+            # so it follows whatever the machine is set to. Pinning it keeps
+            # assertions about date text from depending on where the suite runs.
+            locale="en-US",
         )
         self.addCleanup(context.close)
+        # The first-run tour covers the editor and swallows the #menuBtn click
+        # that open_planner depends on.
+        context.add_init_script(
+            "localStorage.setItem('inkyscib-consent-v1', JSON.stringify({version: 1, analytics: false})); localStorage.setItem('inkyscib-feature-tour-v1', JSON.stringify({seen: true}))"
+        )
         page = context.new_page()
         page.clock.install(
             time=at or datetime(
@@ -136,19 +145,53 @@ class PlannerBrowserTests(unittest.TestCase):
             ),
         )
         page.goto(self.base_url + "/write", wait_until="domcontentloaded")
-        page.wait_for_selector("#plannerBtn")
+        # #plannerBtn lives inside the menu panel, which starts closed, so it is
+        # never *visible* on load - only once open_planner opens the menu.
+        # Waiting for visibility here stalled every test in this class for the
+        # full 30s timeout before its body ever ran.
+        page.wait_for_selector("#plannerBtn", state="attached")
         return page
 
     @staticmethod
     def open_planner(page, date=None):
+        """Open the planner the way the File ribbon does.
+
+        This used to click `#menuBtn` and then `#plannerBtn`. Both of those
+        are gone: the hamburger and its drawer were removed, `#menuBtn` with
+        them, and `#plannerBtn` survives only inside `#chromeTriggers` in
+        write.html - a permanently `hidden` block kept so the import handlers
+        stay bound (see the comment there and the DESIGN.md decision log).
+        Waiting for a permanently hidden button is what stalled every test in
+        this class for its full 30s timeout.
+
+        The ribbon's planner command calls `Planner.open()` directly, so these
+        tests do the same. The launch path itself is covered once, by
+        `test_the_file_ribbon_tools_tab_opens_the_planner`.
+        """
         if date:
             page.evaluate(
                 "(date) => window.Inkyscib.Planner.open(date)",
                 date,
             )
         else:
-            page.locator("#menuBtn").click()
-            page.locator("#plannerBtn").click()
+            page.evaluate("() => window.Inkyscib.Planner.open()")
+        page.locator("#plannerModal.is-open").wait_for(state="visible")
+
+    def test_the_file_ribbon_tools_tab_opens_the_planner(self):
+        """The only route a user has to the planner.
+
+        Every other test in this class calls `Planner.open()` directly, so
+        without this one nothing would notice if the ribbon command broke -
+        which is exactly how the removed hamburger went unnoticed here.
+        """
+        page = self.open_page()
+
+        page.click('[data-ribbon-tab="tools"]')
+        page.wait_for_selector(
+            '[data-ribbon-tab="tools"][aria-expanded="true"]', timeout=5000
+        )
+        page.click('[data-command="planner"]')
+
         page.locator("#plannerModal.is-open").wait_for(state="visible")
 
     def test_calendar_has_exact_inclusive_one_year_boundary(self):

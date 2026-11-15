@@ -181,7 +181,7 @@
 
   async function pickFromScreen() {
     if (!canPickScreen) return;
-    setStatus("Click anywhere to sample that colour…");
+    setStatus("Tap anywhere to sample that colour…");
     try {
       const result = await new window.EyeDropper().open();
       apply(result.sRGBHex, { remember: true });
@@ -211,7 +211,7 @@
 
       stage.hidden = false;
       URL.revokeObjectURL(url);
-      setStatus("Click the image to take its colour.");
+      setStatus("Tap the image to take its colour.");
     };
     image.onerror = () => {
       URL.revokeObjectURL(url);
@@ -418,6 +418,15 @@
       if (event.target.closest?.(".studio-trigger")) return;
       close();
     });
+
+    // It belongs to the panel that opened it, so it never announces itself --
+    // that would put its own panel away -- but it closes whenever any other
+    // surface opens: a different tool's panel, the canvas theme, a File menu.
+    // Its target is a colour field in the panel it came from, which is no
+    // longer on screen once another surface has taken over.
+    document.addEventListener("inkyscib:surface-open", () => {
+      if (!root.hidden) close();
+    });
   }
 
   // ---------- open / close ----------
@@ -435,19 +444,45 @@
     root.querySelector(".studio-hex-input")?.focus();
   }
 
+  /**
+   * Beside the panel that opened it, inside the area no bar covers.
+   *
+   * It used to open under its trigger, or above it when there was no room --
+   * and on a 960x600 tablet there never was, so "above" clamped to y=10 and
+   * the studio covered the toolbar (six buttons, Undo and Redo among them).
+   * On a wide screen it opened at the trigger's own x, inside the dock, over
+   * the panel it came from. Now: to the right of that panel if it fits, to
+   * its left if that fits, and over it only when the screen is too narrow
+   * for either -- always between the bars and the footer, scrolling itself
+   * when it is taller than the room left.
+   */
   function position(trigger) {
     const anchor = trigger?.getBoundingClientRect?.();
     if (!anchor) return;
 
-    // Measure before placing, so a trigger near the bottom or right edge opens
-    // back towards the middle instead of off-screen.
+    const gap = 8;
+    const area = window.Inkyscib?.ToolDock?.freeArea?.() || {
+      top: gap, bottom: window.innerHeight - gap, left: gap, right: window.innerWidth - gap
+    };
+    const room = Math.max(160, area.bottom - area.top);
+    root.style.maxHeight = room + "px";
+    root.style.overflowY = "auto";
+
+    // Measure after capping, so the height used below is the one on screen.
     const box = root.getBoundingClientRect();
-    const margin = 10;
-    const left = clamp(anchor.left, margin, window.innerWidth - box.width - margin);
-    const below = anchor.bottom + 8;
-    const top = below + box.height + margin < window.innerHeight
-      ? below
-      : Math.max(margin, anchor.top - box.height - 8);
+    // The dock before the panel: docked, the panel sits inside the dock's
+    // frame and padding, so "beside the panel" still overlapped the dock.
+    const owner = trigger.closest?.(".tool-dock") || trigger.closest?.(".tool-options");
+    const beside = owner ? owner.getBoundingClientRect() : anchor;
+
+    let left;
+    if (beside.right + gap + box.width <= area.right) left = beside.right + gap;
+    else if (beside.left - gap - box.width >= area.left) left = beside.left - gap - box.width;
+    else left = clamp(anchor.left, area.left, area.right - box.width);
+
+    // Level with the trigger, so the eye does not have to travel, then held
+    // inside the free area.
+    const top = clamp(anchor.top - 12, area.top, Math.max(area.top, area.bottom - box.height));
 
     root.style.left = Math.round(left) + "px";
     root.style.top = Math.round(top) + "px";

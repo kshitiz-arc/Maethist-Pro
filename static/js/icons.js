@@ -130,16 +130,40 @@
             <rect x="7" y="5" width="4" height="14" rx="1"/>
             <rect x="13" y="5" width="4" height="14" rx="1"/>
         `),
-        'fa-cog': strokeIcon(`
-            <circle cx="12" cy="12" r="3.2"/>
-            <path d="M12 3.5v2.2"/>
-            <path d="M12 18.3v2.2"/>
-            <path d="m5.7 5.7 1.6 1.6"/>
-            <path d="m16.7 16.7 1.6 1.6"/>
-            <path d="M3.5 12h2.2"/>
-            <path d="M18.3 12h2.2"/>
-            <path d="m5.7 18.3 1.6-1.6"/>
-            <path d="m16.7 7.3 1.6-1.6"/>
+        // A gear with real teeth. This was a circle with eight loose rays,
+        // which is the sun/brightness symbol, and it was reported as "does not
+        // even look like a settings icon". Built as one filled silhouette with
+        // the axle cut out, so the teeth read as part of a wheel at 16px.
+        'fa-cog': fillIcon(`<path fill-rule="evenodd" d="${(() => {
+            const teeth = 8, outer = 10.4, inner = 7.7, hole = 3.1;
+            const at = (angle, radius) =>
+                `${(12 + Math.cos(angle) * radius).toFixed(2)} ${(12 + Math.sin(angle) * radius).toFixed(2)}`;
+            let d = '';
+            for (let k = 0; k < teeth; k += 1) {
+                const mid = (k / teeth) * Math.PI * 2 - Math.PI / 2;
+                const next = ((k + 1) / teeth) * Math.PI * 2 - Math.PI / 2;
+                d += `${k === 0 ? 'M' : 'L'}${at(mid - 0.27, inner)}` +
+                    `L${at(mid - 0.17, outer)}L${at(mid + 0.17, outer)}L${at(mid + 0.27, inner)}` +
+                    `A${inner} ${inner} 0 0 1 ${at(next - 0.27, inner)}`;
+            }
+            return `${d}Z M${12 + hole} 12A${hole} ${hole} 0 1 0 ${12 - hole} 12A${hole} ${hole} 0 1 0 ${12 + hole} 12Z`;
+        })()}"/>`),
+        // Reset is a counter-clockwise loop back to the start. fa-redo-alt
+        // was used for it and reads as "redo".
+        'fa-rotate-left': strokeIcon(`
+            <path d="M4.6 12a7.4 7.4 0 1 0 2.2-5.25"/>
+            <path d="M4.2 3.9v3.7h3.7"/>
+        `),
+        'fa-cloud-rain': strokeIcon(`
+            <path d="M7.2 15.2a4.2 4.2 0 1 1 .7-8.35A5.3 5.3 0 0 1 18 8.4a3.4 3.4 0 0 1-.6 6.8Z"/>
+            <path d="m8.4 18.2-.9 2.2"/>
+            <path d="m12.4 18.2-.9 2.2"/>
+            <path d="m16.4 18.2-.9 2.2"/>
+        `),
+        'fa-water': strokeIcon(`
+            <path d="M2.5 8.5c1.6-1.4 3.1-1.4 4.7 0s3.1 1.4 4.8 0 3.1-1.4 4.7 0 3.1 1.4 4.8 0"/>
+            <path d="M2.5 13.5c1.6-1.4 3.1-1.4 4.7 0s3.1 1.4 4.8 0 3.1-1.4 4.7 0 3.1 1.4 4.8 0"/>
+            <path d="M2.5 18.5c1.6-1.4 3.1-1.4 4.7 0s3.1 1.4 4.8 0 3.1-1.4 4.7 0 3.1 1.4 4.8 0"/>
         `),
         'fa-chevron-down': strokeIcon('<path d="m6 9 6 6 6-6"/>'),
         'fa-brain': strokeIcon(`

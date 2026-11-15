@@ -13,7 +13,15 @@
 (function () {
   "use strict";
 
-  const TABS = ["file", "insert", "export", "recent"];
+  const TABS = ["file", "insert", "export", "tools", "recent"];
+  // The File panel's own sections. Insert, Export and Tools are tabs on the
+  // ribbon itself, and listing them in this rail as well offered each twice.
+  const RAIL_TABS = ["file", "recent"];
+
+  // Recent is part of File, so it keeps the File tab marked as open.
+  function ribbonTabFor(tab) {
+    return RAIL_TABS.includes(tab) ? "file" : tab;
+  }
 
   let root = null;
   let scrim = null;
@@ -56,6 +64,12 @@
     insert: icon(["M12 6v12", "M6 12h12"]),
     export: icon(["M12 16V4", "m8 8 4-4 4 4", "M5 16v3h14v-3"]),
     recent: icon(["M12 7v5l3 2", "M12 21a9 9 0 1 0-9-9"]),
+    tools: icon(["M4 7h10", "M18 7h2", "M4 17h4", "M12 17h8", "M16 5v4", "M8 15v4"]),
+    timer: icon(["M12 8v4l2.5 2", "M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16", "M9 2h6"]),
+    planner: icon(["M4 6h16v14H4z", "M4 10h16", "M9 3v4", "M15 3v4"]),
+    video: icon(["M3 6h13v12H3z", "m16 10 5-3v10l-5-3"]),
+    camera: icon(["M4 8h3l1.5-2h7L17 8h3v11H4z", "M12 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"]),
+    guide: icon(["M6 4h9l4 4v12H6z", "M9 11h7", "M9 15h5"]),
     open: icon(["M3 7h6l2 2h10v10H3z"]),
     save: icon(["M5 4h11l3 3v13H5z", "M8 4v6h7V4", "M8 20v-6h8v6"]),
     saveAs: icon(["M5 4h10l4 4v8H5z", "M8 4v5h6V4", "m15 21 3-3 3 3", "M18 18v-4"]),
@@ -66,7 +80,8 @@
     package: icon(["m12 3 8 4.5v9L12 21l-8-4.5v-9z", "M12 12 4 7.5", "m12 12 8-4.5", "M12 12v9"]),
     backup: icon(["M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z", "M4 7v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7"]),
     book: icon(["M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z", "M4 5.5v15"]),
-    trash: icon(["M4 7h16", "M10 11v6", "M14 11v6", "M6 7l1 13h10l1-13", "M9 7V4h6v3"])
+    trash: icon(["M4 7h16", "M10 11v6", "M14 11v6", "M6 7l1 13h10l1-13", "M9 7V4h6v3"]),
+    rename: icon(["m4 20 .8-3.4L15.2 6.2l2.6 2.6L7.4 19.2z", "m14.2 7.2 2.6 2.6", "M15.6 4.8a1.8 1.8 0 0 1 2.6 2.6"])
   };
 
   function setStatus(message, tone = "muted") {
@@ -211,6 +226,18 @@
       }
     },
 
+    pages: {
+      title: "Notebook pages",
+      note: "Switch between one infinite canvas and A4-style pages.",
+      icon: "book",
+      run: async () => {
+        close();
+        // Pages changes the shape of the document, so it belongs with the
+        // document commands rather than in a settings drawer.
+        clickExisting("notebookModeToggle");
+      }
+    },
+
     backup: {
       title: "Back up everything",
       note: "Download every notebook as a single .inky file.",
@@ -249,6 +276,61 @@
       run: async () => {
         close();
         clickExisting("imageInsertBtn");
+      }
+    },
+
+    planner: {
+      title: "Planner",
+      note: "Plan your day. Everything stays in this browser.",
+      icon: "planner",
+      run: async () => {
+        close();
+        // Its own menu button does not respond to a programmatic click, so go
+        // through the module's API and keep the button only as a fallback.
+        if (window.Inkyscib?.Planner?.open) window.Inkyscib.Planner.open();
+        else clickExisting("plannerBtn");
+      }
+    },
+
+    pomodoro: {
+      title: "Pomodoro",
+      note: "A focus timer with breaks, and a count of what you got through.",
+      icon: "timer",
+      run: async () => {
+        close();
+        clickExisting("pomodoroBtn");
+      }
+    },
+
+    youtube: {
+      title: "YouTube",
+      note: "A movable player you can take a frame from onto the page.",
+      icon: "video",
+      run: async () => {
+        close();
+        clickExisting("ytToggleBtn");
+      }
+    },
+
+    arInky: {
+      title: "AR Inky",
+      note: "Draw over what the camera sees.",
+      icon: "camera",
+      run: async () => {
+        close();
+        if (window.Inkyscib?.AR?.toggleAR) window.Inkyscib.AR.toggleAR();
+        else clickExisting("arBtn");
+      }
+    },
+
+    featureTour: {
+      title: "Feature tour",
+      note: "A short guided pass over the workspace.",
+      icon: "guide",
+      run: async () => {
+        close();
+        if (window.Inkyscib?.FeatureTour?.open) window.Inkyscib.FeatureTour.open();
+        else clickExisting("featureTourBtn");
       }
     },
 
@@ -471,7 +553,7 @@
       icon: "file",
       heading: "File",
       blurb: "Everything to do with this document as a whole.",
-      commands: ["new", "open", "save", "saveAs", "notebooks", "backup", "clear"]
+      commands: ["new", "open", "save", "saveAs", "notebooks", "pages", "backup", "clear"]
     },
     insert: {
       label: "Insert",
@@ -487,6 +569,13 @@
       blurb: "Pick a destination. The line below says exactly what each one will do to the quality.",
       commands: ["exportPdf", "exportPptx", "exportPng", "exportInkydoc"],
       quality: true
+    },
+    tools: {
+      label: "Tools",
+      icon: "tools",
+      heading: "Extra tools",
+      blurb: "The things that sit beside the drawing rather than on it. Each one opens over the canvas and closes again.",
+      commands: ["planner", "pomodoro", "youtube", "arInky", "featureTour"]
     },
     recent: {
       label: "Recent",
@@ -611,16 +700,36 @@
     }
 
     const sorted = index.documents.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    // The row used to BE the button. Rename and delete cannot be nested inside
+    // one -- HTML forbids interactive controls inside a button -- so the row is
+    // now a container holding an open button that fills it, with the two
+    // actions at the trailing edge. The open button keeps the row's centre,
+    // which is both what test_file_ribbon.py clicks and the only safe place
+    // for a mis-click to land.
     list.innerHTML = sorted
       .map((doc) => {
         const active = doc.id === index.activeId;
+        const id = escapeAttribute(doc.id);
+        const name = escapeHtml(doc.name);
         return (
-          '<button class="file-recent-item" type="button" data-doc="' + escapeAttribute(doc.id) + '"' +
-          (active ? ' aria-current="true"' : "") + ">" +
-          '<span class="file-recent-name">' + escapeHtml(doc.name) + "</span>" +
-          '<span class="file-recent-meta">' +
-          escapeHtml(active ? "Open now" : relativeTime(doc.updatedAt)) +
-          "</span></button>"
+          '<div class="file-recent-item"' + (active ? ' aria-current="true"' : "") +
+          ' data-recent-row="' + id + '">' +
+            '<button class="file-recent-open" type="button" data-doc="' + id + '">' +
+              '<span class="file-recent-name">' + name + "</span>" +
+              '<span class="file-recent-meta">' +
+              escapeHtml(active ? "Open now" : relativeTime(doc.updatedAt)) +
+              "</span>" +
+            "</button>" +
+            '<div class="file-recent-actions">' +
+              '<button class="file-recent-action" type="button" data-recent-rename="' + id + '"' +
+              ' title="Rename" aria-label="Rename ' + escapeAttribute(doc.name) + '">' +
+              ICONS.rename + "</button>" +
+              '<button class="file-recent-action is-destructive" type="button"' +
+              ' data-recent-delete="' + id + '"' +
+              ' title="Delete" aria-label="Delete ' + escapeAttribute(doc.name) + '">' +
+              ICONS.trash + "</button>" +
+            "</div>" +
+          "</div>"
         );
       })
       .join("");
@@ -636,6 +745,110 @@
         await library()?.openDocument(id);
       });
     });
+
+    list.querySelectorAll("[data-recent-rename]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        beginRecentRename(button.dataset.recentRename);
+      });
+    });
+
+    list.querySelectorAll("[data-recent-delete]").forEach((button) => {
+      button.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        await confirmRecentDelete(button.dataset.recentDelete);
+      });
+    });
+  }
+
+  function recentRow(id) {
+    return document.querySelector('[data-recent-row="' + escapeAttribute(id) + '"]');
+  }
+
+  // Renaming happens in the row. A second dialog for one short string is more
+  // ceremony than the job needs, and window.prompt -- which Library.renameDocument
+  // raises on its own when given no name -- looks nothing like the app.
+  function beginRecentRename(id) {
+    const row = recentRow(id);
+    const label = row?.querySelector(".file-recent-name");
+    if (!row || !label || row.querySelector(".file-recent-rename-input")) return;
+
+    const original = label.textContent;
+    const field = document.createElement("input");
+    field.type = "text";
+    field.className = "file-recent-rename-input";
+    field.value = original;
+    field.maxLength = 80;
+    field.setAttribute("aria-label", "Notebook name");
+    label.replaceWith(field);
+    field.focus();
+    field.select();
+
+    let settled = false;
+    const restore = (text) => {
+      if (settled) return;
+      settled = true;
+      const span = document.createElement("span");
+      span.className = "file-recent-name";
+      span.textContent = text;
+      field.replaceWith(span);
+    };
+
+    const commit = async () => {
+      if (settled) return;
+      const next = field.value.trim().slice(0, 80);
+      if (!next || next === original) {
+        restore(original);
+        return;
+      }
+      // Claimed before awaiting so the blur that fires when the row is
+      // replaced cannot re-enter this.
+      settled = true;
+      // Storage first, then re-render from it. Painting the new name straight
+      // into the row would show a rename that had not happened -- and if
+      // renameDocument bailed (runExclusive returns silently while busy, or
+      // before storageReady) the row would keep a name nothing had saved.
+      await library()?.renameDocument?.(id, next);
+      syncDocumentName();
+      await renderRecent();
+      const saved = (await library()?.listDocuments?.())?.documents
+        ?.some((doc) => doc.id === id && doc.name === next);
+      setStatus(
+        saved ? "Renamed to “" + next + "”." : "Could not rename that notebook.",
+        saved ? "success" : "error"
+      );
+    };
+
+    field.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        commit();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        restore(original);
+      }
+    });
+    field.addEventListener("blur", commit);
+  }
+
+  async function confirmRecentDelete(id) {
+    const row = recentRow(id);
+    const name = row?.querySelector(".file-recent-name")?.textContent || "this notebook";
+    const ask = window.showDestructiveConfirm || window.showClearCanvasConfirm;
+    if (typeof ask !== "function") return;
+
+    const confirmed = await ask({
+      title: "Delete “" + name + "”?",
+      body: "The notebook and everything written in it goes, on this device. This cannot be undone.",
+      confirmLabel: "Delete it",
+      cancelLabel: "Keep it"
+    });
+    if (!confirmed) return;
+
+    await library()?.deleteDocument?.(id, { confirmed: true });
+    setStatus("Deleted “" + name + "”.", "success");
+    syncDocumentName();
+    await renderRecent();
   }
 
   function relativeTime(timestamp) {
@@ -665,16 +878,31 @@
 
   // ---------- open / close ----------
 
+  // The control to hand focus back to when the panel closes.
+  let lastTrigger = null;
+
   function open(tab) {
     if (!TABS.includes(tab)) tab = "file";
     openTab = tab;
+    const ribbonTab = ribbonTabFor(tab);
+    lastTrigger =
+      document.querySelector('[data-ribbon-tab="' + ribbonTab + '"]') ||
+      (document.activeElement instanceof HTMLElement ? document.activeElement : null);
 
     document.querySelectorAll("[data-ribbon-tab]").forEach((button) => {
-      button.setAttribute("aria-expanded", String(button.dataset.ribbonTab === tab));
+      button.setAttribute("aria-expanded", String(button.dataset.ribbonTab === ribbonTab));
     });
     document.querySelectorAll("[data-rail-tab]").forEach((button) => {
       button.setAttribute("aria-selected", String(button.dataset.railTab === tab));
     });
+
+    // The rail only lists File's own sections, so a pane opened from Insert,
+    // Export or Tools stands alone rather than beside a rail it is not in.
+    const railShown = RAIL_TABS.includes(tab);
+    const rail = backstage?.querySelector(".file-backstage-rail");
+    if (rail) rail.hidden = !railShown;
+    backstage?.classList.toggle("is-rail-hidden", !railShown);
+    backstage?.setAttribute("aria-label", PANES[ribbonTab]?.label || "File");
 
     renderPane(tab);
     // Opening is the one moment the name is definitely worth re-reading.
@@ -682,14 +910,25 @@
     scrim?.classList.add("is-open");
     backstage?.classList.add("is-open");
     backstage?.setAttribute("aria-hidden", "false");
+    backstage?.removeAttribute("inert");
+    document.dispatchEvent(new CustomEvent("inkyscib:surface-open", { detail: { id: "file-sheet" } }));
 
     // Focus the first thing in the pane so the keyboard works immediately.
     window.requestAnimationFrame(() => {
-      backstage?.querySelector(".file-command, .file-recent-item")?.focus();
+      // .file-recent-open, not .file-recent-item: the row is a container now
+      // and focusing it would be a no-op, leaving focus on whatever opened
+      // the backstage.
+      backstage?.querySelector(".file-command, .file-recent-open")?.focus();
     });
   }
 
   function close() {
+    // Read this before going inert: marking the panel inert blurs whatever was
+    // focused inside it and the browser drops focus to <body>, so a keyboard
+    // user pressing Escape would lose their place entirely. Only take focus
+    // back if it was actually in here -- closing by clicking the canvas should
+    // leave the canvas focused.
+    const focusWasInside = !!backstage && backstage.contains(document.activeElement);
     openTab = null;
     document.querySelectorAll("[data-ribbon-tab]").forEach((button) => {
       button.setAttribute("aria-expanded", "false");
@@ -697,10 +936,19 @@
     scrim?.classList.remove("is-open");
     backstage?.classList.remove("is-open");
     backstage?.setAttribute("aria-hidden", "true");
+    // aria-hidden alone is not enough: closed, this panel is only opacity:0,
+    // so it stays laid out under the ribbon and its four buttons stayed in the
+    // tab order. Focus moving into a subtree marked aria-hidden is the one
+    // combination the spec calls out, because the reader announces nothing
+    // while the focus ring is visibly gone. `inert` takes it out of both.
+    backstage?.setAttribute("inert", "");
+
+    if (focusWasInside) lastTrigger?.focus?.();
   }
 
   function toggle(tab) {
-    if (openTab === tab) close();
+    // Recent shows under the File tab, so tapping File there closes the panel.
+    if (openTab && ribbonTabFor(openTab) === tab) close();
     else open(tab);
   }
 
@@ -720,15 +968,23 @@
     const nameElement = root?.querySelector(".file-ribbon-name");
     if (!nameElement) return;
 
-    const active = deck();
-    if (active?.name) {
-      nameElement.textContent = active.name.replace(/\.(pdf|pptx?)$/i, "");
-      return;
-    }
-
     const index = await library()?.listDocuments?.();
     const current = index?.documents?.find((doc) => doc.id === index.activeId);
     nameElement.textContent = current?.name || "Untitled";
+    nameElement.dataset.documentId = index?.activeId || "";
+
+    // An imported deck is what you are working ON; it is not what the notebook
+    // is called. Putting its filename in the name slot told people their
+    // notebook had been renamed when the library still held the old name, and
+    // exports and the notebook list went on using the real one.
+    const active = deck();
+    const source = active?.name ? active.name.replace(/\.(pdf|pptx?)$/i, "") : "";
+    const sourceElement = root?.querySelector(".file-ribbon-source");
+    if (sourceElement) {
+      sourceElement.textContent = source;
+      sourceElement.hidden = !source;
+      sourceElement.title = source ? "Open file: " + source : "";
+    }
   }
 
   // ---------- build ----------
@@ -741,7 +997,7 @@
     root.setAttribute("aria-label", "File commands");
 
     root.innerHTML =
-      ["file", "insert", "export"]
+      ["file", "insert", "export", "tools"]
         .map(
           (tab) =>
             '<button class="file-ribbon-tab" type="button" data-ribbon-tab="' + tab + '"' +
@@ -750,9 +1006,18 @@
             "<span>" + PANES[tab].label + "</span></button>"
         )
         .join("") +
+      // Sits after Tools and before the divider, so a job the app is doing
+      // appears where the commands are rather than over the canvas. Takes no
+      // room until something is running.
+      '<span class="file-ribbon-progress" id="fileRibbonProgress" role="status"' +
+      ' aria-live="polite" hidden>' +
+      '<span class="file-ribbon-progress-spinner" aria-hidden="true"></span>' +
+      '<span class="file-ribbon-progress-label"></span>' +
+      "</span>" +
       '<span class="file-ribbon-sep" aria-hidden="true"></span>' +
       '<span class="file-ribbon-doc">' +
-      '<span class="file-ribbon-name">Untitled</span>' +
+      '<button type="button" class="file-ribbon-name" title="Rename this notebook">Untitled</button>' +
+      '<span class="file-ribbon-source" hidden></span>' +
       '<span class="file-ribbon-state">Saved</span>' +
       "</span>";
 
@@ -765,10 +1030,11 @@
     backstage.setAttribute("aria-modal", "false");
     backstage.setAttribute("aria-label", "File");
     backstage.setAttribute("aria-hidden", "true");
+    backstage.setAttribute("inert", "");
     backstage.innerHTML =
       '<div class="file-backstage-rail" role="tablist" aria-label="File sections">' +
       '<p class="file-backstage-kicker">Document</p>' +
-      TABS.map(
+      RAIL_TABS.map(
         (tab) =>
           '<button class="file-rail-btn" type="button" role="tab" data-rail-tab="' + tab + '"' +
           ' aria-selected="false">' + ICONS[PANES[tab].icon] +
@@ -779,6 +1045,19 @@
 
     document.body.append(root, scrim, backstage);
 
+    // The name looked editable and was not: renaming only existed in the
+    // library modal. Reuse renameDocument() rather than growing a second
+    // prompt, so both entry points share one validation and status message.
+    root.querySelector(".file-ribbon-name")?.addEventListener("click", async () => {
+      const api = library();
+      if (!api?.renameDocument) return;
+      const index = await api.listDocuments?.();
+      const id = index?.activeId;
+      if (!id) return;
+      await api.renameDocument(id);
+      syncDocumentName();
+    });
+
     root.querySelectorAll("[data-ribbon-tab]").forEach((button) => {
       button.addEventListener("click", () => toggle(button.dataset.ribbonTab));
     });
@@ -786,6 +1065,13 @@
       button.addEventListener("click", () => open(button.dataset.railTab));
     });
     scrim.addEventListener("click", close);
+
+    // One floating surface at a time (tool-dock.js, SURFACE_EVENT). The sheet
+    // announces itself so a floating tool panel and the canvas-theme popover
+    // step aside, and it closes when one of them is opened from the keyboard.
+    document.addEventListener("inkyscib:surface-open", (event) => {
+      if (event.detail?.id !== "file-sheet" && openTab) close();
+    });
   }
 
   function bindShortcuts() {
@@ -833,7 +1119,61 @@
     document.addEventListener("inkyscibDocumentSwitched", syncDocumentName);
   }
 
+  // ---------- progress ----------
+  //
+  // One job at a time, named. Anything slow enough to wonder about says so
+  // here: importing a YouTube frame takes a couple of seconds while the server
+  // decodes the video, and without this the button just sits there.
+  let progressToken = 0;
+
+  function progressElements() {
+    const host = document.getElementById("fileRibbonProgress");
+    return host
+      ? { host, label: host.querySelector(".file-ribbon-progress-label") }
+      : null;
+  }
+
+  function startProgress(text) {
+    const parts = progressElements();
+    if (!parts) return null;
+    const token = ++progressToken;
+    parts.label.textContent = text || "Working";
+    parts.host.dataset.tone = "busy";
+    parts.host.hidden = false;
+
+    const finish = (tone, held) => {
+      // A later job has taken the chip; leave it to that one.
+      if (token !== progressToken) return;
+      const current = progressElements();
+      if (!current) return;
+      current.host.dataset.tone = tone;
+      if (!held) {
+        current.host.hidden = true;
+        return;
+      }
+      current.label.textContent = held;
+      window.setTimeout(() => {
+        if (token === progressToken) {
+          const last = progressElements();
+          if (last) last.host.hidden = true;
+        }
+      }, 2200);
+    };
+
+    return {
+      update: (next) => {
+        if (token === progressToken) {
+          const current = progressElements();
+          if (current) current.label.textContent = next;
+        }
+      },
+      done: () => finish("done", ""),
+      fail: () => finish("error", "Could not finish that")
+    };
+  }
+
   window.Inkyscib = window.Inkyscib || {};
+  window.Inkyscib.RibbonProgress = { start: startProgress };
   window.Inkyscib.FileRibbon = {
     open,
     close,

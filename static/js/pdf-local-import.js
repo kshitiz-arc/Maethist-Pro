@@ -22,12 +22,38 @@
   // so the worker resolves to the same vendored folder regardless of mount path.
   const scriptSrc = document.currentScript?.src || "";
 
-  function pdfjs() {
-    return window.pdfjsLib || null;
+  let pdfjsPromise = null;
+
+  // pdf.min.js is ~312 KB and only an import needs it, so it is fetched on
+  // first use rather than at page load -- the same bargain pdf-export.js makes
+  // for pdf-lib, and the same one pdf.worker.min.js has always made. It used
+  // to be a deferred <script> in write.html, which every visitor paid for and
+  // only the ones who opened a PDF used. Vendored, not from a CDN, so this
+  // keeps working offline.
+  function loadPdfjs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if (pdfjsPromise) return pdfjsPromise;
+
+    pdfjsPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = scriptSrc
+        ? scriptSrc.replace(/pdf-local-import\.js.*$/, "vendor/pdf.min.js")
+        : "/static/js/vendor/pdf.min.js";
+      script.onload = () => {
+        if (window.pdfjsLib) resolve(window.pdfjsLib);
+        else reject(new Error("The PDF reader failed to start."));
+      };
+      script.onerror = () => reject(new Error("The PDF reader could not be loaded."));
+      document.head.appendChild(script);
+    });
+    // A failed load must not be remembered, or a flaky network disables PDF
+    // import for the rest of the session with no way to retry.
+    pdfjsPromise.catch(() => { pdfjsPromise = null; });
+    return pdfjsPromise;
   }
 
-  function ensureWorker() {
-    const lib = pdfjs();
+  async function ensureWorker() {
+    const lib = await loadPdfjs();
     if (!lib) {
       throw new Error("Fast PDF import is unavailable (PDF.js failed to load).");
     }
@@ -117,7 +143,7 @@
       throw new Error("Fast local import supports .pdf files.");
     }
 
-    const lib = ensureWorker();
+    const lib = await ensureWorker();
     const buffer = await file.arrayBuffer();
 
     // Keep the upload itself before a single page is rasterised. Everything

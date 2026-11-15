@@ -1,6 +1,39 @@
 {% extends "_marketing.html" %}
 
-{% block title %}Inkyscib — the geometry is real{% endblock %}
+{% block title %}Inkyscib — free handwriting, geometry and PDF canvas{% endblock %}
+{% block description %}A free, ad-free study canvas: handwritten notes, live ruler-and-compass geometry, algebra tiles and PDF annotation — in your browser, on any device.{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Inkyscib",
+  "url": "{{ site_url('/') }}",
+  "applicationCategory": "EducationalApplication",
+  "operatingSystem": "Any browser",
+  "browserRequirements": "Requires a modern browser with HTML Canvas support",
+  "image": "{{ site_url(url_for('static', filename='img/og-cover.png', v='og-1')) }}",
+  "description": "A free, ad-free study canvas: handwritten notes, live ruler-and-compass geometry, algebra tiles and PDF annotation, in the browser on any device.",
+  "featureList": [
+    "Handwriting with pressure-aware pens",
+    "Ruler-and-compass geometry that stays live",
+    "Algebra tiles",
+    "PDF and PowerPoint annotation and export",
+    "Notebook library with offline backup",
+    "YouTube lectures beside your notes",
+    "Pomodoro timer"
+  ],
+  "isAccessibleForFree": true,
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "license": "https://opensource.org/licenses/MIT"
+}
+</script>
+{% endblock %}
 
 {% block content %}
     <main class="hero">

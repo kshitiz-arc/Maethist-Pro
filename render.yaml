@@ -1,0 +1,29 @@
+# Render blueprint for Inkyscib. In the Render dashboard choose
+# "New > Blueprint" and point it at this repository.
+services:
+  - type: web
+    name: inkyscib
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app --config gunicorn.conf.py
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: SECRET_KEY
+        generateValue: true
+      - key: INKYSCIB_ENV
+        value: production
+      - key: TRUST_PROXY_HEADERS
+        value: "true"
+      - key: FORCE_HTTPS
+        value: "true"
+      # Set this to your public address, for example https://inkyscib.com.
+      # It drives canonical URLs, the sitemap and social cards.
+      - key: SITE_ORIGIN
+        sync: false
+      # Optional: Google Search Console HTML-tag verification.
+      - key: SEARCH_CONSOLE_TOKEN
+        sync: false

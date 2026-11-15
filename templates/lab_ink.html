@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>InkLab</title>
+  <!-- An unfinished WebGPU prototype, not part of the product: keep it out of
+       the index and do not let it spend link equity. robots.txt also
+       Disallows /lab/. -->
+  <meta name="robots" content="noindex, nofollow" />
+  <!--
+    Cross-origin isolated (COEP require-corp), so nothing on this page may come
+    from another origin: no Google Fonts, no analytics. The token font stacks
+    fall back to system faces.
+  -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
+      overflow: hidden;
+    }
+    #inklabCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      touch-action: none;
+    }
+    .inklab-bar {
+      position: fixed;
+      top: var(--s3);
+      left: var(--s3);
+      right: var(--s3);
+      display: flex;
+      gap: var(--s3);
+      align-items: flex-start;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .inklab-stats {
+      max-width: 70ch;
+      padding: var(--s1) var(--s2);
+      font-family: var(--mono);
+      font-size: var(--t-1);
+      font-variant-numeric: tabular-nums;
+      color: var(--ink-2);
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      border-radius: var(--r-sm);
+      overflow-wrap: anywhere;
+    }
+    .inklab-clear {
+      pointer-events: auto;
+      min-height: var(--tap);
+      padding: 0 var(--s4);
+      font: inherit;
+      color: var(--ink);
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      border-radius: var(--r-sm);
+      cursor: pointer;
+    }
+    .inklab-clear:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .inklab-message {
+      position: fixed;
+      left: var(--s5);
+      right: var(--s5);
+      bottom: var(--s5);
+      margin: 0 auto;
+      max-width: var(--measure);
+      padding: var(--s3) var(--s4);
+      color: var(--ink);
+      background: var(--surface);
+      border: 1px solid var(--error);
+      border-radius: var(--r-md);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="inklabCanvas" aria-label="Drawing surface"></canvas>
+  <div class="inklab-bar">
+    <span id="inklabStats" class="inklab-stats">Starting&hellip;</span>
+    <button id="inklabClear" class="inklab-clear" type="button">Clear</button>
+  </div>
+  <p id="inklabMessage" class="inklab-message" role="alert" hidden></p>
+  <script id="inklabConfig" type="application/json">{{ config|tojson }}</script>
+  <script src="{{ url_for('static', filename='js/inklab/ring-buffer.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/inklab/lab-main.js') }}"></script>
+</body>
+</html>

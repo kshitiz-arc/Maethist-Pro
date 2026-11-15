@@ -128,18 +128,52 @@
       path.points.length >= 3;
   }
 
-  function isSmartQuadrilateral(path) {
+  // Stored as the four ends of its axes; see ellipseFrame.
+  function isSmartEllipse(path) {
     return !!path &&
       path.tool === "shape" &&
-      ["rectangle", "parallelogram", "rhombus", "kite"].includes(path.shapeType) &&
+      path.shapeType === "ellipse" &&
       Number(path.geometryVersion) === GEOMETRY_VERSION &&
-      path.geometryKind === path.shapeType &&
+      path.geometryKind === "ellipse" &&
       Array.isArray(path.points) &&
       path.points.length >= 4;
   }
 
+  // Every polygon kind other than the triangle, and how many corners it has.
+  // Listed once, so a kind added here is created, drawn, measured, labelled,
+  // handled and normalised everywhere that asks. isSmartQuadrilateral keeps its
+  // name for the callers that already use it; it now covers every polygon.
+  const POLYGON_VERTEX_COUNT = {
+    rectangle: 4,
+    parallelogram: 4,
+    rhombus: 4,
+    kite: 4,
+    square: 4,
+    trapezium: 4,
+    pentagon: 5,
+    hexagon: 6,
+    octagon: 8
+  };
+  const REGULAR_POLYGON_KINDS = new Set(["square", "pentagon", "hexagon", "octagon"]);
+
+  function polygonVertexCount(path) {
+    if (isSmartTriangle(path)) return 3;
+    return POLYGON_VERTEX_COUNT[path?.geometryKind] || 0;
+  }
+
+  function isSmartQuadrilateral(path) {
+    const count = POLYGON_VERTEX_COUNT[path?.shapeType];
+    return !!path &&
+      !!count &&
+      path.tool === "shape" &&
+      Number(path.geometryVersion) === GEOMETRY_VERSION &&
+      path.geometryKind === path.shapeType &&
+      Array.isArray(path.points) &&
+      path.points.length >= count;
+  }
+
   function isSmartGeometry(path) {
-    return isSmartCircle(path) || isSmartTriangle(path) || isSmartQuadrilateral(path);
+    return isSmartCircle(path) || isSmartTriangle(path) || isSmartQuadrilateral(path) || isSmartEllipse(path);
   }
 
   function polygonCenter(path) {
@@ -161,17 +195,33 @@
       : DEFAULT_UNIT_SCALE;
   }
 
+  // How a shape is painted: no fill, a tint of its colour, or solid; an outline
+  // solid, dashed or dotted. Anything unrecognised is the default, so a
+  // document from before these existed draws exactly as it did.
+  const SHAPE_FILLS = new Set(["none", "tint", "solid"]);
+  const SHAPE_DASHES = new Set(["solid", "dashed", "dotted"]);
+
+  function shapeFill(value) {
+    return SHAPE_FILLS.has(value) ? value : "none";
+  }
+
+  function shapeDash(value) {
+    return SHAPE_DASHES.has(value) ? value : "solid";
+  }
+
   function geometryBasePath(kind, settings = {}) {
     return {
       tool: "shape",
       size: settings.size || 3,
       color: settings.color || "#ffffff",
+      fill: shapeFill(settings.fill),
+      dash: shapeDash(settings.dash),
       shapeType: kind,
       geometryVersion: GEOMETRY_VERSION,
       geometryKind: kind,
       unitScale: DEFAULT_UNIT_SCALE,
       rotation: 0,
-      showMeasurements: true,
+      showMeasurements: settings.showMeasurements !== false,
       snapToGrid: settings.snapToGrid !== false,
       snapToObjects: settings.snapToObjects !== false,
       timestamp: Date.now()
@@ -245,6 +295,71 @@
     };
   }
 
+  // An ellipse is stored as the four ends of its axes, in order +a, +b, -a, -b.
+  // Moving, turning and scaling points is what the select tool already does to
+  // every polygon, so the ellipse needs no transform code of its own: its
+  // centre, radii and tilt are read back from wherever those points end up.
+  function ellipseFrame(path) {
+    const points = (path?.points || []).slice(0, 4);
+    if (points.length < 4 || !points.every(finitePoint)) {
+      return { center: { x: 0, y: 0 }, radiusX: 0, radiusY: 0, rotation: 0 };
+    }
+    const center = {
+      x: points.reduce((sum, point) => sum + point.x, 0) / 4,
+      y: points.reduce((sum, point) => sum + point.y, 0) / 4
+    };
+    const axis = { x: points[0].x - points[2].x, y: points[0].y - points[2].y };
+    const across = { x: points[1].x - points[3].x, y: points[1].y - points[3].y };
+    const length = Math.hypot(axis.x, axis.y);
+    // After a stretch the two diameters are no longer at right angles. Keeping
+    // the first as the axis and only the perpendicular part of the second
+    // keeps the area the stretch produced.
+    const radiusY = length > 1e-9
+      ? Math.abs(axis.x * across.y - axis.y * across.x) / length / 2
+      : Math.hypot(across.x, across.y) / 2;
+    return {
+      center,
+      radiusX: length / 2,
+      radiusY,
+      rotation: Math.atan2(axis.y, axis.x)
+    };
+  }
+
+  function setEllipseGeometry(path, center, radiusX, radiusY, rotation) {
+    if (!path || !finitePoint(center)) return path;
+    const a = Math.max(MIN_RADIUS, numberOr(radiusX, MIN_RADIUS));
+    const b = Math.max(MIN_RADIUS, numberOr(radiusY, MIN_RADIUS));
+    const turn = numberOr(rotation);
+    const cos = Math.cos(turn);
+    const sin = Math.sin(turn);
+    path.points = [
+      { x: center.x + cos * a, y: center.y + sin * a },
+      { x: center.x - sin * b, y: center.y + cos * b },
+      { x: center.x - cos * a, y: center.y - sin * a },
+      { x: center.x + sin * b, y: center.y - cos * b }
+    ];
+    path.rotation = turn;
+    return path;
+  }
+
+  // The point at parameter `t` on a frame's ellipse, in screen space.
+  function pointOnEllipse(frame, t) {
+    const along = Math.cos(t) * frame.radiusX;
+    const across = Math.sin(t) * frame.radiusY;
+    const cos = Math.cos(frame.rotation);
+    const sin = Math.sin(frame.rotation);
+    return {
+      x: frame.center.x + along * cos - across * sin,
+      y: frame.center.y + along * sin + across * cos
+    };
+  }
+
+  function ellipseDisplayPoints(path) {
+    if (!isSmartEllipse(path)) return [];
+    const frame = ellipseFrame(path);
+    return Array.from({ length: 48 }, (_, index) => pointOnEllipse(frame, (index / 48) * TAU));
+  }
+
   function shapeAnchors(path) {
     if (!path) return [];
     if (isSmartCircle(path)) {
@@ -257,8 +372,11 @@
         pointOnCircle(path, Math.PI * 1.5)
       ];
     }
+    if (isSmartEllipse(path)) {
+      return [ellipseFrame(path).center, ...path.points.slice(0, 4).filter(finitePoint)];
+    }
     if (isSmartTriangle(path) || isSmartQuadrilateral(path)) {
-      const points = path.points.filter(finitePoint).slice(0, isSmartTriangle(path) ? 3 : 4);
+      const points = path.points.filter(finitePoint).slice(0, polygonVertexCount(path));
       const anchors = [...points, polygonCenter(path)];
       points.forEach((point, index) => {
         const next = points[(index + 1) % points.length];
@@ -337,6 +455,8 @@
       tool: "shape",
       size: settings.size || 3,
       color: settings.color || "#ffffff",
+      fill: shapeFill(settings.fill),
+      dash: shapeDash(settings.dash),
       shapeType: "circle",
       points: [{ ...center }, { ...center }],
       centerX: center.x,
@@ -389,20 +509,33 @@
       objects: settings.snapToObjects !== false,
       unitScale: DEFAULT_UNIT_SCALE
     }).point;
+    const count = POLYGON_VERTEX_COUNT[kind] || 4;
     return {
       ...geometryBasePath(kind, settings),
-      points: [{ ...snapped }, { ...snapped }, { ...snapped }, { ...snapped }],
+      points: Array.from({ length: count }, () => ({ ...snapped })),
       draftStart: { ...snapped },
-      vertexLabels: ["A", "B", "C", "D"]
+      vertexLabels: Array.from({ length: count }, (_, index) => String.fromCharCode(65 + index))
+    };
+  }
+
+  function createEllipsePath(position, settings = {}) {
+    const snapped = snapPoint(position, null, {
+      grid: settings.snapToGrid !== false,
+      objects: settings.snapToObjects !== false,
+      unitScale: DEFAULT_UNIT_SCALE
+    }).point;
+    return {
+      ...geometryBasePath("ellipse", settings),
+      points: Array.from({ length: 4 }, () => ({ ...snapped })),
+      draftStart: { ...snapped }
     };
   }
 
   function createShapePath(kind, position, settings = {}) {
     if (kind === "circle") return createCirclePath(position, settings);
     if (kind === "triangle") return createTrianglePath(position, settings);
-    if (["rectangle", "parallelogram", "rhombus", "kite"].includes(kind)) {
-      return createQuadrilateralPath(kind, position, settings);
-    }
+    if (kind === "ellipse") return createEllipsePath(position, settings);
+    if (POLYGON_VERTEX_COUNT[kind]) return createQuadrilateralPath(kind, position, settings);
     return null;
   }
 
@@ -490,7 +623,7 @@
         { x: box.center.x, y: box.bottom },
         { x: box.left, y: box.center.y }
       ];
-    } else {
+    } else if (path.geometryKind === "kite") {
       const crossY = box.top + box.height * 0.42;
       path.points = [
         { x: box.center.x, y: box.top },
@@ -498,7 +631,49 @@
         { x: box.center.x, y: box.bottom },
         { x: box.left, y: crossY }
       ];
+    } else if (path.geometryKind === "square") {
+      const side = quantizeWorldLength(path, Math.max(box.width, box.height));
+      path.points = regularPolygonPoints(box.center, side / Math.SQRT2, 4, -Math.PI * 3 / 4);
+    } else if (path.geometryKind === "trapezium") {
+      const inset = box.width * 0.2;
+      path.points = [
+        { x: box.left + inset, y: box.top },
+        { x: box.right - inset, y: box.top },
+        { x: box.right, y: box.bottom },
+        { x: box.left, y: box.bottom }
+      ];
+    } else if (REGULAR_POLYGON_KINDS.has(path.geometryKind)) {
+      const sides = POLYGON_VERTEX_COUNT[path.geometryKind];
+      path.points = regularPolygonPoints(box.center, Math.min(box.width, box.height) / 2, sides, flatBottomStart(sides));
+    } else {
+      // A kind in POLYGON_VERTEX_COUNT with no draft of its own. This branch
+      // used to be the kite, so a new kind silently drew as one.
+      return false;
     }
+    return true;
+  }
+
+  // Corners of a regular polygon: `radius` from `center`, the first corner at
+  // `start` radians, the rest clockwise on screen.
+  function regularPolygonPoints(center, radius, sides, start) {
+    return Array.from({ length: sides }, (_, index) => {
+      const angle = start + index * Math.PI * 2 / sides;
+      return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius };
+    });
+  }
+
+  // The start angle that lays one edge flat along the bottom, the way a
+  // pentagon or hexagon is usually drawn. Screen y grows downward.
+  function flatBottomStart(sides) {
+    return Math.PI / 2 + Math.PI / sides;
+  }
+
+  // Dragged corner to corner like a rectangle, the ellipse filling the box.
+  function updateEllipseDraft(path, pointer) {
+    const start = path.draftStart || path.points?.[0];
+    if (!finitePoint(start)) return false;
+    const box = draftBounds(start, pointer);
+    setEllipseGeometry(path, box.center, box.width / 2, box.height / 2, 0);
     return true;
   }
 
@@ -512,6 +687,7 @@
     if (isSmartCircle(path)) return updateCircleDraft(path, snapped);
     if (isSmartTriangle(path)) return updateTriangleDraft(path, snapped);
     if (isSmartQuadrilateral(path)) return updateQuadrilateralDraft(path, snapped);
+    if (isSmartEllipse(path)) return updateEllipseDraft(path, snapped);
     return false;
   }
 
@@ -547,6 +723,15 @@
   function finalizeSmartShape(path) {
     if (!isSmartGeometry(path)) return false;
     if (isSmartCircle(path)) return finalizeCircle(path);
+    if (isSmartEllipse(path)) {
+      delete path.draftStart;
+      const frame = ellipseFrame(path);
+      // A tap rather than a drag: give it a size worth editing.
+      if (Math.PI * frame.radiusX * frame.radiusY < 64) {
+        setEllipseGeometry(path, frame.center, 72, 48, 0);
+      }
+      return true;
+    }
     delete path.draftStart;
     if (isSmartTriangle(path)) {
       promoteTriangle(path);
@@ -587,6 +772,10 @@
   function isMeaningfulShape(path) {
     if (!isSmartGeometry(path)) return false;
     if (isSmartCircle(path)) return circleRadius(path) >= MIN_RADIUS;
+    if (isSmartEllipse(path)) {
+      const frame = ellipseFrame(path);
+      return frame.radiusX >= MIN_RADIUS && frame.radiusY >= MIN_RADIUS;
+    }
     return polygonAreaWorld(path.points) >= 8;
   }
 
@@ -641,6 +830,26 @@
       diameter: radius * 2,
       circumference: TAU * radius,
       area: Math.PI * radius * radius
+    };
+  }
+
+  // Perimeter by Ramanujan's second approximation: exact for a circle and within
+  // 0.05% for any ellipse at all.
+  function measureEllipse(path) {
+    const unit = geometryUnitScale(path);
+    const frame = ellipseFrame(path);
+    const radiusX = frame.radiusX / unit;
+    const radiusY = frame.radiusY / unit;
+    const sum = radiusX + radiusY;
+    const h = sum > 0 ? ((radiusX - radiusY) / sum) ** 2 : 0;
+    const major = Math.max(radiusX, radiusY);
+    const minor = Math.min(radiusX, radiusY);
+    return {
+      radiusX,
+      radiusY,
+      area: Math.PI * radiusX * radiusY,
+      perimeter: Math.PI * sum * (1 + 3 * h / (10 + Math.sqrt(4 - 3 * h))),
+      eccentricity: major > 0 ? Math.sqrt(Math.max(0, 1 - (minor * minor) / (major * major))) : 0
     };
   }
 
@@ -722,12 +931,16 @@
     };
   }
 
+  // Any polygon, not only four-cornered ones. Diagonals AC and BD are what the
+  // quadrilateral inspector shows; on a pentagon or larger they are simply two
+  // of its diagonals.
   function quadrilateralMetrics(path) {
-    const points = path.points.slice(0, 4);
+    const count = Math.max(3, polygonVertexCount(path) || 4);
+    const points = path.points.slice(0, count);
     const unit = geometryUnitScale(path);
-    const sides = points.map((point, index) => pointDistance(point, points[(index + 1) % 4]) / unit);
-    const diagonalAC = pointDistance(points[0], points[2]) / unit;
-    const diagonalBD = pointDistance(points[1], points[3]) / unit;
+    const sides = points.map((point, index) => pointDistance(point, points[(index + 1) % count]) / unit);
+    const diagonalAC = pointDistance(points[0], points[2 % count]) / unit;
+    const diagonalBD = pointDistance(points[1], points[3 % count]) / unit;
     return {
       sides,
       diagonalAC,
@@ -736,8 +949,8 @@
       area: polygonAreaWorld(points) / (unit * unit),
       angles: points.map((_, index) => {
         const vertex = points[index];
-        const previous = points[(index + 3) % 4];
-        const next = points[(index + 1) % 4];
+        const previous = points[(index + count - 1) % count];
+        const next = points[(index + 1) % count];
         const u = { x: previous.x - vertex.x, y: previous.y - vertex.y };
         const v = { x: next.x - vertex.x, y: next.y - vertex.y };
         return Math.atan2(Math.abs(u.x * v.y - u.y * v.x), u.x * v.x + u.y * v.y);
@@ -747,6 +960,7 @@
 
   function measureGeometry(path) {
     if (isSmartCircle(path)) return measureCircle(path);
+    if (isSmartEllipse(path)) return measureEllipse(path);
     if (isSmartTriangle(path)) return triangleMetrics(path);
     if (isSmartQuadrilateral(path)) return quadrilateralMetrics(path);
     return null;
@@ -1026,12 +1240,69 @@
   }
 
   function updateGeometryVertex(path, index, target, originalPath = null, snapKind = null) {
+    if (isSmartEllipse(path)) return updateEllipseAxis(path, index, target, snapKind);
     if (isSmartTriangle(path)) return updateTriangleVertex(path, index, target, originalPath, snapKind);
     if (path.geometryKind === "rectangle") return updateRectangleVertex(path, index, target, originalPath, snapKind);
     if (path.geometryKind === "parallelogram") return updateParallelogramVertex(path, index, target, originalPath, snapKind);
     if (path.geometryKind === "rhombus") return updateRhombusVertex(path, index, target, snapKind);
     if (path.geometryKind === "kite") return updateKiteVertex(path, index, target, snapKind);
+    if (REGULAR_POLYGON_KINDS.has(path.geometryKind)) return updateRegularPolygonVertex(path, index, target, snapKind);
+    if (path.geometryKind === "trapezium") return updateTrapeziumVertex(path, index, target);
     return false;
+  }
+
+  // Dragging an axis end changes that radius alone. The centre and the tilt stay
+  // put, the way a compass keeps its point.
+  function updateEllipseAxis(path, index, target, snapKind = null) {
+    if (!finitePoint(target) || !Number.isInteger(index) || index < 0 || index > 3) return false;
+    const frame = ellipseFrame(path);
+    const cos = Math.cos(frame.rotation);
+    const sin = Math.sin(frame.rotation);
+    const along = index % 2 === 0 ? { x: cos, y: sin } : { x: -sin, y: cos };
+    const reach = Math.abs((target.x - frame.center.x) * along.x + (target.y - frame.center.y) * along.y);
+    const radius = quantizeWorldLength(path, reach, snapKind === "object");
+    if (index % 2 === 0) setEllipseGeometry(path, frame.center, radius, frame.radiusY, frame.rotation);
+    else setEllipseGeometry(path, frame.center, frame.radiusX, radius, frame.rotation);
+    return true;
+  }
+
+  // Square, pentagon, hexagon, octagon: the dragged corner sets the size and
+  // the turn, and every other corner follows, so the shape stays regular.
+  function updateRegularPolygonVertex(path, index, target, snapKind = null) {
+    const count = POLYGON_VERTEX_COUNT[path.geometryKind];
+    const center = polygonCenter({ points: path.points.slice(0, count) });
+    const rawRadius = pointDistance(center, target);
+    if (rawRadius < 4) return false;
+    // The side is what the inspector and the labels show, so that is what snaps.
+    const halfAngle = Math.sin(Math.PI / count);
+    const side = quantizeWorldLength(path, 2 * rawRadius * halfAngle, snapKind === "object");
+    const start = Math.atan2(target.y - center.y, target.x - center.x) - index * Math.PI * 2 / count;
+    path.points = regularPolygonPoints(center, side / (2 * halfAngle), count, start);
+    return true;
+  }
+
+  // A trapezium keeps AB parallel to DC. The dragged corner goes where it is
+  // put; its partner on the same base keeps its place along that base and takes
+  // the dragged corner's distance across it, so the base stays parallel.
+  function updateTrapeziumVertex(path, index, target) {
+    const points = path.points.slice(0, 4).map((point) => ({ ...point }));
+    const onTop = index === 0 || index === 1;
+    const partner = { 0: 1, 1: 0, 2: 3, 3: 2 }[index];
+    const [p, q] = onTop ? [points[3], points[2]] : [points[0], points[1]];
+    const length = pointDistance(p, q);
+    if (length < 0.001) return false;
+    const along = { x: (q.x - p.x) / length, y: (q.y - p.y) / length };
+    const across = { x: -along.y, y: along.x };
+    const partnerAlong = (points[partner].x - p.x) * along.x + (points[partner].y - p.y) * along.y;
+    const offset = (target.x - p.x) * across.x + (target.y - p.y) * across.y;
+    points[index] = { x: target.x, y: target.y };
+    points[partner] = {
+      x: p.x + along.x * partnerAlong + across.x * offset,
+      y: p.y + along.y * partnerAlong + across.y * offset
+    };
+    if (polygonAreaWorld(points) < 8) return false;
+    path.points = points;
+    return true;
   }
 
   function translateGeometry(path, targetCenter) {
@@ -1047,8 +1318,9 @@
 
   function geometryDisplayPoints(path) {
     if (isSmartCircle(path)) return circleDisplayPoints(path);
+    if (isSmartEllipse(path)) return ellipseDisplayPoints(path);
     if (isSmartTriangle(path)) return path.points.filter(finitePoint).slice(0, 3);
-    if (isSmartQuadrilateral(path)) return path.points.filter(finitePoint).slice(0, 4);
+    if (isSmartQuadrilateral(path)) return path.points.filter(finitePoint).slice(0, polygonVertexCount(path));
     return [];
   }
 
@@ -1322,21 +1594,55 @@
     drawCanvasLabel(ctx, measurementStrings(path).canvasRadius, labelPoint);
   }
 
+  // Fill and outline style come from paintShape in tools/select.js, shared with
+  // the circle and the triangle so no two kinds can paint differently.
   function drawSmartPolygon(ctx, path) {
     const points = geometryDisplayPoints(path);
     if (points.length < 3) return;
+    window.Inkyscib.Geometry.paintShape(ctx, path, (context) => {
+      context.moveTo(points[0].x, points[0].y);
+      points.slice(1).forEach((point) => context.lineTo(point.x, point.y));
+      context.closePath();
+    });
+  }
+
+  function drawSmartEllipse(ctx, path) {
+    const frame = ellipseFrame(path);
+    if (frame.radiusX <= 0 || frame.radiusY <= 0) return;
+    window.Inkyscib.Geometry.paintShape(ctx, path, (context) => {
+      context.ellipse(frame.center.x, frame.center.y, frame.radiusX, frame.radiusY, frame.rotation, 0, TAU);
+    });
+  }
+
+  // The two semi-axes, dashed from the centre and labelled a and b, drawn the
+  // way the circle draws its radius.
+  function drawEllipseAnnotations(ctx, path) {
+    if (path.showMeasurements === false || !measurementsVisible()) return;
+    const frame = ellipseFrame(path);
+    if (frame.radiusX < MIN_RADIUS || frame.radiusY < MIN_RADIUS) return;
+    const values = measureEllipse(path);
+    const cos = Math.cos(frame.rotation);
+    const sin = Math.sin(frame.rotation);
+    const endA = pointOnEllipse(frame, 0);
+    const endB = pointOnEllipse(frame, -Math.PI / 2);
     ctx.save();
     ctx.strokeStyle = path.color || "#ffffff";
-    ctx.lineWidth = Math.max(0.5, path.size || 2);
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.moveTo(points[0].x, points[0].y);
-    points.slice(1).forEach((point) => ctx.lineTo(point.x, point.y));
-    ctx.closePath();
-    ctx.stroke();
+    ctx.globalAlpha = 0.42;
+    ctx.lineWidth = Math.max(worldSize(1), (path.size || 2) * 0.45);
+    ctx.setLineDash([5 / currentScale(), 5 / currentScale()]);
+    drawSegment(ctx, frame.center, endA);
+    drawSegment(ctx, frame.center, endB);
     ctx.restore();
+    const suffix = ` ${unitLabel()}`;
+    // a sits just off its axis on the side away from b; b sits beside its axis.
+    drawCanvasLabel(ctx, `a = ${formatNumber(values.radiusX)}${suffix}`, {
+      x: (frame.center.x + endA.x) / 2 - sin * worldSize(14),
+      y: (frame.center.y + endA.y) / 2 + cos * worldSize(14)
+    }, { small: true });
+    drawCanvasLabel(ctx, `b = ${formatNumber(values.radiusY)}${suffix}`, {
+      x: (frame.center.x + endB.x) / 2 + cos * worldSize(36),
+      y: (frame.center.y + endB.y) / 2 + sin * worldSize(36)
+    }, { small: true });
   }
 
   function drawEdgeMeasurement(ctx, points, index, value, centroid) {
@@ -1359,7 +1665,7 @@
 
   function drawQuadrilateralAnnotations(ctx, path) {
     if (!isSmartQuadrilateral(path)) return;
-    const points = path.points.slice(0, 4);
+    const points = path.points.slice(0, polygonVertexCount(path));
     const centroid = polygonCenter(path);
     points.forEach((vertex, index) => {
       const away = { x: vertex.x - centroid.x, y: vertex.y - centroid.y };
@@ -1371,7 +1677,8 @@
     });
     if (path.showMeasurements === false) return;
     const metrics = quadrilateralMetrics(path);
-    const edges = path.geometryKind === "rhombus" ? [0] : [0, 1];
+    // Equal-sided shapes need one side labelled, not two.
+    const edges = path.geometryKind === "rhombus" || REGULAR_POLYGON_KINDS.has(path.geometryKind) ? [0] : [0, 1];
     edges.forEach((index) => drawEdgeMeasurement(ctx, points, index, metrics.sides[index], centroid));
   }
 
@@ -1426,6 +1733,11 @@
     if (!geometry || geometry.__smartGeometryInstalled) return;
     const baseDrawShapeOutline = geometry.drawShapeOutline;
     geometry.drawShapeOutline = function drawGeometryShape(ctx, path) {
+      if (isSmartEllipse(path)) {
+        drawSmartEllipse(ctx, path);
+        drawEllipseAnnotations(ctx, path);
+        return;
+      }
       if (isSmartQuadrilateral(path)) {
         drawSmartPolygon(ctx, path);
         drawQuadrilateralAnnotations(ctx, path);
@@ -1519,7 +1831,12 @@
       ];
     }
 
-    const count = isSmartTriangle(path) ? 3 : 4;
+    if (isSmartEllipse(path)) {
+      const ends = path.points.slice(0, 4).map((point, index) => ({ type: "vertex", index, x: point.x, y: point.y }));
+      return [...ends, { type: "center", x: center.x, y: center.y }, rotationHandle];
+    }
+
+    const count = polygonVertexCount(path) || 4;
     const vertices = path.points.slice(0, count).map((point, index) => ({
       type: "vertex",
       index,
@@ -1949,6 +2266,13 @@
   }
 
   function geometryDimensionDescriptors(path) {
+    if (isSmartEllipse(path)) {
+      const values = measureEllipse(path);
+      return [
+        { key: "radiusX", label: "Semi-axis a", value: values.radiusX, unit: unitLabel(), min: MIN_DIMENSION_UNITS },
+        { key: "radiusY", label: "Semi-axis b", value: values.radiusY, unit: unitLabel(), min: MIN_DIMENSION_UNITS }
+      ];
+    }
     if (isSmartTriangle(path)) {
       const values = triangleMetrics(path);
       if (path.triangleType === "equilateral") {
@@ -1962,6 +2286,10 @@
     }
     if (!isSmartQuadrilateral(path)) return [];
     const values = quadrilateralMetrics(path);
+    if (REGULAR_POLYGON_KINDS.has(path.geometryKind)) {
+      return [{ key: "side", label: "Side", value: values.sides[0], unit: unitLabel(), min: MIN_DIMENSION_UNITS }];
+    }
+    if (path.geometryKind === "trapezium") return [];
     if (path.geometryKind === "rectangle") {
       return [
         { key: "width", label: "Width", value: values.sides[0], unit: unitLabel(), min: MIN_DIMENSION_UNITS },
@@ -1992,6 +2320,19 @@
     const value = Number(rawValue);
     if (!Number.isFinite(value)) return false;
     const unit = geometryUnitScale(path);
+
+    if (isSmartEllipse(path)) {
+      if ((key !== "radiusX" && key !== "radiusY") || value < MIN_DIMENSION_UNITS) return false;
+      const frame = ellipseFrame(path);
+      setEllipseGeometry(
+        path,
+        frame.center,
+        key === "radiusX" ? value * unit : frame.radiusX,
+        key === "radiusY" ? value * unit : frame.radiusY,
+        frame.rotation
+      );
+      return true;
+    }
 
     if (isSmartTriangle(path)) {
       if (path.triangleType === "equilateral" && key === "side") {
@@ -2143,6 +2484,16 @@
       ];
       return true;
     }
+
+    if (REGULAR_POLYGON_KINDS.has(path.geometryKind)) {
+      if (key !== "side" || value < MIN_DIMENSION_UNITS) return false;
+      const count = POLYGON_VERTEX_COUNT[path.geometryKind];
+      const points = path.points.slice(0, count);
+      const center = polygonCenter({ points });
+      const start = Math.atan2(points[0].y - center.y, points[0].x - center.x);
+      path.points = regularPolygonPoints(center, value * unit / (2 * Math.sin(Math.PI / count)), count, start);
+      return true;
+    }
     return false;
   }
 
@@ -2251,6 +2602,16 @@
       };
     }
 
+    if (isSmartEllipse(path)) {
+      const values = measureEllipse(path);
+      return {
+        title: "Ellipse",
+        labels: ["Semi-axis a", "Semi-axis b", "Perimeter", "Area"],
+        values: [unitText(values.radiusX), unitText(values.radiusY), `\u2248 ${unitText(values.perimeter)}`, unitText(values.area, true)],
+        summary: `Area \u03c0ab \u2022 Eccentricity ${formatNumber(values.eccentricity)}`
+      };
+    }
+
     if (isSmartTriangle(path)) {
       const values = triangleMetrics(path);
       return {
@@ -2271,9 +2632,31 @@
       rectangle: "Rectangle",
       parallelogram: "Parallelogram",
       rhombus: "Rhombus",
-      kite: "Kite"
+      kite: "Kite",
+      square: "Square",
+      trapezium: "Trapezium",
+      pentagon: "Pentagon",
+      hexagon: "Hexagon",
+      octagon: "Octagon"
     };
     const title = titles[path.geometryKind] || "Quadrilateral";
+    if (REGULAR_POLYGON_KINDS.has(path.geometryKind)) {
+      const corners = polygonVertexCount(path);
+      return {
+        title,
+        labels: ["Side", "Perimeter", "Area", "Interior angle"],
+        values: [unitText(values.sides[0]), unitText(values.perimeter), unitText(values.area, true), `${formatNumber((corners - 2) * 180 / corners)}\u00b0`],
+        summary: `${corners} equal sides and equal angles`
+      };
+    }
+    if (path.geometryKind === "trapezium") {
+      return {
+        title,
+        labels: ["Top AB", "Bottom DC", "Area", "Perimeter"],
+        values: [unitText(values.sides[0]), unitText(values.sides[2]), unitText(values.area, true), unitText(values.perimeter)],
+        summary: "AB is parallel to DC"
+      };
+    }
     if (path.geometryKind === "rectangle") {
       return {
         title,
@@ -2338,6 +2721,8 @@
       path.snapToObjects,
       path.color,
       path.size,
+      path.fill,
+      path.dash,
       path.rotation,
       (path.constructions || []).length
     ].join(":");
@@ -2375,6 +2760,10 @@
     }
     if (!inputIsFocused(widthInput)) widthInput.value = path.size || 2;
     if (!inputIsFocused(colorInput)) colorInput.value = colorToHex(path.color);
+    const fillInput = inspector.querySelector("#geometryFillInput");
+    const dashInput = inspector.querySelector("#geometryDashInput");
+    if (fillInput && !inputIsFocused(fillInput)) fillInput.value = shapeFill(path.fill);
+    if (dashInput && !inputIsFocused(dashInput)) dashInput.value = shapeDash(path.dash);
 
     const lockButton = inspector.querySelector("#geometryRadiusLock");
     lockButton.classList.toggle("active", circleControls && !!path.radiusLocked);
@@ -2499,6 +2888,18 @@
     });
     colorInput.addEventListener("change", () => finishFieldEdit("color"));
     colorInput.addEventListener("blur", () => finishFieldEdit("color"));
+
+    // Picking from a list is one decision, not a drag, so each change is its
+    // own undo step.
+    [["#geometryFillInput", "fill", shapeFill], ["#geometryDashInput", "dash", shapeDash]].forEach(([selector, key, normalize]) => {
+      const input = inspector.querySelector(selector);
+      if (!input) return;
+      input.addEventListener("change", () => {
+        beginFieldEdit(key);
+        liveFieldEdit(key, (path) => { path[key] = normalize(input.value); });
+        finishFieldEdit(key);
+      });
+    });
 
     inspector.querySelectorAll("[data-geometry-angle]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -2652,7 +3053,13 @@
     });
 
     document.addEventListener("toolChanged", () => syncInspector(true));
-    document.addEventListener("canvasRendered", () => syncInspector());
+    // The selection cannot change between two samples of one stroke, and
+    // syncInspector writes hidden/aria-hidden/class before its signature
+    // check short-circuits.
+    document.addEventListener("canvasRendered", (event) => {
+      if (event?.detail?.liveInk) return;
+      syncInspector();
+    });
     document.addEventListener("click", (event) => {
       if (constructMenu.hidden || inspector.contains(event.target)) return;
       constructMenu.hidden = true;
@@ -2679,6 +3086,19 @@
   }
 
   function defaultPolygonPoints(kind, center) {
+    if (kind === "square") return regularPolygonPoints(center, 62, 4, -Math.PI * 3 / 4);
+    if (REGULAR_POLYGON_KINDS.has(kind)) {
+      const sides = POLYGON_VERTEX_COUNT[kind];
+      return regularPolygonPoints(center, 62, sides, flatBottomStart(sides));
+    }
+    if (kind === "trapezium") {
+      return [
+        { x: center.x - 38, y: center.y - 42 },
+        { x: center.x + 38, y: center.y - 42 },
+        { x: center.x + 62, y: center.y + 42 },
+        { x: center.x - 62, y: center.y + 42 }
+      ];
+    }
     if (kind === "triangle") {
       return [
         { x: center.x, y: center.y - 64 },
@@ -2795,15 +3215,52 @@
     path.points = points;
   }
 
+  // Loaded or transformed: rebuild from the centre, the mean corner distance
+  // and the first corner's angle, so a regular polygon stays exactly regular.
+  function normalizeRegularPolygonPoints(path) {
+    const count = POLYGON_VERTEX_COUNT[path.geometryKind];
+    const points = path.points.slice(0, count);
+    const center = polygonCenter({ points });
+    const radius = points.reduce((sum, point) => sum + pointDistance(center, point), 0) / count;
+    if (radius < 4) return;
+    const start = Math.atan2(points[0].y - center.y, points[0].x - center.x);
+    path.points = regularPolygonPoints(center, radius, count, start);
+  }
+
+  function normalizeEllipse(path) {
+    path.geometryVersion = GEOMETRY_VERSION;
+    path.unitScale = geometryUnitScale(path);
+    path.showMeasurements = path.showMeasurements !== false;
+    path.snapToGrid = path.snapToGrid !== false;
+    path.snapToObjects = path.snapToObjects !== false;
+    delete path.draftStart;
+    delete path.previewPoint;
+    delete path.vertexLabels;
+    const finite = Array.isArray(path.points) ? path.points.filter(finitePoint) : [];
+    if (finite.length >= 4) {
+      const frame = ellipseFrame({ points: finite });
+      if (frame.radiusX >= MIN_RADIUS / 2 && frame.radiusY >= MIN_RADIUS / 2) {
+        return setEllipseGeometry(path, frame.center, frame.radiusX, frame.radiusY, frame.rotation);
+      }
+    }
+    const center = finite.length
+      ? polygonCenter({ points: finite })
+      : { x: numberOr(path.centerX), y: numberOr(path.centerY) };
+    return setEllipseGeometry(path, center, 72, 48, 0);
+  }
+
   function normalizeSmartGeometry(path) {
     if (!path || path.tool !== "shape") return path;
+    path.fill = shapeFill(path.fill);
+    path.dash = shapeDash(path.dash);
+    if (path.geometryKind === "ellipse" && path.shapeType === "ellipse") return normalizeEllipse(path);
     if (path.geometryKind === "circle" && path.shapeType === "circle") {
       path.geometryVersion = GEOMETRY_VERSION;
       return normalizeCircle(path);
     }
 
     const kind = path.geometryKind;
-    if (path.shapeType !== kind || !["triangle", "rectangle", "parallelogram", "rhombus", "kite"].includes(kind)) return path;
+    if (path.shapeType !== kind || (kind !== "triangle" && !POLYGON_VERTEX_COUNT[kind])) return path;
     path.geometryVersion = GEOMETRY_VERSION;
     path.unitScale = geometryUnitScale(path);
     path.rotation = numberOr(path.rotation);
@@ -2811,7 +3268,7 @@
     path.snapToGrid = path.snapToGrid !== false;
     path.snapToObjects = path.snapToObjects !== false;
 
-    const count = kind === "triangle" ? 3 : 4;
+    const count = kind === "triangle" ? 3 : POLYGON_VERTEX_COUNT[kind];
     const finite = Array.isArray(path.points) ? path.points.filter(finitePoint).slice(0, count) : [];
     const fallbackCenter = finite.length
       ? { x: finite.reduce((sum, point) => sum + point.x, 0) / finite.length, y: finite.reduce((sum, point) => sum + point.y, 0) / finite.length }
@@ -2866,6 +3323,7 @@
     if (kind === "parallelogram") normalizeParallelogramPoints(path);
     if (kind === "rhombus") normalizeRhombusPoints(path);
     if (kind === "kite") normalizeKitePoints(path);
+    if (REGULAR_POLYGON_KINDS.has(kind)) normalizeRegularPolygonPoints(path);
     if (polygonAreaWorld(path.points) < 12) path.points = defaultPolygonPoints(kind, fallbackCenter);
     return path;
   }
@@ -2879,6 +3337,7 @@
     isSmartCircle,
     isSmartTriangle,
     isSmartQuadrilateral,
+    isSmartEllipse,
     isSmartGeometry,
     createCirclePath,
     createShapePath,
@@ -2903,7 +3362,12 @@
     geometryDisplayPoints,
     constructionPoints,
     measureCircle,
+    measureEllipse,
     measureGeometry,
+    ellipseFrame,
+    setEllipseGeometry,
+    shapeFill,
+    shapeDash,
     triangleMetrics,
     quadrilateralMetrics,
     geometryDimensionDescriptors,

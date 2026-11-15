@@ -181,14 +181,19 @@ window.appState = {
     lastTouchDist: null,
     lastTouchMid: null,
     toolSettings: {
-        pen: { size: 2, color: '#ffffff', style: 'default' },
-        eraser: { size: 20 },
+        // smoothing is the write-assist level, 0-100 (40 = the old "natural").
+        pen: { size: 2, color: '#ffffff', style: 'default', smoothing: 40 },
+        // mode is what a dragged eraser does; lassoAction is what the hold
+        // gesture does when you draw a loop. They are separate keys because
+        // the two gestures answer different questions, and because the mode
+        // normaliser coerces anything that is not 'object' back to 'partial'.
+        eraser: { size: 20, mode: 'partial', lassoAction: 'erase' },
         highlight: { size: 10, color: 'rgba(255,255,0,0.3)' },
         // A line segment is a measurement, not a mark. It comes out carrying its
         // length and the names of its ends by default; both toggle off in the
         // Line panel for anyone who wants a bare stroke.
         line: { size: 2, color: '#ffffff', lineType: 'solid', arrowStyle: 'triangle', lineKind: 'segment', showLabels: true, showLength: true, showAngle: true, showCoords: false, showMidpoint: false, fixedLength: null },
-        shape: { size: 3, color: '#ffffff', shapeType: 'circle', triangleType: 'isosceles' },
+        shape: { size: 3, color: '#ffffff', shapeType: 'circle', triangleType: 'isosceles', fill: 'none', dash: 'solid' },
         settingsVersion: 2,
         compass: { color: null },
         angle: { color: null, size: 1.7, showText: true }
@@ -333,21 +338,20 @@ function ensureClearCanvasModal() {
             <button class="clear-confirm-close" type="button" aria-label="Close dialog" data-clear-cancel>
                 <i class="fas fa-times"></i>
             </button>
-            <div class="clear-confirm-hero" aria-hidden="true">
-                <div class="clear-confirm-orb">
+            <div class="clear-confirm-head">
+                <div class="clear-confirm-mark" aria-hidden="true">
                     <i class="fas fa-trash-can"></i>
                 </div>
-                <div class="clear-confirm-rings"></div>
+                <div class="clear-confirm-headings">
+                    <h3 id="clearCanvasTitle">Clear the canvas?</h3>
+                    <p class="clear-confirm-copy">Every stroke on this page goes. Undo brings them back.</p>
+                </div>
             </div>
-            <p class="clear-confirm-kicker">Fresh start</p>
-            <h3 id="clearCanvasTitle">Clear the canvas?</h3>
-            <p class="clear-confirm-copy">This wipes every stroke on the page and resets the undo stack.</p>
             <div class="clear-confirm-actions">
                 <button class="clear-confirm-btn clear-confirm-cancel" type="button" data-clear-cancel>
                     Keep drawing
                 </button>
                 <button class="clear-confirm-btn clear-confirm-danger" type="button" data-clear-confirm>
-                    <i class="fas fa-broom"></i>
                     Clear it
                 </button>
             </div>
@@ -378,8 +382,33 @@ function isClearCanvasModalOpen() {
     return !!modal && modal.classList.contains('active');
 }
 
-function openClearCanvasModal() {
+// The dialog's copy, so the one destructive confirm in the app can be reused
+// rather than grown a second time. Defaults are exactly what it always said,
+// so clearCanvas() keeps working untouched.
+const CLEAR_CONFIRM_DEFAULTS = {
+    title: 'Clear the canvas?',
+    body: 'Every stroke on this page goes. Undo brings them back.',
+    confirmLabel: 'Clear it',
+    cancelLabel: 'Keep drawing'
+};
+
+function applyClearConfirmCopy(modal, options) {
+    const copy = { ...CLEAR_CONFIRM_DEFAULTS, ...(options || {}) };
+    const title = modal.querySelector('#clearCanvasTitle');
+    const body = modal.querySelector('.clear-confirm-copy');
+    const confirmBtn = modal.querySelector('.clear-confirm-danger');
+    const cancelBtn = modal.querySelector('.clear-confirm-cancel');
+    // textContent, not innerHTML: a notebook name reaches this straight from
+    // the user.
+    if (title) title.textContent = copy.title;
+    if (body) body.textContent = copy.body;
+    if (confirmBtn) confirmBtn.textContent = copy.confirmLabel;
+    if (cancelBtn) cancelBtn.textContent = copy.cancelLabel;
+}
+
+function openClearCanvasModal(options) {
     const modal = ensureClearCanvasModal();
+    applyClearConfirmCopy(modal, options);
     clearCanvasLastFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     modal.classList.remove('is-confirming');
@@ -414,7 +443,10 @@ function closeClearCanvasModal(confirmed) {
     resolve(confirmed);
 }
 
-function showClearCanvasConfirm() {
+// Called with no arguments this is still the clear-canvas confirm, word for
+// word. Pass { title, body, confirmLabel, cancelLabel } to reuse it for another
+// destructive action -- deleting a notebook from Recents does.
+function showClearCanvasConfirm(options) {
     ensureClearCanvasModal();
 
     if (clearCanvasResolve) {
@@ -424,9 +456,16 @@ function showClearCanvasConfirm() {
 
     return new Promise((resolve) => {
         clearCanvasResolve = resolve;
-        openClearCanvasModal();
+        openClearCanvasModal(options);
     });
 }
+
+// A name that says what it is, for callers that are not clearing the canvas.
+// Deliberately an alias of the same function rather than a wrapper: in a
+// classic script a top-level `function foo` IS `window.foo`, so exporting a
+// wrapper under an existing name silently replaces what the file's own calls
+// resolve to. That is what broke every preference save until 2026-09-15.
+window.showDestructiveConfirm = showClearCanvasConfirm;
 
 function handleClearCanvasModalKeydown(e) {
     if (!isClearCanvasModalOpen()) return;
@@ -505,6 +544,13 @@ async function initApp() {
 }
 function setTheme() {
     const html = document.documentElement;
+    // The canvas preset owns the theme now: it names the chrome it pairs with
+    // and swaps the default pen colour the same way the code below does.
+    const canvasTheme = window.Inkyscib?.CanvasTheme;
+    if (canvasTheme) {
+        canvasTheme.set(canvasTheme.get().id, { persist: false, render: false });
+        return;
+    }
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
         html.dataset.theme = savedTheme;
@@ -614,6 +660,10 @@ function createPath(pos) {
         timestamp: Date.now()
     };
 
+    if (state.currentTool === 'eraser') {
+        path.eraseMode = settings.mode === 'object' ? 'object' : 'partial';
+    }
+
     if (state.currentTool === 'pen') {
         path.penStyle = settings.style || 'default';
     }
@@ -622,7 +672,10 @@ function createPath(pos) {
         path.lineType = settings.lineType || 'solid';
         path.arrowStyle = settings.arrowStyle || 'triangle';
         // geometric kind, independent of the visual style
-        path.lineKind = settings.lineKind || 'segment';
+        // Inkyscib is a bounded page, so every drawn line is a finite segment.
+        // Keep the property for old documents, but never create new rays or
+        // infinite lines.
+        path.lineKind = 'segment';
         // Whether this segment names its ends and reports its length. Set per
         // line, seeded from the tool's defaults; the letters themselves are
         // handed out once the line is actually committed.
@@ -650,9 +703,9 @@ function setTool(tool) {
     window.appState.currentTool = tool;
     window.appState.panMode = false;
     window.appState.isPanning = false;
-    if (tool !== 'select' && window.Inkyscib?.Selection?.clear) {
-        window.Inkyscib.Selection.clear({ render: false });
-    }
+    // Keep the selected object while its tool panel opens. This is what lets
+    // controls such as labels and measurements edit the object the user just
+    // selected. The selection is cleared when the next canvas action starts.
     document.querySelectorAll('.tool').forEach(b => b.classList.remove('active'));
     const toolButton = document.getElementById(tool + 'Tool');
     if (toolButton) {
@@ -711,9 +764,13 @@ function closeAllToolboxes() {
             slider.value = confirmed;
         }
     });
-    if (keepDocked) {
-        window.Inkyscib.ToolDock.syncActivePanel?.();
-    }
+    // tool-dock.js decides which panel is showing, at every width: hide, then
+    // hand back to it. This used to hand back only in dock mode, so below
+    // 1180px every stroke start and canvas click (events.js) hid the floating
+    // panel -- the sticky Compass and Angle panels too, the live readout of a
+    // construction in progress -- while the dock still believed it was open,
+    // and the next resize or tool sync brought it back unasked.
+    window.Inkyscib?.ToolDock?.syncActivePanel?.();
 }
 function toggleToolbox(id) {
     const el = document.getElementById(id);
@@ -727,6 +784,54 @@ function toggleToolbox(id) {
 // snapshot the paths before every committed mutation instead.
 const HISTORY_LIMIT = 80;
 
+// A direct deep copy, in place of JSON.parse(JSON.stringify(path)). The round
+// trip serialised every stroke to a string and reparsed it: 28 ms for a
+// 2000-stroke page on a desktop, on every pen lift, which is why the lag
+// arrived as the page filled.
+//
+// It stays a real deep copy. Sharing objects with the live array would let the
+// partial eraser, which appends into path.erasers in place, reach back into a
+// snapshot taken before it ran.
+//
+// undefined and function values are skipped so the result stays
+// value-identical to what JSON produced, and self-references are refused the
+// same way rather than looping forever.
+// Depth rather than a visited Set: a page carries ~80,000 point objects, and
+// an add/has/delete on each cost more than the copy itself. A path is four
+// levels deep at worst (path -> erasers -> cut -> points -> point), so
+// anything past __CLONE_MAX_DEPTH is a cycle, which throws and falls back the
+// same way JSON.stringify would.
+const __CLONE_MAX_DEPTH = 12;
+
+function __cloneValue(value, depth) {
+    if (value === null || typeof value !== 'object') return value;
+    if (depth > __CLONE_MAX_DEPTH) throw new TypeError('path nested too deeply');
+    const next = depth + 1;
+    if (Array.isArray(value)) {
+        const count = value.length;
+        const out = new Array(count);
+        for (let i = 0; i < count; i++) {
+            const item = value[i];
+            // JSON writes null for a hole, an undefined or a function in an array.
+            out[i] = (item === undefined || typeof item === 'function')
+                ? null
+                : __cloneValue(item, next);
+        }
+        return out;
+    }
+    const out = {};
+    const keys = Object.keys(value);
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        const item = value[key];
+        if (item === undefined || typeof item === 'function') continue;
+        out[key] = (item === null || typeof item !== 'object')
+            ? item
+            : __cloneValue(item, next);
+    }
+    return out;
+}
+
 function __clonePathSnapshot(paths) {
     return (paths || []).map(path => {
         if (path?.tool === 'youtube-frame') {
@@ -739,9 +844,13 @@ function __clonePathSnapshot(paths) {
             };
         }
         try {
-            return JSON.parse(JSON.stringify(path));
+            return __cloneValue(path, 0);
         } catch (e) {
-            return path;
+            try {
+                return JSON.parse(JSON.stringify(path));
+            } catch (e2) {
+                return path;
+            }
         }
     });
 }
@@ -813,10 +922,14 @@ async function clearCanvas() {
     const confirmed = await showClearCanvasConfirm();
     if (!confirmed) return;
 
+    // Snapshot before the wipe, not after. Clearing used to reset undoStack
+    // outright, so the one action that destroys everything was the one action
+    // Undo could not reach -- and the File ribbon promised the opposite.
+    // commitHistory() also clears the redo branch, which is what we want here.
+    commitHistory();
+
     await animateCanvasClear();
     state.paths = [];
-    state.undoStack = [];
-    state.redoStack = [];
     state.currentPath = null;
     if (typeof window.render === 'function') {
         window.render();

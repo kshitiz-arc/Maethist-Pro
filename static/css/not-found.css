@@ -1,14 +1,30 @@
+/* This page used to declare its own palette, and the page is the reason
+   DESIGN.md's "one token vocabulary" rule exists. Three separate faults, all
+   measured in a browser on 2026-09-21:
+
+     --accent: var(--accent)   was self-referential, so it resolved to the
+                               guaranteed-invalid value and computed to "".
+                               The primary CTA fell back to a hard-coded blue
+                               gradient -- #6868FF against a brand accent of
+                               #F0913C -- and vengeance.css's border beam,
+                               which reads var(--beam-color, var(--accent)),
+                               fell through to currentColor and drew white.
+     --accent-soft/-wash       read from tokens.css, which 404.html did not load.
+     --r-sm/-md/-lg/-pill,     used throughout, defined nowhere. The CTA
+     --s4, --ink-2             rendered with border-radius: 0.
+
+   404.html now loads fonts.css and tokens.css first, like every other page,
+   and keeps data-theme="dark" so the dark art direction below is the design
+   system's own dark theme rather than a second one invented here. The five
+   names that remain are local aliases onto that vocabulary -- nothing new. */
 :root {
-  --bg: #06080d;
-  --bg-soft: #0c0f15;
-  --panel: rgba(12, 15, 22, 0.9);
-  --panel-strong: rgba(16, 20, 29, 0.96);
-  --text: #ffffff;
-  --muted: #aeb7c9;
-  --line: rgba(255, 255, 255, 0.12);
-  --accent: var(--accent);
-  --accent-soft: var(--accent-wash);
-  --ink: #f7f8ff;
+  --bg:           var(--paper);
+  --bg-soft:      var(--surface);
+  --panel:        var(--surface);
+  --panel-strong: var(--raised);
+  --text:         var(--ink);
+  --muted:        var(--ink-2);
+  --line:         var(--rule);
 }
 
 * {
@@ -24,7 +40,7 @@ body {
   min-height: 100vh;
   margin: 0;
   overflow: hidden;
-  font-family: "Segoe UI", Arial, sans-serif;
+  font-family: var(--sans);
   color: var(--text);
   background:
     radial-gradient(circle at 50% -10%, var(--accent-wash), transparent 36%),
@@ -161,37 +177,45 @@ h1 {
   line-height: 1.65;
 }
 
+/* Two more exits below the button, as a quieter second line. Scoped under
+   .lost-copy because the `.lost-copy p` rule above is more specific than a
+   bare class and would otherwise win. The fallbacks are gone: 404.html loads
+   tokens.css now, so --s4 and --ink-2 resolve. */
+.lost-copy .lost-links {
+  margin: var(--s4) 0 0;
+  color: var(--ink-2);
+}
+
+.lost-copy .lost-links a { color: inherit; text-underline-offset: 3px; }
+
+/* The same primary button as every other page: `.primary` in marketing.css is
+   `background: var(--accent); color: var(--on-accent)` at --r-sm. This used to
+   be a blue gradient with its own border, radius and weight, which is how the
+   one page a visitor reaches by accident ended up the only page not wearing
+   the brand. --tap, not 54px: the minimum a finger can reliably hit. */
 .return-button {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  min-height: 54px;
-  padding: 0 20px;
-  border: 1px solid rgba(122, 122, 255, 0.72);
-  border-radius: var(--r-lg);
-  color: #ffffff;
-  background:
-    linear-gradient(180deg, rgba(104, 104, 255, 0.95), rgba(74, 74, 220, 0.92));
-  box-shadow:
-    0 16px 38px var(--accent-wash),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28);
-  font-weight: 800;
+  gap: var(--s3);
+  min-height: var(--tap);
+  padding: 0 var(--s5);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  color: var(--on-accent);
+  background: var(--accent);
+  font-family: var(--sans);
+  font-weight: 600;
   text-decoration: none;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  transition: opacity var(--fast) ease-out, outline-color var(--fast) ease-out;
 }
 
-.return-button:hover,
-.return-button:focus-visible {
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.75);
-  box-shadow:
-    0 22px 48px var(--accent-wash),
-    inset 0 1px 0 rgba(255, 255, 255, 0.36);
+.return-button:hover {
+  opacity: 0.88;
 }
 
 .return-button:focus-visible {
-  outline: 3px solid rgba(255, 255, 255, 0.42);
-  outline-offset: 4px;
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
 }
 
 .button-icon {
@@ -424,7 +448,7 @@ h1 {
   right: -12px;
   top: 14%;
   color: #ffffff;
-  background: var(--accent-soft);
+  background: var(--accent-wash);
   animation: small-float 4.4s ease-in-out 1s infinite;
 }
 

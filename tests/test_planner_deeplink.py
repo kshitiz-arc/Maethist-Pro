@@ -5,11 +5,11 @@ from urllib.parse import parse_qs, urlparse
 from zoneinfo import ZoneInfo
 
 from app import app
+from browser_server import make_browser_server
 
 
 try:
     from playwright.sync_api import sync_playwright
-    from werkzeug.serving import make_server
 
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
@@ -20,7 +20,7 @@ except ImportError:
 class PlannerDeepLinkTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.server = make_server("127.0.0.1", 0, app, threaded=True)
+        cls.server = make_browser_server(app)
         cls.server_thread = threading.Thread(
             target=cls.server.serve_forever,
             daemon=True,
@@ -38,7 +38,14 @@ class PlannerDeepLinkTests(unittest.TestCase):
         cls.server_thread.join(timeout=3)
 
     def test_planner_deep_link_opens_requested_date_and_cleans_its_query(self):
-        context = self.browser.new_context(timezone_id="Asia/Kolkata")
+        # The planner formats dates through Intl with an undefined locale, so
+        # it follows the machine. Without pinning this, the assertion below
+        # passes only where the system locale happens to be en-US: an en-GB
+        # machine renders "Sunday, 9 August 2026".
+        context = self.browser.new_context(
+            timezone_id="Asia/Kolkata",
+            locale="en-US",
+        )
         self.addCleanup(context.close)
         page = context.new_page()
         page.clock.install(

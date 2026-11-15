@@ -2,11 +2,11 @@ import threading
 import unittest
 
 from app import app
+from browser_server import make_browser_server
 
 
 try:
     from playwright.sync_api import sync_playwright
-    from werkzeug.serving import make_server
 
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
@@ -17,7 +17,7 @@ except ImportError:
 class SmartGeometryBrowserTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.server = make_server("127.0.0.1", 0, app, threaded=True)
+        cls.server = make_browser_server(app)
         cls.server_thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.server_thread.start()
         cls.base_url = f"http://127.0.0.1:{cls.server.server_port}"
@@ -125,7 +125,12 @@ class SmartGeometryBrowserTests(unittest.TestCase):
               const tangent = path.constructions.find((item) => item.type === 'tangent');
               const tangentPoint = geometry.constructionPoints(path, tangent)[0];
               const worldAngle = tangent.angle + (path.rotation || 0);
-              const tangentDirection = { x: -Math.sin(worldAngle), y: Math.cos(worldAngle) };
+              // Angles here are CCW-positive but screen y grows downward, so
+              // pointOnCircle negates the sin term and the radius vector is
+              // (cos A, -sin A). The tangent is its derivative, (-sin A, -cos A);
+              // with y: +cos this asserted against a direction the renderer has
+              // never used and failed by exactly the radius.
+              const tangentDirection = { x: -Math.sin(worldAngle), y: -Math.cos(worldAngle) };
               const radiusVector = { x: tangentPoint.x - center.x, y: tangentPoint.y - center.y };
               const tangentDot = radiusVector.x * tangentDirection.x + radiusVector.y * tangentDirection.y;
               return {
@@ -379,7 +384,13 @@ class SmartGeometryBrowserTests(unittest.TestCase):
             places=8
         )
 
-    def test_legacy_square_stays_on_its_two_point_pipeline(self):
+    def test_the_picker_square_is_smart_and_legacy_squares_still_load(self):
+        """Square became a SmartGeometry kind (tests/test_shape_kinds.py).
+
+        Documents saved before that hold two-point squares with no
+        geometryKind. Those must still load, stay on their own pipeline, and
+        draw their four corners.
+        """
         page = self.open_page()
         result = page.evaluate(
             """
@@ -401,35 +412,38 @@ class SmartGeometryBrowserTests(unittest.TestCase):
               window.Inkyscib.Events.startDrawing(eventAt(180, 170));
               window.Inkyscib.Events.continueDrawing(eventAt(340, 290));
               window.Inkyscib.Events.endDrawing();
-              await window.saveDrawing({ force: true });
-              const path = state.paths[0];
-              const stored = JSON.parse(localStorage.getItem('inkyscib_drawing'))[0];
+              const drawn = state.paths[0];
+
+              const legacy = window.normalizeLoadedPath({
+                tool: 'shape', shapeType: 'square', size: 3, color: '#ffffff',
+                points: [{ x: 180, y: 170 }, { x: 340, y: 290 }], width: 160, height: 120
+              });
               return {
-                smart: window.Inkyscib.SmartGeometry.isSmartGeometry(path),
-                shapeType: path.shapeType,
-                geometryKind: path.geometryKind || null,
-                pointCount: path.points.length,
-                displayPointCount: window.Inkyscib.Geometry.shapeDisplayPoints(path).length,
-                width: path.width,
-                height: path.height,
-                currentTool: state.currentTool,
-                storedShapeType: stored.shapeType,
-                storedPointCount: stored.points.length
+                drawn: {
+                  smart: window.Inkyscib.SmartGeometry.isSmartGeometry(drawn),
+                  geometryKind: drawn.geometryKind,
+                  pointCount: drawn.points.length
+                },
+                legacy: {
+                  smart: window.Inkyscib.SmartGeometry.isSmartGeometry(legacy),
+                  shapeType: legacy.shapeType,
+                  geometryKind: legacy.geometryKind || null,
+                  pointCount: legacy.points.length,
+                  displayPointCount: window.Inkyscib.Geometry.shapeDisplayPoints(legacy).length
+                }
               };
             }
             """
         )
 
-        self.assertFalse(result["smart"])
-        self.assertEqual(result["shapeType"], "square")
-        self.assertIsNone(result["geometryKind"])
-        self.assertEqual(result["pointCount"], 2)
-        self.assertEqual(result["displayPointCount"], 4)
-        self.assertAlmostEqual(result["width"], 160, places=5)
-        self.assertAlmostEqual(result["height"], 120, places=5)
-        self.assertEqual(result["currentTool"], "shape")
-        self.assertEqual(result["storedShapeType"], "square")
-        self.assertEqual(result["storedPointCount"], 2)
+        self.assertTrue(result["drawn"]["smart"])
+        self.assertEqual(result["drawn"]["geometryKind"], "square")
+        self.assertEqual(result["drawn"]["pointCount"], 4)
+        self.assertFalse(result["legacy"]["smart"])
+        self.assertEqual(result["legacy"]["shapeType"], "square")
+        self.assertIsNone(result["legacy"]["geometryKind"])
+        self.assertEqual(result["legacy"]["pointCount"], 2)
+        self.assertEqual(result["legacy"]["displayPointCount"], 4)
 
     def test_custom_three_click_triangle_is_promoted_to_smart_geometry(self):
         page = self.open_page()

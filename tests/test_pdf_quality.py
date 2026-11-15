@@ -28,9 +28,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from app import app
+from browser_server import make_browser_server
 from pdf_quality import (
     COMPARE_DPI,
     FIXTURE_BUILDERS,
+    build_cropped_pdf,
     build_form_pdf,
     build_heavy_pdf,
     build_scanned_pdf,
@@ -39,6 +41,7 @@ from pdf_quality import (
     content_stream_digests,
     form_field_names,
     image_filters,
+    ink_bounds,
     measure,
     page_sizes,
     page_texts,
@@ -47,7 +50,6 @@ from pdf_quality import (
 
 try:
     from playwright.sync_api import sync_playwright
-    from werkzeug.serving import make_server
 
     BROWSER_AVAILABLE = True
 except ImportError:  # pragma: no cover - optional dependency
@@ -239,7 +241,7 @@ class BrowserTestBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         app.config["TESTING"] = True
-        cls.server = make_server("127.0.0.1", 0, app, threaded=True)
+        cls.server = make_browser_server(app)
         cls.port = cls.server.server_port
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
@@ -663,6 +665,100 @@ class BrowserAnnotatedExportTest(BrowserTestBase):
         original = source.read_bytes()
         result, _ = self.export_with_ink(source)
         self.assertLess(len(result), len(original) * 3)
+
+
+class CroppedPageAlignmentTest(BrowserTestBase):
+    """Ink must land where it was drawn, including on a cropped page.
+
+    PDF.js lays a page out in its CropBox, so the coordinates the editor
+    stores are relative to that box. The exporter has to invert the same
+    viewport it was given: building its matrix from the MediaBox instead
+    translates every stroke on the page by the offset between the two boxes.
+    On this fixture that is 18pt left and 24pt up — small enough to look like
+    sloppy drawing rather than a bug, which is exactly why it needs a test.
+
+    Every other fixture here is uncropped, where the two boxes agree and the
+    mistake is invisible.
+    """
+
+    # Collinear, so the midpoint smoothing in pdf-vector.js reproduces the
+    # straight line exactly and the bounding box stays predictable.
+    START = (100.0, 120.0)
+    END = (400.0, 500.0)
+    PEN_SIZE = 4
+
+    def draw_and_export(self, source):
+        steps = 15
+        points = [
+            {
+                "x": self.START[0] + (self.END[0] - self.START[0]) * step / steps,
+                "y": self.START[1] + (self.END[1] - self.START[1]) * step / steps,
+                "pressure": 0.5,
+            }
+            for step in range(steps + 1)
+        ]
+
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch()
+            context = self.new_context(browser, accept_downloads=True)
+            page = self.new_page(context)
+            try:
+                self.open_editor(page)
+                self.import_pdf(page, source)
+                page.evaluate(
+                    """({ points, size }) => {
+                      window.appState.paths.push({
+                        tool: 'pen', penStyle: 'default', color: '#e0407a',
+                        size, points, timestamp: Date.now()
+                      });
+                      window.render();
+                    }""",
+                    {"points": points, "size": self.PEN_SIZE},
+                )
+                with page.expect_download(timeout=90000) as info:
+                    page.evaluate("window.exportPptDeck('pdf')")
+                target = self.directory / "aligned.pdf"
+                info.value.save_as(str(target))
+            finally:
+                context.close()
+                browser.close()
+
+        self.raise_for_page_errors()
+        return target.read_bytes()
+
+    def assert_ink_matches_the_stroke(self, pdf_bytes, label):
+        bounds = ink_bounds(pdf_bytes)
+        self.assertIsNotNone(bounds, "%s: the stroke should be vector ink on the page" % label)
+
+        expected = (self.START[0], self.START[1], self.END[0], self.END[1])
+        # The reported box is the stroked path's, so it can sit up to half a
+        # line width outside the centreline. A whole pen width is loose enough
+        # never to flake and still an order of magnitude tighter than the 18pt
+        # and 24pt shifts a wrong page box produces.
+        for edge, got, want in zip(("x0", "y0", "x1", "y1"), bounds, expected):
+            self.assertAlmostEqual(
+                got, want, delta=self.PEN_SIZE,
+                msg="%s: ink %s landed at %.2f, drawn at %.2f (out by %.2f pt)"
+                    % (label, edge, got, want, got - want),
+            )
+
+    def test_ink_lands_where_it_was_drawn_on_a_cropped_page(self):
+        source = build_cropped_pdf(self.directory)
+        result = self.draw_and_export(source)
+        self.assert_ink_matches_the_stroke(result, "cropped page")
+
+        # The document underneath still has to be untouched.
+        self.assertEqual(page_texts(result), page_texts(source.read_bytes()))
+
+    def test_ink_lands_where_it_was_drawn_on_an_uncropped_page(self):
+        """The control: the same stroke on the same page, minus the CropBox.
+
+        Without this, a change that moved the error onto ordinary pages rather
+        than removing it would still pass the test above.
+        """
+        source = build_cropped_pdf(self.directory, name="uncropped.pdf", crop=False)
+        result = self.draw_and_export(source)
+        self.assert_ink_matches_the_stroke(result, "uncropped page")
 
 
 if __name__ == "__main__":

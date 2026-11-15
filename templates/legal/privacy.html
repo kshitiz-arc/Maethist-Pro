@@ -1,0 +1,361 @@
+{% extends "legal/_legal.html" %}
+
+{% block title %}Inkyscib privacy policy — what is collected, and why{% endblock %}
+{% block description %}What Inkyscib collects (almost nothing), who receives it, how long it is kept, and how to export or erase everything this browser holds.{% endblock %}
+{% block legal_title %}Privacy policy{% endblock %}
+
+{% block legal_body %}
+
+      <p>
+        Inkyscib has no accounts, no sign-up and no server-side copy of your
+        work. That makes this document short, and it makes most of it a list of
+        things that do not happen. Each paragraph below describes the code as it
+        runs today.
+      </p>
+
+      <h2>What we collect</h2>
+
+      <p>
+        Nothing that identifies you, by default. There is no account, no email
+        field and no password anywhere on this site.
+      </p>
+
+      <h3>On your device, and only there</h3>
+
+      <p>
+        Your notes, drawings, pages, notebooks, saved video moments and every
+        preference live in your own browser, in <code>localStorage</code> and
+        IndexedDB (the database <code>inkyscib_cache</code>, whose
+        <code>records</code> store holds your notebooks and preferences and
+        whose <code>documents</code> store holds any PDF or deck you
+        imported). None of it is uploaded, and there is no
+        endpoint on the server that could receive it. If you clear your browser
+        storage, it is gone, and we cannot bring it back.
+      </p>
+
+      <h3>What passes through the server, and does not stay</h3>
+
+      <ul>
+        <li>
+          <strong>A PDF or PowerPoint file you import.</strong> It is sent to
+          the server, converted to page images, and returned to your browser.
+          The upload is written into a temporary directory that is deleted when
+          the request ends, whether the conversion succeeded or failed
+          (<code>tempfile.TemporaryDirectory</code> in <code>app.py</code>). It
+          is never copied anywhere else, and the same is true of the original
+          PDF when you export annotations back onto it. PowerPoint export never
+          touches the disk at all.
+        </li>
+        <li>
+          <strong>A lecture search.</strong> The words you type are sent to the
+          server, which asks YouTube on your behalf, so your own address is not
+          sent to Google for the search. The result is held in the server's
+          memory for ten minutes, keyed by the words you typed and attached to
+          nobody.
+        </li>
+        <li>
+          <strong>A saved video moment.</strong> The server fetches the
+          video's public preview image from YouTube on your behalf and passes
+          it to your browser, where it is stored. Nothing about which video you
+          watched is recorded.
+        </li>
+      </ul>
+
+      <h3>What the server keeps</h3>
+
+      <ul>
+        <li>
+          <strong>Web server logs</strong> — the request line, the status code
+          and how long it took. Before any log record is written, a filter
+          rewrites IP addresses (IPv4 loses its last octet, IPv6 is cut to a
+          48-bit prefix), email addresses and document filenames out of it, so
+          the identifying version never reaches a disk or a log service
+          (<code>logging_filters.py</code>).
+        </li>
+      </ul>
+
+      <h3>No analytics, so no question to ask</h3>
+
+      <p>
+        There is no analytics on this site: no Google Analytics, no tracking
+        pixel, no visitor counter and no cookie banner, because there is nothing
+        for a banner to ask about. Earlier versions offered Google Analytics as
+        an opt-in. Version 2 removed it altogether.
+      </p>
+
+      <h2>Why we are allowed to</h2>
+
+      <ul>
+        <li>
+          <strong>Converting the file you asked us to convert: the request
+          itself.</strong> Art. 6(1)(b) where a contract for this free service
+          exists, and Art. 6(1)(f) otherwise. The processing lasts as long as
+          the request.
+        </li>
+        <li>
+          <strong>Security and abuse logs: legitimate interests.</strong>
+          Art. 6(1)(f). The interest is keeping the site up; the balancing test
+          is what the redaction filter is for, because the logs are stripped of
+          identifiers before they are written.
+        </li>
+      </ul>
+
+      <h2>Where it goes</h2>
+
+      <p>
+        Two companies can receive anything at all, and one of them only if you
+        ask for a lecture.
+      </p>
+
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable table">
+        <table>
+          <caption>Everyone outside Inkyscib who receives data, and when.</caption>
+          <thead>
+            <tr>
+              <th scope="col">Who</th>
+              <th scope="col">What they receive</th>
+              <th scope="col">When</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>The hosting provider</td>
+              <td>The request itself: address, page, timing. Standard for any website.</td>
+              <td>Every visit</td>
+            </tr>
+            <tr>
+              <td>Google Ireland Limited / Google LLC — YouTube</td>
+              <td>Your IP address and the player's own data, as Google's terms describe.</td>
+              <td>Only when you open a lecture</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        <strong>Google Fonts and Google Analytics have both been removed.</strong>
+        The typefaces are served from this site and nothing measures visits, so
+        a visit with no lecture opened makes no third-party request at all.
+      </p>
+
+      <p>
+        Nothing is sold. Nothing is shared for advertising. There is no
+        advertising network, no data broker, no CRM, no email list and no
+        profiling of any kind. Where the YouTube player sends data to Google outside the EEA or the
+        UK, that transfer relies on the EU–US Data Privacy Framework and on
+        Google's standard contractual clauses.
+      </p>
+
+      <h2>How long we keep it</h2>
+
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable table">
+        <table>
+          <caption>Retention, by store.</caption>
+          <thead>
+            <tr>
+              <th scope="col">What</th>
+              <th scope="col">How long</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Your notes, drawings and preferences</td>
+              <td>Until you clear them. They are on your device, not ours.</td>
+            </tr>
+            <tr>
+              <td>An imported PDF or deck on the server</td>
+              <td>The seconds the conversion takes, then deleted with its temporary directory</td>
+            </tr>
+            <tr>
+              <td>A lecture search in the server's memory</td>
+              <td>10 minutes</td>
+            </tr>
+            <tr>
+              <td>Video preview data in the server's memory</td>
+              <td>30 minutes</td>
+            </tr>
+            <tr>
+              <td>Web server logs</td>
+              <td>30 days, already stripped of identifiers</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Your rights</h2>
+
+      <p>
+        For everything that matters — your notes, your drawings, your notebooks
+        and your settings — you do not need to ask us, and you do not have to
+        wait 30 days. The data is on your machine, so access, portability and
+        erasure are two controls on this page. That is also the honest limit of
+        our power: we cannot delete your work for you, because we cannot reach
+        it.
+      </p>
+
+      <div class="privacy-controls">
+
+        <div class="privacy-control">
+          <button type="button" id="exportEverything">Download everything this browser holds</button>
+          <p>
+            Your right of access and to portability, in a machine-readable file:
+            GDPR and UK GDPR Art. 15 and Art. 20, DPDP §11, CPRA "right to know",
+            LGPD Art. 18(II), PIPEDA Principle 9, Australian Privacy Principle 12
+            and Singapore's PDPA access obligation.
+          </p>
+        </div>
+
+        <div class="privacy-control">
+          <button type="button" id="eraseEverything" class="destructive">Erase everything in this browser</button>
+          <p>
+            Your right to erasure: GDPR and UK GDPR Art. 17, DPDP §12(3), CPRA
+            "right to delete", LGPD Art. 18(VI). It clears every store this site
+            uses and cannot be undone, so export a backup first.
+          </p>
+        </div>
+
+      </div>
+
+      <h3>Rights we have to handle ourselves</h3>
+
+      <p>
+        One record is on the server and out of your reach: the redacted web
+        server logs. Ask us about it — access, correction, erasure,
+        restriction, objection, or a copy — and we will answer within 30 days,
+        which is the window GDPR Art. 12(3), the UK GDPR, DPDP §13 and the CPRA
+        all set. Because the logs are stripped of identifiers before they are
+        written, we will usually have to tell you that we cannot find anything
+        belonging to you in them, and that is not an evasion: it is the design.
+      </p>
+
+      <h3>Which law gives you which right</h3>
+
+      <ul>
+        <li>
+          <strong>EU and EEA — GDPR.</strong> Access, rectification, erasure,
+          restriction, portability and objection.
+        </li>
+        <li>
+          <strong>United Kingdom — UK GDPR</strong> and the Data Protection Act
+          2018. The same set.
+        </li>
+        <li>
+          <strong>India — the Digital Personal Data Protection Act, 2023.</strong>
+          Access to a summary, correction and completion, erasure, nomination,
+          and grievance redressal (§11–§14). The Act is passed and is being
+          brought into force through rules; this policy follows it as written.
+        </li>
+        <li>
+          <strong>California — CCPA as amended by the CPRA.</strong> Know,
+          delete, correct, opt out of sale or sharing, and limit the use of
+          sensitive information. We do not sell or share personal information,
+          and we collect no sensitive categories, so there is nothing
+          to opt out of.
+        </li>
+        <li>
+          <strong>Virginia, Colorado, Connecticut and Utah — VCDPA, CPA, CTDPA
+          and UCPA.</strong> Access, deletion, correction, portability, and
+          opt-out of targeted advertising and profiling. There is no targeted
+          advertising or profiling here to opt out of.
+        </li>
+        <li>
+          <strong>Brazil — LGPD.</strong> The Art. 18 rights, including
+          confirmation, access, correction, anonymisation, deletion and
+          information about sharing.
+        </li>
+        <li>
+          <strong>Canada — PIPEDA.</strong> Access to your information and the
+          right to challenge its accuracy and our handling of it.
+        </li>
+        <li>
+          <strong>Australia — the Privacy Act 1988</strong> and the Australian
+          Privacy Principles. Anonymous use is not an option here, it is the only
+          mode: there is no account to create (APP 2), and APP 12 and APP 13
+          cover access and correction.
+        </li>
+        <li>
+          <strong>Singapore — the PDPA.</strong> Access, correction, and the
+          retention limits listed above.
+        </li>
+      </ul>
+
+      <h2>Children</h2>
+
+      <p>
+        Inkyscib is built for students, so this matters more here than on most
+        sites. There are no advertisements, no profiles, no behavioural tracking
+        and no recommendation engine — for anyone, of any age. There is no
+        analytics either.
+      </p>
+
+      <p>
+        Under India's Digital Personal Data Protection Act, 2023, everyone under
+        18 is a child, and tracking, behavioural monitoring and targeted
+        advertising directed at children are prohibited outright (§9). Nothing
+        here does any of those things. In the United States, COPPA applies to
+        children under 13; we knowingly collect nothing from anyone, which
+        includes them.
+      </p>
+
+      <h2>Complaints</h2>
+
+      <p>
+        Please tell us first, so we can fix it. You do not have to, and you can
+        go straight to a regulator:
+      </p>
+
+      <ul>
+        <li>
+          United Kingdom — the
+          <a href="https://ico.org.uk/make-a-complaint/" rel="noopener noreferrer" target="_blank">Information Commissioner's Office</a>.
+        </li>
+        <li>
+          EU and EEA — your national supervisory authority, listed by the
+          <a href="https://www.edpb.europa.eu/about-edpb/about-edpb/members_en" rel="noopener noreferrer" target="_blank">European Data Protection Board</a>.
+        </li>
+        <li>
+          India — the Data Protection Board of India, once it is constituted
+          under the Act, via the
+          <a href="https://www.meity.gov.in/" rel="noopener noreferrer" target="_blank">Ministry of Electronics and Information Technology</a>.
+        </li>
+        <li>
+          Elsewhere — your own data protection authority; the rights listed above
+          are the ones your law gives you, not ones we grant.
+        </li>
+      </ul>
+
+      <h2>Who we are, and how to reach us</h2>
+
+      <p>
+        Inkyscib is built and run by one person, Kshitiz Kumar Sinha, in Ranchi,
+        India, who is the data controller — or, in the language of the Indian
+        Act, the data fiduciary. There is no company, no data protection officer
+        and no support desk, because at this size neither GDPR Art. 37 nor the
+        DPDP Act requires one; if that changes, this section changes with it.
+      </p>
+
+      <p>
+        <strong>Privacy contact: to be set before this page is published.</strong>
+        A monitored address for rights requests and privacy questions is required
+        here, and the placeholder is deliberate rather than an oversight — see
+        <code>docs/legal/README.md</code>. Until it is filled in, the public
+        route is
+        <a href="https://github.com/SalajPro" rel="noopener noreferrer" target="_blank">github.com/SalajPro</a>.
+        We answer rights requests within 30 days.
+      </p>
+
+      <h2>Changes to this policy</h2>
+
+      <p>
+        The date at the top of this page is the only version marker. The events that force a re-read of this document are listed
+        in <code>docs/legal/README.md</code> in the source.
+      </p>
+
+{% endblock %}
+
+{% block after_main %}
+  {# The two controls above are the whole of Art. 15, 17 and 20 for this
+     product, so the script that implements them ships with the page that
+     carries them rather than site-wide. #}
+  <script src="{{ url_for('static', filename='js/privacy-controls.js', v='privacy-1') }}" defer></script>
+{% endblock %}

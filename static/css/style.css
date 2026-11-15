@@ -270,7 +270,7 @@ a {
   font-size: clamp(4.4rem, 16vw, 13.2rem);
   line-height: 0.82;
   letter-spacing: 0;
-  font-weight: 950;
+  font-weight: 900;
   color: var(--text);
   text-shadow: 0 30px 80px var(--accent-wash);
 }

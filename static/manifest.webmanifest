@@ -2,12 +2,12 @@
   "id": "/write",
   "name": "Inkyscib",
   "short_name": "Inkyscib",
-  "description": "Fast local-first notes, documents, focus tools, and daily planning.",
+  "description": "A free study canvas: handwriting, live geometry and PDF annotation that works offline.",
   "start_url": "/write",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#10131d",
-  "theme_color": "#6366f1",
+  "background_color": "#0E2238",
+  "theme_color": "#0E2238",
   "prefer_related_applications": false,
   "icons": [
     {

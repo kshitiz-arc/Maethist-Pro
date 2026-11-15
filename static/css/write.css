@@ -173,10 +173,6 @@ body::before {
   color: #5b6d99;
 }
 
-.tool-dock-title {
-  display: none;
-}
-
 .tool-dock-body {
   flex: 1;
   min-height: 0;
@@ -184,13 +180,41 @@ body::before {
   padding-right: 0;
 }
 
+/* The dock scrolls -- the compass panel is ~950px of content in ~700px of
+   frame -- but the scrollbar was set to zero width, so there was nothing at
+   all to say the rest existed. A thin bar is the position cue; the mask fade
+   below is the "there is more" cue. */
+.tool-dock-body {
+  scrollbar-width: thin;
+  scrollbar-color: var(--w-4) transparent;
+}
+
 .tool-dock-body::-webkit-scrollbar {
-  width: 0;
+  width: 6px;
+}
+
+.tool-dock-body::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .tool-dock-body::-webkit-scrollbar-thumb {
-  background: var(--w-3);
+  background: var(--w-4);
   border-radius: var(--r-pill);
+}
+
+.tool-dock-body:hover::-webkit-scrollbar-thumb {
+  background: var(--w-5);
+}
+
+/* Faded against the panel rather than covered by a gradient, so it needs no
+   colour of its own and cannot mismatch the surface in either theme.
+   `has-more` is set only while there is something below the fold. */
+.tool-dock.has-more .tool-dock-body,
+/* The same cue for the floating panel, which is its own scroller and had
+   none -- on the target tablet there is no dock for the class to land on. */
+.tool-options.has-more {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 38px), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 38px), transparent);
 }
 
 .tool-dock-empty {
@@ -217,69 +241,79 @@ body::before {
   gap: 10px;
 }
 
-.tool-dock .tool-option-section {
+/* Scoped to .tool-options, not .tool-dock: there is no dock below 1180px, so
+   everything written for one left the target tablet on the bare base layer --
+   centred headings at two-thirds opacity, a vertical slider, ragged swatches.
+   One rule set now serves both layouts. */
+.tool-options .tool-option-section {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 0 0;
+  align-items: stretch;
+  gap: var(--s2);
+  padding: 12px 0 0;
   border-radius: 0;
   background: transparent;
   border: none;
   border-top: 1px solid var(--w-2);
 }
 
-.tool-dock .tool-option-section:first-child {
+.tool-options .tool-option-section:first-child {
   padding-top: 0;
   border-top: none;
 }
 
-[data-theme="light"] .tool-dock .tool-option-section {
-  border-top-color: rgba(89, 104, 129, 0.14);
-}
+
 
 .tool-option-heading,
-.tool-dock .tool-options label>span {
-  /* 0.6rem computed to 11.2px. Panel labels are the map of the tool. */
+.tool-options label>span {
+  /* Panel labels are the map of the tool, so they are read at full strength
+     and left-aligned. They were centred at 0.66 opacity everywhere the rail
+     did not reach, which is the whole of the target device. */
   font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  opacity: 0.66;
-  text-align: center;
+  color: var(--ink-2);
+  opacity: 1;
+  text-align: left;
 }
 
-.tool-dock .tool-options label {
+.tool-options label {
   margin: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 10px;
   width: 100%;
 }
 
 .tool-size-controls {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 6px;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
   align-items: center;
-  justify-items: center;
+  justify-items: stretch;
   width: 100%;
 }
 
-.tool-dock .tool-options input[type="range"] {
-  width: 16px;
-  height: 92px;
-  margin: 0 auto;
-  writing-mode: vertical-lr;
-  direction: rtl;
-  -webkit-appearance: slider-vertical;
+.tool-options input[type="range"] {
+  width: 100%;
+  height: 24px;
+  margin: 0;
+  writing-mode: horizontal-tb;
+  direction: ltr;
+  -webkit-appearance: auto;
+  appearance: auto;
+  /* Without this the slider on the target device is browser-default blue:
+     accent-color was only ever set inside the >=1180px rail. */
+  accent-color: var(--accent);
 }
 
-.tool-dock .tool-options input[type="number"] {
+.tool-options input[type="number"] {
   display: block;
-  width: 42px;
-  height: 24px;
+  width: 56px;
+  height: 32px;
   padding: 2px 4px;
   border-radius: var(--r-md);
   border: 1px solid var(--w-2);
@@ -287,17 +321,17 @@ body::before {
   color: inherit;
   box-sizing: border-box;
   text-align: center;
-  font-size: 0.7rem;
+  font-size: 0.78rem;
 }
 
-[data-theme="light"] .tool-dock .tool-options input[type="number"] {
+[data-theme="light"] .tool-options input[type="number"] {
   border-color: rgba(89, 104, 129, 0.12);
   background: rgba(255, 255, 255, 0.72);
 }
 
-.tool-dock .tool-options input[type="color"] {
-  width: 24px;
-  height: 24px;
+.tool-options input[type="color"] {
+  width: 34px;
+  height: 34px;
   padding: 0;
   border: none;
   border-radius: var(--r-md);
@@ -305,25 +339,61 @@ body::before {
   cursor: pointer;
 }
 
-.tool-dock .colors {
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
+/* 43px circles with a 2px gap, wrapping ragged against the panel edge. A
+   fixed four-column grid gives them room, lines the second row up under the
+   first instead of leaving an orphan, and takes each swatch past the 44px
+   target this file sets for every other control. */
+.tool-options .colors {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s2);
+  justify-items: center;
   margin-bottom: 0;
 }
 
-.tool-dock .color-swatch {
-  width: 18px;
-  height: 18px;
+.tool-options .color-swatch {
+  /* border-box, or the 2-3px border is added outside the 52px and each swatch
+     comes out wider than its grid cell -- which pushed the leftmost column
+     past the panel edge and clipped it. */
+  box-sizing: border-box;
+  width: 100%;
+  /* 44 is both the tap-target floor and what the selected swatch can afford:
+     it is scale(1.12) when active, so the real footprint is 49.3px in a ~52px
+     cell. At 52 (and still at 46) the first column spilled past the panel. */
+  max-width: 44px;
+  height: auto;
+  aspect-ratio: 1;
 }
 
+/* The picker and the hex field share the row, not a swatch cell: the field
+   wants ~140px and a 1fr cell is ~52px, which pushed it 35px past the panel
+   edge. Pinning the picker to column 1 starts a fresh row rather than leaving
+   it stranded in whatever cell the swatches happened to end on. */
+.tool-options .colors > input[type="color"] {
+  box-sizing: border-box;
+  grid-column: 1;
+  width: 100%;
+  max-width: 52px;
+  aspect-ratio: 1;
+  height: auto;
+}
+
+.tool-options .colors > .hex-field {
+  grid-column: 2 / -1;
+  justify-self: stretch;
+  min-width: 0;
+}
+
+/* Rows, not a centred column: five arrow tips stacked into a tower on every
+   screen narrower than the rail. */
 .line-types,
-.arrow-styles,
-.triangle-types {
+.arrow-styles {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  justify-content: flex-start;
+  gap: var(--s2);
 }
 
 /* A centred flex-wrap put five items into a ragged 2-2-1 that read as one
@@ -332,17 +402,22 @@ body::before {
    each style its own cell, aligned to a column instead of floating. */
 .pen-styles {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
   gap: var(--s2);
-  max-width: 240px;
+  max-width: none;
 }
 
+/* --tap, not 30x26: the Line panel's line styles and arrow tips were the only
+   buttons left on the old size, at 30x26px against DESIGN.md's 44px floor --
+   seven targets a finger has to hit while holding a stylus. Five tips at 44px
+   plus gaps still fit the panel's 280px row. .pen-style-btn below restates
+   its own size. */
 .line-type-btn,
 .arrow-style-btn,
-.triangle-type-btn,
 .pen-style-btn {
-  width: 30px;
-  height: 26px;
+  min-width: var(--tap);
+  min-height: var(--tap);
   border: 1px solid var(--w-2);
   background: var(--w-1);
   color: inherit;
@@ -356,21 +431,18 @@ body::before {
 
 .line-type-btn:hover,
 .arrow-style-btn:hover,
-.triangle-type-btn:hover,
 .pen-style-btn:hover {
   background: var(--w-2);
   transform: none;
 }
 
 .line-type-btn,
-.arrow-style-btn,
-.triangle-type-btn {
+.arrow-style-btn {
   border-radius: var(--r-lg);
 }
 
 .line-type-btn.active,
 .arrow-style-btn.active,
-.triangle-type-btn.active,
 .pen-style-btn.active {
   border-color: var(--accent);
   background: var(--accent-wash);
@@ -397,7 +469,6 @@ body::before {
 
 [data-theme="light"] .line-type-btn,
 [data-theme="light"] .arrow-style-btn,
-[data-theme="light"] .triangle-type-btn,
 [data-theme="light"] .pen-style-btn {
   border-color: rgba(89, 104, 129, 0.12);
   background: rgba(91, 109, 153, 0.04);
@@ -405,15 +476,8 @@ body::before {
 
 [data-theme="light"] .line-type-btn:hover,
 [data-theme="light"] .arrow-style-btn:hover,
-[data-theme="light"] .triangle-type-btn:hover,
 [data-theme="light"] .pen-style-btn:hover {
   background: rgba(91, 109, 153, 0.12);
-}
-
-.tool-dock .shapes {
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 0;
 }
 
 /* Removed: a two-column 22px grid with 22px buttons, left over from when the
@@ -526,6 +590,37 @@ body.toolbar-relocating .toolbar .tool {
   background: rgba(100, 100, 100, 0.1);
 }
 
+/* Clear canvas sits next to Undo again, so it cannot look like Undo. It stays
+   recessive at rest -- a permanently red button in the chrome is just noise --
+   and commits to the warning colour the moment it is aimed at, in the same hue
+   the clear confirm modal's destructive button already uses. The effect rides
+   on colour rather than opacity because colour is the property both this rule
+   and the rail chrome already transition. The rail layout restates this at its
+   own specificity in editor-chrome.css; this pair covers the wrapped bar below
+   the 1180px breakpoint. */
+.tool-destructive {
+  --tool-destructive-ink: #ff985d;
+  --tool-destructive-wash: rgba(255, 151, 73, 0.14);
+  transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+}
+
+.tool-destructive:hover,
+.tool-destructive:focus-visible {
+  color: var(--tool-destructive-ink);
+  background: var(--tool-destructive-wash);
+}
+
+[data-theme="light"] .tool-destructive {
+  --tool-destructive-ink: #b4530a;
+  --tool-destructive-wash: rgba(180, 83, 10, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-destructive {
+    transition: none;
+  }
+}
+
 .toolbar-divider {
   flex-shrink: 0;
   align-self: stretch;
@@ -597,6 +692,44 @@ body.toolbar-relocating .toolbar .tool {
   fill: rgba(226, 232, 240, 0.72);
 }
 
+/* Built on the core tokens, following shape-picker.css: 34px was under the
+   44px floor DESIGN.md sets, the 8px radius was off the 3/6/10 scale, and the
+   selected state was indigo (rgba(133,126,255,.46) on rgba(106,96,255,.2)) in
+   an ochre system. The state selector is [aria-pressed], which the markup
+   already carries, rather than a class JS has to keep in sync. */
+.eraser-mode-btn {
+  box-sizing: border-box;
+  min-height: var(--tap);
+  padding: var(--s1) var(--s2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  color: var(--ink);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--fast) ease-out,
+    border-color var(--fast) ease-out;
+}
+
+.eraser-mode-btn:hover {
+  background: var(--raised);
+}
+
+.eraser-mode-btn.active,
+.eraser-mode-btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--ink);
+  background: var(--accent-wash);
+}
+
+.eraser-mode-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 .highlighter-chisel,
 .highlighter-swatch {
   stroke: #facc15;
@@ -632,65 +765,7 @@ body.toolbar-relocating .toolbar .tool {
   pointer-events: none;
 }
 
-.shape-tool-svg {
-  position: absolute;
-  inset: 0;
-  display: block;
-  opacity: 0;
-  transform: scale(0.52) rotate(-18deg);
-  transform-origin: 50% 50%;
-  transition:
-    opacity 0.18s ease,
-    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-  overflow: visible;
-}
-
-.shape-tool-svg * {
-  stroke-dasharray: 72;
-  stroke-dashoffset: 0;
-}
-
-.shape-tool[data-shape="circle"] .shape-tool-circle,
-.shape-tool[data-shape="square"] .shape-tool-square,
-.shape-tool[data-shape="rectangle"] .shape-tool-rectangle,
-.shape-tool[data-shape="triangle"] .shape-tool-triangle,
-.shape-tool[data-shape="parallelogram"] .shape-tool-parallelogram,
-.shape-tool[data-shape="rhombus"] .shape-tool-rhombus,
-.shape-tool[data-shape="kite"] .shape-tool-kite {
-  opacity: 1;
-  transform: scale(1) rotate(0deg);
-}
-
-.shape-tool.is-changing {
-  animation: shapeToolPop 340ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.shape-tool.is-changing .shape-tool-svg {
-  opacity: 0;
-  transform: scale(0.52) rotate(-18deg);
-  transition: none;
-}
-
-.shape-tool.is-changing[data-shape="circle"] .shape-tool-circle,
-.shape-tool.is-changing[data-shape="square"] .shape-tool-square,
-.shape-tool.is-changing[data-shape="rectangle"] .shape-tool-rectangle,
-.shape-tool.is-changing[data-shape="triangle"] .shape-tool-triangle,
-.shape-tool.is-changing[data-shape="parallelogram"] .shape-tool-parallelogram,
-.shape-tool.is-changing[data-shape="rhombus"] .shape-tool-rhombus,
-.shape-tool.is-changing[data-shape="kite"] .shape-tool-kite {
-  opacity: 1;
-  transform: scale(1) rotate(0deg);
-}
-
-.shape-tool.is-changing[data-shape="circle"] .shape-tool-circle *,
-.shape-tool.is-changing[data-shape="square"] .shape-tool-square *,
-.shape-tool.is-changing[data-shape="rectangle"] .shape-tool-rectangle *,
-.shape-tool.is-changing[data-shape="triangle"] .shape-tool-triangle *,
-.shape-tool.is-changing[data-shape="parallelogram"] .shape-tool-parallelogram *,
-.shape-tool.is-changing[data-shape="rhombus"] .shape-tool-rhombus *,
-.shape-tool.is-changing[data-shape="kite"] .shape-tool-kite * {
-  animation: shapeToolTrace 520ms ease both;
-}
+/* Which icon the shape button shows, and how it changes, is in shape-picker.css. */
 
 @keyframes toolSelectPop {
   0% {
@@ -744,38 +819,10 @@ body.toolbar-location-down .tool {
   }
 }
 
-@keyframes shapeToolPop {
-  0% {
-    transform: translateY(0) scale(0.92);
-  }
-
-  56% {
-    transform: translateY(-1px) scale(1.12);
-  }
-
-  100% {
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes shapeToolTrace {
-  0% {
-    stroke-dashoffset: 72;
-    opacity: 0.24;
-  }
-
-  100% {
-    stroke-dashoffset: 0;
-    opacity: 1;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
 
   .tool-icon,
-  .shape-tool,
-  .shape-tool-svg,
-  .shape-tool-svg * {
+  .shape-tool {
     animation: none !important;
     transition: none !important;
   }
@@ -951,12 +998,13 @@ body.toolbar-location-up.toolbar-relocating .toolbar .tool {
 }
 
 
+/* Placement and visibility only. This block also set background, padding,
+   border-radius and max-width, every one of which the second .tool-options
+   block 3,800 lines below overrode -- same selector, same file, dead on
+   arrival. Removed rather than left to look load-bearing. */
 .tool-options {
   display: none;
   flex-direction: column;
-  background: rgba(18, 18, 18, 0.95);
-  padding: 6px;
-  border-radius: var(--r-md);
 
   position: absolute;
   top: 60px;
@@ -964,8 +1012,7 @@ body.toolbar-location-up.toolbar-relocating .toolbar .tool {
   transform: translateX(-50%);
   z-index: 11;
 
-  max-width: 250px;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 [data-theme="light"] .tool-options {
@@ -988,8 +1035,13 @@ body.toolbar-location-up.toolbar-relocating .toolbar .tool {
 }
 
 .color-swatch {
-  width: 20px;
-  height: 20px;
+  /* border-box everywhere: the 2-3px border belongs inside the declared size.
+     With content-box a swatch in a grid cell came out wider than the cell and
+     the leftmost column was clipped by the panel edge. Sizes below are the
+     rendered diameters, border included. */
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   cursor: pointer;
   border: 2px solid transparent;
@@ -1033,6 +1085,12 @@ footer {
   position: fixed;
   bottom: 10px;
   width: 100%;
+  /* width:100% on a fixed element resolves against the viewport, so without
+     this the 20px padding was added *outside* it: 1000px of footer in a 960px
+     tablet. Nothing scrolled, because the overflow was off-screen rather than
+     in flow, so the only symptom was the last item -- "Do Not Sell or Share My
+     Personal Information" -- losing its final 20px off the right edge. */
+  box-sizing: border-box;
   display: flex;
   justify-content: space-between;
   padding: 0 20px;
@@ -1112,37 +1170,6 @@ footer a:hover {
 }
 
 
-.shapes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 8px;
-  justify-content: center;
-}
-
-.shape-btn {
-  width: 32px;
-  height: 32px;
-  border: 2px solid transparent;
-  background: rgba(100, 100, 100, 0.2);
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  font-size: 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: inherit;
-  transition: all 0.2s;
-}
-
-.shape-btn:hover {
-  background: rgba(100, 100, 100, 0.4);
-}
-
-.shape-btn.active {
-  border-color: var(--accent);
-  background: var(--accent-wash);
-}
 
 
 .clear-confirm-modal {
@@ -1174,13 +1201,12 @@ body.canvas-clearing .side-menu {
 
 .clear-confirm-panel {
   position: relative;
-  width: min(100%, 430px);
-  padding: 28px 24px 24px;
+  width: min(100%, 420px);
+  padding: var(--s5);
   border-radius: var(--r-lg);
   overflow: hidden;
-  background:
-    linear-gradient(180deg, rgba(19, 21, 30, 0.98), rgba(8, 10, 16, 0.96));
-  border: 1px solid var(--w-3);
+  background: var(--surface);
+  border: 1px solid var(--rule);
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
   transform: translateY(24px) scale(0.94);
   transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.26s ease;
@@ -1191,21 +1217,9 @@ body.canvas-clearing .side-menu {
 }
 
 .clear-confirm-modal.is-confirming .clear-confirm-panel {
-  transform: scale(0.98);
-  box-shadow: 0 18px 44px rgba(255, 149, 73, 0.24);
+  transform: scale(0.99);
 }
 
-.clear-confirm-panel::before {
-  content: "";
-  position: absolute;
-  inset: -30% -10% auto;
-  height: 240px;
-  background:
-    radial-gradient(circle at center, rgba(255, 196, 92, 0.24), transparent 62%),
-    radial-gradient(circle at 75% 30%, rgba(108, 137, 255, 0.18), transparent 42%);
-  animation: clear-modal-drift 7s ease-in-out infinite alternate;
-  pointer-events: none;
-}
 
 .clear-confirm-panel>* {
   position: relative;
@@ -1231,165 +1245,117 @@ body.canvas-clearing .side-menu {
   transform: rotate(90deg);
 }
 
-.clear-confirm-hero {
-  position: relative;
+/* An editorial dialog rather than a generic centred alert: the mark sits
+   beside the question instead of floating above it, and the decision is
+   separated from the explanation by a hairline. No gradient, no glow, no
+   ornament -- the weight comes from type and spacing. */
+.clear-confirm-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+}
+
+.clear-confirm-mark {
+  flex: 0 0 auto;
   display: grid;
   place-items: center;
-  margin-bottom: 12px;
-  min-height: 130px;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-md);
+  font-size: 1.05rem;
+  color: var(--accent);
+  background: var(--accent-wash);
 }
 
-.clear-confirm-orb {
-  width: 90px;
-  height: 90px;
-  border-radius: var(--r-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  color: #ffd36b;
-  background:
-    radial-gradient(circle at 30% 30%, rgba(255, 243, 198, 0.42), rgba(255, 168, 86, 0.12) 48%, var(--w-1) 72%);
-  border: 1px solid rgba(255, 211, 107, 0.28);
-  box-shadow:
-    inset 0 1px 0 var(--w-5),
-    0 14px 34px rgba(255, 153, 77, 0.18);
-  animation: clear-orb-float 3.6s ease-in-out infinite;
+[data-theme="dark"] .clear-confirm-mark {
+  background: var(--raised);
 }
 
-.clear-confirm-rings,
-.clear-confirm-rings::before,
-.clear-confirm-rings::after {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  content: "";
-  pointer-events: none;
-}
-
-.clear-confirm-rings {
-  width: 128px;
-  height: 128px;
-  border: 1px solid rgba(255, 211, 107, 0.24);
-  animation: clear-ring-pulse 2.8s ease-out infinite;
-}
-
-.clear-confirm-rings::before {
-  width: 160px;
-  height: 160px;
-  border: 1px solid rgba(255, 211, 107, 0.12);
-  animation: clear-ring-pulse 2.8s ease-out infinite 0.25s;
-}
-
-.clear-confirm-rings::after {
-  width: 192px;
-  height: 192px;
-  border: 1px solid rgba(108, 137, 255, 0.12);
-  animation: clear-ring-pulse 2.8s ease-out infinite 0.5s;
-}
-
-.clear-confirm-kicker {
-  margin: 0 0 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.22em;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #ffd36b;
-  text-align: center;
+.clear-confirm-headings {
+  min-width: 0;
 }
 
 .clear-confirm-panel h3 {
   margin: 0;
-  font-size: 1.8rem;
-  text-align: center;
+  font-size: 1.35rem;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  text-align: left;
 }
 
 .clear-confirm-copy {
-  margin: 12px 0 0;
-  font-size: 0.98rem;
-  line-height: 1.6;
-  text-align: center;
-  opacity: 0.78;
+  margin: var(--s2) 0 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  text-align: left;
+  color: var(--ink-2);
+}
+
+[data-theme="dark"] .clear-confirm-copy {
+  color: var(--a-8, rgba(242, 242, 238, 0.66));
 }
 
 .clear-confirm-actions {
   display: flex;
-  gap: 12px;
-  margin-top: 22px;
+  justify-content: flex-end;
+  gap: var(--s2);
+  margin-top: var(--s5);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--rule);
   flex-wrap: wrap;
 }
 
 .clear-confirm-btn {
-  flex: 1 1 170px;
-  min-height: 50px;
-  border-radius: var(--r-lg);
+  flex: 0 1 auto;
+  min-height: 44px;
+  padding: 0 var(--s4);
+  border-radius: var(--r-md);
   border: 1px solid transparent;
-  font-weight: 700;
-  font-size: 0.96rem;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-}
-
-.clear-confirm-btn:hover {
-  transform: translateY(-2px);
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
 
 .clear-confirm-btn:focus-visible,
 .clear-confirm-close:focus-visible {
-  outline: 2px solid #ffd36b;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
 .clear-confirm-cancel {
   color: inherit;
-  background: var(--w-2);
-  border-color: var(--w-3);
+  background: transparent;
+  border-color: var(--rule);
 }
 
 .clear-confirm-cancel:hover {
-  background: var(--w-4);
+  background: var(--raised);
 }
 
+/* Solid, one accent. This was a 135deg amber gradient under a coloured glow,
+   which is the first thing that reads as generated rather than designed. */
 .clear-confirm-danger {
-  color: #101217;
-  background: linear-gradient(135deg, #ffd36b, #ff985d);
-  box-shadow: 0 14px 28px rgba(255, 151, 73, 0.28);
+  color: var(--on-accent);
+  background: var(--accent);
 }
 
 .clear-confirm-danger:hover {
-  box-shadow: 0 18px 34px rgba(255, 151, 73, 0.34);
+  background: color-mix(in srgb, var(--accent) 88%, #000);
 }
 
 [data-theme="light"] .clear-confirm-modal {
   background: rgba(235, 238, 245, 0.6);
 }
 
-[data-theme="light"] .clear-confirm-panel {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 244, 237, 0.96));
-  border-color: rgba(125, 98, 45, 0.12);
-  box-shadow: 0 28px 70px rgba(93, 73, 40, 0.18);
-}
-
-[data-theme="light"] .clear-confirm-close,
-[data-theme="light"] .clear-confirm-cancel {
-  background: rgba(94, 74, 42, 0.08);
-  border-color: rgba(94, 74, 42, 0.1);
-}
-
-[data-theme="light"] .clear-confirm-close:hover,
-[data-theme="light"] .clear-confirm-cancel:hover {
-  background: rgba(94, 74, 42, 0.12);
-}
-
-[data-theme="light"] .clear-confirm-copy {
-  opacity: 0.68;
+/* The panel and its quiet controls are token-driven now, so light mode needs
+   no separate palette. What is left here is only the scrim. */
+[data-theme="light"] .clear-confirm-close {
+  background: var(--raised);
 }
 
 @media (max-width: 560px) {
@@ -1402,10 +1368,6 @@ body.canvas-clearing .side-menu {
     border-radius: var(--r-lg);
   }
 
-  .clear-confirm-hero {
-    min-height: 116px;
-  }
-
   .clear-confirm-panel h3 {
     font-size: 1.55rem;
   }
@@ -1414,45 +1376,6 @@ body.canvas-clearing .side-menu {
     flex-direction: column;
   }
 }
-
-@keyframes clear-modal-drift {
-  0% {
-    transform: translate3d(-12px, -6px, 0) scale(0.98);
-  }
-
-  100% {
-    transform: translate3d(12px, 10px, 0) scale(1.04);
-  }
-}
-
-@keyframes clear-orb-float {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-8px);
-  }
-}
-
-@keyframes clear-ring-pulse {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.82);
-  }
-
-  28% {
-    opacity: 0.5;
-  }
-
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(1.16);
-  }
-}
-
 
 .menu-btn {
   position: fixed;
@@ -1631,6 +1554,31 @@ body.menu-open #sideMenu.side-menu {
   background: var(--d-1);
 }
 
+/* Pattern moved out of the hamburger drawer and into the View cluster, where
+   DESIGN.md's zone rule puts it: it is a property of the view. Anchored under
+   its button and right-aligned so it never runs off the bar, and the canvas
+   stays visible behind it -- which is the point. A backstage pane covers the
+   very thing you are choosing a pattern for. */
+.pattern-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* The icon plus the popover say enough in a compact bar; the swatch stays in
+   the DOM because the inline pattern script paints it. */
+.pattern-control .pattern-preview {
+  display: none;
+}
+
+.pattern-control .pattern-pop {
+  left: auto;
+  right: 0;
+  top: calc(100% + 8px);
+  width: max-content;
+  min-width: 172px;
+}
+
 .pattern-pop {
   position: absolute;
   left: 0;
@@ -1640,9 +1588,11 @@ body.menu-open #sideMenu.side-menu {
   padding: 10px;
   z-index: 10001;
 
-  background: rgba(12, 12, 12, 0.96);
+  /* Was 0.96 alpha over a 14px backdrop blur: 4% of the backdrop showing
+     through a blur nobody can resolve, at the price of a compositing layer.
+     Opaque instead, and the blur goes. */
+  background: #0C0C0C;
   border: 1px solid var(--w-3);
-  backdrop-filter: blur(14px);
 
   transform: translateY(-6px);
   opacity: 0;
@@ -1651,7 +1601,7 @@ body.menu-open #sideMenu.side-menu {
 }
 
 [data-theme="light"] .pattern-pop {
-  background: rgba(250, 250, 250, 0.96);
+  background: #FAFAFA;
   border: 1px solid var(--d-3);
 }
 
@@ -2454,7 +2404,7 @@ body.notebook-active #pptImportBtn {
 }
 
 [data-theme="light"] .ppt-deck-kicker {
-  color: #4f46e5;
+  color: var(--accent);
 }
 
 .ppt-deck-panel h3 {
@@ -2956,6 +2906,39 @@ body.yt-runtime-active .tool.yt-playing {
   min-height: 0;
   background: #0a0a0a;
   transition: opacity 0.2s ease;
+}
+
+/* "Save frame" is answered on the frame it is pressed: a camera flash over the
+   video and an accent edge, gone in a quarter of a second, while the server
+   cuts the real frame. Never takes a click from the player beneath it. */
+.yt-video-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+
+.yt-video-container.yt-shutter::after {
+  animation: ytShutter 260ms ease-out;
+}
+
+@keyframes ytShutter {
+  0% { opacity: 0; }
+  18% { opacity: 0.5; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The edge alone, held briefly: the acknowledgement without the flash. */
+  .yt-video-container.yt-shutter::after {
+    animation: none;
+    opacity: 1;
+    background: transparent;
+  }
 }
 
 .yt-embed-slot,
@@ -3595,1075 +3578,6 @@ body.yt-runtime-active .tool.yt-playing {
 }
 
 
-/* ══════════════════════════════════════════════════
-   Focus Studio (pomodoro v2)
-   ══════════════════════════════════════════════════ */
-
-.pomo-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
-  background: rgba(4, 6, 12, 0.45);
-  backdrop-filter: blur(7px);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.22s ease;
-}
-
-.pomo-overlay.active {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-[data-theme="light"] .pomo-overlay {
-  background: rgba(232, 237, 245, 0.5);
-}
-
-.pomo-panel {
-  --pomo-accent: var(--accent);
-  --pomo-accent-soft: var(--accent-wash);
-  width: min(400px, 100%);
-  max-height: min(92vh, 92svh);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  padding: 18px 20px 20px;
-  border-radius: var(--r-lg);
-  background: linear-gradient(180deg, rgba(20, 22, 32, 0.97), rgba(10, 12, 19, 0.97));
-  border: 1px solid var(--w-3);
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.45);
-  transform: translateY(16px) scale(0.97);
-  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.pomo-overlay.active .pomo-panel {
-  transform: translateY(0) scale(1);
-}
-
-[data-theme="light"] .pomo-panel {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 246, 251, 0.97));
-  border-color: var(--d-3);
-  box-shadow: 0 28px 70px rgba(91, 109, 153, 0.24);
-}
-
-.pomo-overlay[data-mode="short"] .pomo-panel {
-  --pomo-accent: #34d399;
-  --pomo-accent-soft: rgba(52, 211, 153, 0.2);
-}
-
-.pomo-overlay[data-mode="long"] .pomo-panel {
-  --pomo-accent: #fbbf24;
-  --pomo-accent-soft: rgba(251, 191, 36, 0.2);
-}
-
-.pomo-panel button,
-.pomo-pill button,
-.pomo-tab,
-.pomo-preset,
-.pomo-sound-chip {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* head */
-.pomo-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.pomo-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  font-weight: 800;
-  font-size: 1.02rem;
-  letter-spacing: 0.01em;
-}
-
-.pomo-title i {
-  color: var(--pomo-accent);
-}
-
-.pomo-head-actions {
-  display: inline-flex;
-  gap: 6px;
-}
-
-.pomo-icon-btn {
-  /* 34px was well under the 44px floor for a finger. */
-  width: var(--tap);
-  height: var(--tap);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: var(--r-lg);
-  background: var(--w-2);
-  color: inherit;
-  cursor: pointer;
-  font-size: 0.92rem;
-  transition: background 0.18s ease, transform 0.18s ease;
-}
-
-.pomo-icon-btn:hover {
-  background: var(--w-4);
-}
-
-.pomo-icon-btn.is-muted {
-  opacity: 0.55;
-}
-
-[data-theme="light"] .pomo-icon-btn {
-  background: var(--d-1);
-}
-
-[data-theme="light"] .pomo-icon-btn:hover {
-  background: var(--d-3);
-}
-
-/* settings drawer */
-.pomo-settings {
-  display: grid;
-  gap: 9px;
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  margin-bottom: 0;
-  transition: max-height 0.28s ease, opacity 0.22s ease, margin 0.22s ease;
-}
-
-.pomo-settings.open {
-  max-height: 260px;
-  opacity: 1;
-  margin-bottom: 14px;
-}
-
-.pomo-settings-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-
-.pomo-settings-grid label {
-  display: grid;
-  gap: 4px;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  opacity: 0.75;
-}
-
-.pomo-settings-grid input {
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-  padding: 8px 6px;
-  border-radius: var(--r-md);
-  border: 1px solid var(--w-4);
-  background: var(--d-5);
-  color: inherit;
-  font: inherit;
-  font-size: 0.9rem;
-  text-align: center;
-}
-
-[data-theme="light"] .pomo-settings-grid input {
-  border-color: var(--d-4);
-  background: rgba(255, 255, 255, 0.85);
-}
-
-.pomo-switch {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 0.85rem;
-  font-weight: 650;
-  cursor: pointer;
-  user-select: none;
-}
-
-.pomo-switch input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.pomo-switch span {
-  flex: 0 0 auto;
-  width: 34px;
-  height: 20px;
-  border-radius: var(--r-pill);
-  background: var(--w-4);
-  position: relative;
-  transition: background 0.2s ease;
-}
-
-[data-theme="light"] .pomo-switch span {
-  background: var(--d-4);
-}
-
-.pomo-switch span::after {
-  content: "";
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #fff;
-  transition: transform 0.2s ease;
-}
-
-.pomo-switch input:checked+span {
-  background: var(--pomo-accent);
-}
-
-.pomo-switch input:checked+span::after {
-  transform: translateX(14px);
-}
-
-/* mode tabs */
-.pomo-tabs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  padding: 4px;
-  border-radius: var(--r-lg);
-  background: var(--w-1);
-  border: 1px solid var(--w-3);
-  margin-bottom: 8px;
-}
-
-[data-theme="light"] .pomo-tabs {
-  background: var(--d-1);
-  border-color: var(--d-2);
-}
-
-.pomo-tab {
-  min-height: var(--tap);
-  border: none;
-  border-radius: var(--r-md);
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  font-weight: 750;
-  font-size: 0.84rem;
-  opacity: 0.72;
-  transition: background 0.18s ease, opacity 0.18s ease, color 0.18s ease;
-}
-
-.pomo-tab:hover {
-  opacity: 1;
-  background: var(--w-2);
-}
-
-.pomo-tab.active {
-  opacity: 1;
-  color: #fff;
-  background: var(--pomo-accent);
-  box-shadow: 0 8px 20px var(--pomo-accent-soft);
-}
-
-/* ring + time */
-.pomo-stage {
-  position: relative;
-  width: min(240px, 62vw);
-  margin: 4px auto 2px;
-  aspect-ratio: 1;
-}
-
-.pomo-ring {
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-}
-
-.pomo-ring circle {
-  fill: none;
-  stroke-width: 9;
-}
-
-.pomo-ring-track {
-  stroke: var(--w-3);
-}
-
-[data-theme="light"] .pomo-ring-track {
-  stroke: var(--d-2);
-}
-
-.pomo-ring-fill {
-  stroke: var(--pomo-accent);
-  stroke-linecap: round;
-  filter: drop-shadow(0 0 8px var(--pomo-accent-soft));
-  transition: stroke-dashoffset 0.25s linear, stroke 0.3s ease;
-}
-
-.pomo-stage-inner {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 3px;
-  text-align: center;
-}
-
-.pomo-time {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-variant-numeric: tabular-nums;
-  font-size: clamp(2.6rem, 11vw, 3.3rem);
-  font-weight: 850;
-  line-height: 1;
-  letter-spacing: 0.01em;
-}
-
-.pomo-stage-mode {
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--pomo-accent);
-}
-
-.pomo-dots {
-  display: flex;
-  gap: 6px;
-  margin-top: 5px;
-}
-
-.pomo-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--w-4);
-  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-[data-theme="light"] .pomo-dot {
-  background: var(--d-3);
-}
-
-.pomo-dot.done {
-  background: var(--pomo-accent);
-}
-
-.pomo-dot.current {
-  background: var(--pomo-accent);
-  opacity: 0.55;
-  box-shadow: 0 0 0 3px var(--pomo-accent-soft);
-  transform: scale(1.08);
-}
-
-/* controls */
-.pomo-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin: 12px 0 14px;
-}
-
-.pomo-ctrl {
-  border: none;
-  border-radius: var(--r-lg);
-  color: inherit;
-  cursor: pointer;
-  background: var(--w-2);
-  transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
-}
-
-.pomo-ctrl:hover {
-  background: var(--w-4);
-  transform: translateY(-1px);
-}
-
-[data-theme="light"] .pomo-ctrl {
-  background: var(--d-1);
-}
-
-[data-theme="light"] .pomo-ctrl:hover {
-  background: var(--d-3);
-}
-
-.pomo-reset,
-.pomo-skip {
-  width: 46px;
-  height: 46px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.95rem;
-}
-
-.pomo-main {
-  min-width: 150px;
-  min-height: 52px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  font-size: 1rem;
-  font-weight: 800;
-  color: #fff;
-  background: var(--pomo-accent);
-  box-shadow: 0 14px 30px var(--pomo-accent-soft);
-}
-
-.pomo-main:hover {
-  background: var(--pomo-accent);
-  filter: brightness(1.08);
-  box-shadow: 0 18px 36px var(--pomo-accent-soft);
-}
-
-/* keep the accent fill in light theme (beats the light .pomo-ctrl override) */
-[data-theme="light"] .pomo-ctrl.pomo-main,
-[data-theme="light"] .pomo-ctrl.pomo-main:hover {
-  background: var(--pomo-accent);
-  color: #fff;
-}
-
-/* presets */
-.pomo-presets {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-.pomo-preset {
-  min-height: var(--tap);
-  border-radius: var(--r-lg);
-  border: 1px solid var(--w-3);
-  background: var(--w-1);
-  color: inherit;
-  cursor: pointer;
-  font-weight: 750;
-  font-size: 0.8rem;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-  transition: background 0.18s ease, border-color 0.18s ease;
-}
-
-.pomo-preset em {
-  font-style: normal;
-  font-size: 0.68rem;
-  opacity: 0.6;
-  font-variant-numeric: tabular-nums;
-}
-
-.pomo-preset:hover {
-  background: var(--w-3);
-}
-
-.pomo-preset.active {
-  border-color: var(--pomo-accent);
-  background: var(--pomo-accent-soft);
-}
-
-[data-theme="light"] .pomo-preset {
-  border-color: var(--d-3);
-  background: rgba(255, 255, 255, 0.6);
-}
-
-[data-theme="light"] .pomo-preset.active {
-  background: var(--pomo-accent-soft);
-}
-
-/* current focus input */
-.pomo-task-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 12px;
-  border-radius: var(--r-lg);
-  border: 1px solid var(--w-3);
-  background: var(--d-4);
-  margin-bottom: 14px;
-}
-
-[data-theme="light"] .pomo-task-row {
-  border-color: var(--d-3);
-  background: rgba(255, 255, 255, 0.8);
-}
-
-.pomo-task-row i {
-  color: var(--pomo-accent);
-  font-size: 0.9rem;
-  flex: 0 0 auto;
-}
-
-.pomo-task-input {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 0.92rem;
-  padding: 11px 0;
-  outline: none;
-}
-
-.pomo-task-input::placeholder {
-  color: inherit;
-  opacity: 0.45;
-}
-
-/* sections (tasks / sounds) */
-.pomo-section {
-  margin-bottom: 14px;
-}
-
-.pomo-section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 7px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.68;
-}
-
-.pomo-task-count {
-  font-variant-numeric: tabular-nums;
-}
-
-.pomo-task-list {
-  display: grid;
-  gap: 5px;
-  margin-bottom: 7px;
-}
-
-.pomo-task {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 7px 8px;
-  border-radius: var(--r-lg);
-  background: var(--w-1);
-  transition: background 0.18s ease, opacity 0.18s ease;
-}
-
-[data-theme="light"] .pomo-task {
-  background: var(--d-1);
-}
-
-.pomo-task-check {
-  flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--r-md);
-  border: 1.6px solid var(--w-5);
-  background: transparent;
-  color: transparent;
-  cursor: pointer;
-  font-size: 0.62rem;
-  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
-}
-
-[data-theme="light"] .pomo-task-check {
-  border-color: var(--d-5);
-}
-
-.pomo-task.done .pomo-task-check {
-  background: var(--pomo-accent);
-  border-color: var(--pomo-accent);
-  color: #fff;
-}
-
-.pomo-task-text {
-  flex: 1;
-  min-width: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pomo-task.done .pomo-task-text {
-  text-decoration: line-through;
-  opacity: 0.5;
-}
-
-.pomo-task-remove {
-  flex: 0 0 auto;
-  width: 24px;
-  height: 24px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: var(--r-md);
-  background: transparent;
-  color: inherit;
-  opacity: 0.4;
-  cursor: pointer;
-  font-size: 0.72rem;
-  transition: opacity 0.18s ease, background 0.18s ease;
-}
-
-.pomo-task-remove:hover {
-  opacity: 1;
-  background: rgba(251, 113, 133, 0.18);
-}
-
-.pomo-task-form {
-  display: flex;
-  gap: 7px;
-}
-
-.pomo-task-add-input {
-  flex: 1;
-  min-width: 0;
-  padding: 9px 12px;
-  border-radius: var(--r-lg);
-  border: 1px dashed var(--w-4);
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 0.88rem;
-  outline: none;
-  transition: border-color 0.18s ease;
-}
-
-.pomo-task-add-input:focus {
-  border-color: var(--pomo-accent);
-  border-style: solid;
-}
-
-[data-theme="light"] .pomo-task-add-input {
-  border-color: var(--d-4);
-}
-
-.pomo-task-form button {
-  flex: 0 0 auto;
-  width: 38px;
-  border: none;
-  border-radius: var(--r-lg);
-  background: var(--w-2);
-  color: inherit;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: background 0.18s ease;
-}
-
-.pomo-task-form button:hover {
-  background: var(--pomo-accent);
-  color: #fff;
-}
-
-[data-theme="light"] .pomo-task-form button {
-  background: var(--d-2);
-}
-
-/* focus sounds */
-.pomo-sound-row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-wrap: wrap;
-}
-
-.pomo-sound-chip {
-  min-height: var(--tap);
-  padding: 0 11px;
-  border-radius: var(--r-pill);
-  border: 1px solid var(--w-4);
-  background: var(--w-1);
-  color: inherit;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 0.78rem;
-  transition: background 0.18s ease, border-color 0.18s ease;
-}
-
-.pomo-sound-chip:hover {
-  background: var(--w-3);
-}
-
-.pomo-sound-chip.active {
-  border-color: var(--pomo-accent);
-  background: var(--pomo-accent-soft);
-}
-
-[data-theme="light"] .pomo-sound-chip {
-  border-color: var(--d-3);
-  background: rgba(255, 255, 255, 0.6);
-}
-
-.pomo-volume {
-  flex: 1;
-  min-width: 70px;
-  accent-color: var(--pomo-accent);
-  /* The visible track stays a 4px line; the control it sits in is what a
-     finger has to find, so the box gets the 44px floor instead. */
-  height: var(--tap);
-  background: transparent;
-  cursor: pointer;
-}
-
-/* stats */
-.pomo-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  padding-top: 13px;
-  border-top: 1px solid var(--w-3);
-}
-
-[data-theme="light"] .pomo-stats {
-  border-top-color: var(--d-3);
-}
-
-.pomo-stat {
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-  text-align: center;
-}
-
-.pomo-stat-value {
-  font-size: 1.06rem;
-  font-weight: 850;
-  font-variant-numeric: tabular-nums;
-}
-
-.pomo-stat-label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  opacity: 0.6;
-}
-
-/* floating pill */
-.pomo-pill {
-  position: fixed;
-  top: 16px;
-  right: max(20px, var(--workspace-edge-gap));
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 8px 10px 10px 12px;
-  border-radius: var(--r-pill);
-  overflow: hidden;
-  cursor: pointer;
-  max-width: calc(100vw - 40px);
-  --pomo-accent: var(--accent);
-  --pomo-accent-soft: var(--accent-wash);
-  background: rgba(14, 16, 26, 0.82);
-  border: 1px solid var(--pomo-accent);
-  box-shadow: 0 10px 30px var(--d-5);
-  backdrop-filter: blur(10px);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.pomo-pill:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.36);
-}
-
-[data-theme="light"] .pomo-pill {
-  background: rgba(255, 255, 255, 0.88);
-}
-
-.pomo-pill[data-mode="short"] {
-  --pomo-accent: #34d399;
-  --pomo-accent-soft: rgba(52, 211, 153, 0.2);
-}
-
-.pomo-pill[data-mode="long"] {
-  --pomo-accent: #fbbf24;
-  --pomo-accent-soft: rgba(251, 191, 36, 0.2);
-}
-
-.pomo-pill-icon {
-  flex: 0 0 auto;
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--pomo-accent-soft);
-  color: var(--pomo-accent);
-  font-size: 0.86rem;
-}
-
-.pomo-pill-body {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  line-height: 1.15;
-}
-
-.pomo-pill-time {
-  font-weight: 850;
-  font-variant-numeric: tabular-nums;
-  font-size: 1rem;
-}
-
-.pomo-pill-task {
-  max-width: 130px;
-  font-size: 0.68rem;
-  font-weight: 650;
-  opacity: 0.62;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pomo-pill button {
-  flex: 0 0 auto;
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 50%;
-  background: var(--w-2);
-  color: inherit;
-  cursor: pointer;
-  font-size: 0.78rem;
-  transition: background 0.18s ease;
-}
-
-.pomo-pill button:hover {
-  background: var(--w-4);
-}
-
-[data-theme="light"] .pomo-pill button {
-  background: var(--d-2);
-}
-
-[data-theme="light"] .pomo-pill button:hover {
-  background: var(--d-3);
-}
-
-.pomo-pill-bar {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 3px;
-  height: 3px;
-  border-radius: var(--r-pill);
-  background: var(--w-3);
-  overflow: hidden;
-  pointer-events: none;
-}
-
-[data-theme="light"] .pomo-pill-bar {
-  background: var(--d-3);
-}
-
-.pomo-pill-bar span {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--pomo-accent);
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 0.25s linear;
-}
-
-@keyframes pomoPillPop {
-  0% {
-    transform: scale(1);
-  }
-
-  40% {
-    transform: scale(1.09);
-  }
-
-  100% {
-    transform: scale(1);
-  }
-}
-
-.pomo-pill-pop {
-  animation: pomoPillPop 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* toolbar button states */
-@keyframes pomoTriggerBreath {
-
-  0%,
-  100% {
-    box-shadow: 0 0 0 3px var(--accent-wash);
-  }
-
-  50% {
-    box-shadow: 0 0 0 5px var(--accent-wash);
-  }
-}
-
-#pomodoroBtn.timer-running {
-  animation: pomoTriggerBreath 2.4s ease-in-out infinite;
-}
-
-#pomodoroBtn.timer-paused {
-  box-shadow: 0 0 0 2px var(--w-4);
-}
-
-[data-theme="light"] #pomodoroBtn.timer-paused {
-  box-shadow: 0 0 0 2px var(--d-4);
-}
-
-/* toasts */
-.pomo-toast-host {
-  position: fixed;
-  left: 50%;
-  bottom: max(56px, calc(env(safe-area-inset-bottom) + 48px));
-  transform: translateX(-50%);
-  z-index: 20001;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  pointer-events: none;
-}
-
-.pomo-toast {
-  padding: 10px 18px;
-  border-radius: var(--r-pill);
-  background: rgba(16, 18, 28, 0.94);
-  color: #f8fafc;
-  border: 1px solid var(--w-4);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
-  font-size: 0.88rem;
-  font-weight: 700;
-  max-width: min(420px, calc(100vw - 32px));
-  text-align: center;
-  opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 0.28s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.pomo-toast.show {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-[data-theme="light"] .pomo-toast {
-  background: rgba(255, 255, 255, 0.97);
-  color: #0f172a;
-  border-color: var(--d-3);
-  box-shadow: 0 14px 30px rgba(91, 109, 153, 0.25);
-}
-
-/* confetti canvas */
-.pomo-confetti {
-  position: fixed;
-  inset: 0;
-  z-index: 30000;
-  pointer-events: none;
-}
-
-/* responsive */
-@media (max-width: 768px) {
-  .pomo-pill {
-    top: auto;
-    bottom: 92px;
-    right: 10px;
-  }
-
-  body.toolbar-location-down .pomo-pill {
-    top: 14px;
-    bottom: auto;
-  }
-
-  .pomo-toast-host {
-    bottom: max(96px, calc(env(safe-area-inset-bottom) + 88px));
-  }
-}
-
-@media (max-width: 640px) {
-  .pomo-overlay {
-    padding: 10px;
-    align-items: flex-end;
-  }
-
-  .pomo-panel {
-    width: 100%;
-    max-height: min(88vh, 88svh);
-    padding: 16px 16px 18px;
-    border-radius: 22px 22px 16px 16px;
-  }
-
-  .pomo-stage {
-    width: min(210px, 58vw);
-  }
-
-  .pomo-main {
-    min-width: 132px;
-    min-height: 48px;
-  }
-
-  .pomo-pill-task {
-    max-width: 90px;
-  }
-}
-
-@media (max-width: 896px) and (orientation: landscape) {
-  .pomo-overlay {
-    align-items: center;
-  }
-
-  .pomo-panel {
-    max-height: 94vh;
-    padding: 14px 16px;
-  }
-
-  .pomo-stage {
-    width: min(150px, 30vh);
-  }
-
-  .pomo-pill {
-    bottom: 66px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-
-  .pomo-panel,
-  .pomo-overlay,
-  .pomo-ring-fill,
-  .pomo-pill,
-  .pomo-pill-bar span,
-  .pomo-toast {
-    transition: none !important;
-  }
-
-  #pomodoroBtn.timer-running {
-    animation: none;
-    box-shadow: 0 0 0 3px var(--accent-wash);
-  }
-
-  .pomo-pill-pop {
-    animation: none;
-  }
-}
-
 /* ============================== Notebook library ============================== */
 
 .library-modal {
@@ -4712,7 +3626,7 @@ body.yt-runtime-active .tool.yt-playing {
   inset: -30% -10% auto;
   height: 220px;
   background:
-    radial-gradient(circle at 22% 30%, rgba(108, 137, 255, 0.2), transparent 55%),
+    radial-gradient(circle at 22% 30%, rgba(95, 212, 240, 0.2), transparent 55%),
     radial-gradient(circle at 78% 20%, var(--accent-wash), transparent 48%);
   pointer-events: none;
 }
@@ -4800,13 +3714,13 @@ body.yt-runtime-active .tool.yt-playing {
 
 .library-action-primary {
   border-color: transparent;
-  background: linear-gradient(135deg, var(--accent), #7b6cff);
-  color: #fff;
+  background: var(--accent);
+  color: var(--on-accent);
   box-shadow: 0 10px 26px var(--accent-wash);
 }
 
 .library-action-primary:hover {
-  background: linear-gradient(135deg, #6a6aff, #8b7cff);
+  background: var(--accent);
 }
 
 .library-status {
@@ -4863,7 +3777,7 @@ body.library-busy .library-actions {
 .library-card:hover,
 .library-card:focus-visible {
   transform: translateY(-2px);
-  border-color: rgba(123, 108, 255, 0.55);
+  border-color: rgba(95, 212, 240, 0.55);
   box-shadow: 0 14px 30px var(--d-5);
   outline: none;
 }
@@ -4901,8 +3815,8 @@ body.library-busy .library-actions {
   left: 8px;
   padding: 3px 9px;
   border-radius: var(--r-pill);
-  background: linear-gradient(135deg, var(--accent), #7b6cff);
-  color: #fff;
+  background: var(--accent);
+  color: var(--on-accent);
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -4983,8 +3897,8 @@ body.library-busy .library-actions {
 }
 
 [data-theme="light"] .library-action-primary {
-  background: linear-gradient(135deg, var(--accent), #7b6cff);
-  color: #fff;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 [data-theme="light"] .library-card {
@@ -5082,20 +3996,6 @@ body.library-busy .library-actions {
 [data-theme="light"] .font-category {
   color: #718096;
   background-color: #f7fafc;
-}
-
-.shape-btn svg {
-  width: 23px;
-  height: 19px;
-  overflow: visible;
-}
-
-.shape-btn svg path,
-.shape-btn svg rect {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linejoin: round;
 }
 
 /* Smart geometry inspector */
@@ -5249,14 +4149,14 @@ body.toolbar-location-down .geometry-inspector {
 .geometry-measure-card strong {
   display: block;
   overflow: hidden;
-  color: #c9c5ff;
+  color: var(--accent);
   font-size: 0.81rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 [data-theme="light"] .geometry-measure-card strong {
-  color: #4c43c7;
+  color: var(--accent);
 }
 
 .geometry-radius-row {
@@ -5374,10 +4274,15 @@ body.toolbar-location-down .geometry-inspector {
   color: rgba(51, 65, 91, 0.62);
 }
 
+/* --ink-2 in both themes. This was rgba(224,229,244,.52) dark and
+   rgba(51,65,91,.62) light: two literals outside the token vocabulary, and the
+   light one resolved to #818999 -- 3.51:1 against the panel, which axe-core
+   flagged at 9.76px. The token already flips per theme, so the light override
+   below is gone with it. */
 .geometry-control-hint,
 .geometry-snap-hint {
   margin: 0;
-  color: rgba(224, 229, 244, 0.52);
+  color: var(--ink-2);
   font-size: 0.61rem;
   font-weight: 650;
   line-height: 1.45;
@@ -5389,19 +4294,16 @@ body.toolbar-location-down .geometry-inspector {
   gap: 6px;
 }
 
-.geometry-control-hint > span {
-  color: #a9a3ff;
+/* The hint's decorative glyph. Indigo in both themes, which is the one
+   colour this system does not have. */
+/* The glyph, not every span: all ten hints mark their glyph aria-hidden, and a
+   hint whose text lives in a span so script can rewrite it (Shape assist's)
+   was painting its whole sentence in the accent. The light-theme copy of this
+   rule set the same value and is gone. */
+.geometry-control-hint > span[aria-hidden="true"] {
+  color: var(--accent);
   font-size: 0.78rem;
   line-height: 1.1;
-}
-
-[data-theme="light"] .geometry-control-hint,
-[data-theme="light"] .geometry-snap-hint {
-  color: rgba(51, 65, 91, 0.62);
-}
-
-[data-theme="light"] .geometry-control-hint > span {
-  color: #5c54d6;
 }
 
 .geometry-rotation-row {
@@ -5444,9 +4346,9 @@ body.toolbar-location-down .geometry-inspector {
 }
 
 .geometry-reset-btn:hover {
-  border-color: rgba(133, 126, 255, 0.42);
+  border-color: var(--accent);
   color: #f1efff;
-  background: rgba(106, 96, 255, 0.16);
+  background: var(--accent-wash);
 }
 
 [data-theme="light"] .geometry-reset-btn {
@@ -5682,6 +4584,13 @@ body.toolbar-location-down .geometry-inspector {
 }
 
 .geometry-toggle-grid span {
+  /* The chip fills its grid cell. Without this the five chips came out five
+     different widths (59-115px) inside a fixed 104px two-column grid, and
+     "Coordinates" overflowed its column: the dock styles the label as a
+     `flex-direction: column; align-items: center` container, which sizes this
+     span to its text rather than to the cell. Setting the width beats that
+     without having to out-specify the dock's own label rule. */
+  width: 100%;
   min-height: 33px;
   display: flex;
   align-items: center;
@@ -5699,9 +4608,9 @@ body.toolbar-location-down .geometry-inspector {
 }
 
 .geometry-toggle-grid input:checked + span {
-  border-color: rgba(133, 126, 255, 0.46);
-  color: #e9e7ff;
-  background: rgba(106, 96, 255, 0.2);
+  border-color: var(--accent);
+  color: var(--ink);
+  background: var(--accent-wash);
 }
 
 [data-theme="light"] .geometry-toggle-grid span {
@@ -5711,8 +4620,8 @@ body.toolbar-location-down .geometry-inspector {
 }
 
 [data-theme="light"] .geometry-toggle-grid input:checked + span {
-  color: #403897;
-  background: rgba(99, 88, 231, 0.12);
+  color: var(--ink);
+  background: var(--accent-wash);
 }
 
 .geometry-style-row {
@@ -5945,19 +4854,69 @@ body.toolbar-location-down .geometry-inspector {
   padding: 12px;
   border: 1px solid var(--w-3);
   border-radius: var(--r-lg);
-  background:
-    radial-gradient(circle at 100% 0%, rgba(104, 95, 255, 0.16), transparent 42%),
-    rgba(12, 16, 25, 0.95);
+  /* Was a violet radial wash over a blue-black. Neither is in the palette:
+     tokens.css declares one accent and it is ochre. */
+  background: var(--surface);
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.4), inset 0 1px var(--w-2);
-  backdrop-filter: blur(18px) saturate(1.15);
+  /* No backdrop-filter: the background above is opaque, so it blurred pixels
+     the fill then covered -- pure cost, on the slowest GPU this ships to.
+     DESIGN.md removed the same bargain from the rail and the top bar. */
   scrollbar-width: thin;
 }
 
+/* Below the 1180px dock, a tool's panel floats over the canvas, and on the
+   ~960px tablet this product is written for that is how every panel is seen.
+   tool-dock.js adds .is-floating and writes only the two numbers it has to
+   measure -- top and max-height, from the free area between the bars and the
+   footer. Everything else is decided here.
+
+   Three things this replaced, all measured at 960x600:
+   - content-box sizing: the 12px padding, 1px border and a stray 10px margin
+     all landed OUTSIDE the max-height, so the panel ran 20px off the bottom of
+     the screen and over the footer's privacy links.
+   - centring over the canvas (left: 50%; translateX(-50%)): the panel sat on
+     top of whatever was being drawn. It now docks to the left edge, where the
+     wide-screen dock also lives, so the two layouts read as one.
+   - width: max-content: every tool came out a different width, 264 to 306px.
+     One width for all, the old widest (280px of content plus padding).
+
+   Scoped through .tool-panel-layer, the body-level host tool-dock.js floats
+   the panels from (see ensurePanelLayer there for why they left the
+   toolbar). The extra class is also what outranks the toolbar-at-the-bottom
+   rules above -- body.toolbar-location-down .tool-options sets bottom: 54px,
+   which with this top would stretch a short panel to the full height. */
+.tool-panel-layer > .tool-options.is-floating {
+  position: fixed;
+  left: var(--s3);
+  right: auto;
+  bottom: auto;
+  transform: none;
+  margin: 0;
+  box-sizing: border-box;
+  width: min(19rem, calc(100vw - 2 * var(--s3)));
+  max-width: none;
+  min-width: 0;
+  /* 11 is .tool-options' own value, and what the panel always meant: above
+     the toolbar, rail, dock and geometry inspector, below the construction
+     menu, the assist chip, the YouTube player, the Pomodoro pill and every
+     sheet and modal. Inside the toolbar that was academic -- its stacking
+     context capped the panel at 10 whatever it said -- so the 9997 written
+     here earlier would, at body level, have put a panel over the File
+     sheet's scrim and the player's title bar. */
+  z-index: 11;
+  /* Opacity only. .tool-options transitions transform as well, and its base
+     transform is the old centring translateX(-50%), so a panel turning
+     floating slid 152px in from the left edge -- caught frozen at x=-140
+     in a pane that never advances transitions. Nothing here moves sideways,
+     so there is nothing to animate but the fade. */
+  transition: opacity var(--fast) ease-out;
+}
+
 [data-theme="light"] .tool-options {
-  border-color: rgba(58, 72, 102, 0.14);
-  background:
-    radial-gradient(circle at 100% 0%, rgba(98, 88, 255, 0.1), transparent 42%),
-    rgba(250, 252, 255, 0.97);
+  border-color: var(--rule);
+  /* The violet radial was recorded as removed; it survived here, in light
+     mode only, which is why it kept being missed. */
+  background: var(--surface);
   box-shadow: 0 16px 40px rgba(54, 69, 98, 0.18), inset 0 1px #ffffff;
 }
 
@@ -5980,29 +4939,17 @@ body.toolbar-location-down .geometry-inspector {
   backdrop-filter: none;
 }
 
-.shape-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--r-lg);
-  border-color: var(--w-2);
-  background: var(--w-2);
-}
-
-.shape-btn.active {
-  border-color: rgba(133, 126, 255, 0.7);
-  background: rgba(106, 96, 255, 0.22);
-  box-shadow: 0 6px 16px rgba(84, 74, 226, 0.28);
-}
-
 .color-swatch {
-  width: 22px;
-  height: 22px;
+  /* 26, not 22: this is now a border-box diameter, and 22 + the 2px border
+     each side is what it rendered as before. */
+  width: 26px;
+  height: 26px;
   box-shadow: 0 2px 6px var(--d-5);
   transition: transform 0.16s ease, border-color 0.16s ease;
 }
 
 .color-swatch.active {
-  border-color: #8b84ff;
+  border-color: var(--accent);
   transform: scale(1.12);
 }
 
@@ -6135,7 +5082,7 @@ body.toolbar-location-down .geometry-inspector.is-collapsed {
 }
 
 .tool.active .tile-tool-icon .tile-icon-unit {
-  fill: #8b84ff;
+  fill: var(--accent);
   opacity: 1;
 }
 
@@ -6150,7 +5097,8 @@ body.toolbar-location-down .geometry-inspector.is-collapsed {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 42px;
+  /* 42px: two short of the tap floor on every tile in the tray. */
+  min-height: var(--tap);
   padding: 6px 9px;
   border: 1px solid var(--w-3);
   border-radius: var(--r-lg);
@@ -6168,8 +5116,8 @@ body.toolbar-location-down .geometry-inspector.is-collapsed {
 }
 
 .tile-chip:hover {
-  border-color: rgba(133, 126, 255, 0.45);
-  background: rgba(106, 96, 255, 0.14);
+  border-color: var(--accent);
+  background: var(--accent-wash);
   transform: translateY(-1px);
 }
 
@@ -6179,9 +5127,9 @@ body.toolbar-location-down .geometry-inspector.is-collapsed {
 }
 
 .tile-chip.active {
-  border-color: rgba(133, 126, 255, 0.75);
-  background: rgba(106, 96, 255, 0.2);
-  box-shadow: 0 6px 16px rgba(84, 74, 226, 0.26);
+  border-color: var(--accent);
+  background: var(--accent-wash);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
 }
 
 .tile-chip-label {
@@ -6202,15 +5150,24 @@ body.toolbar-location-down .geometry-inspector.is-collapsed {
   box-shadow: inset 0 0 0 1px var(--w-5);
 }
 
-.tile-art-unit { width: 11px; height: 11px; background: #fbbf24; }
-.tile-art-x { width: 25px; height: 11px; background: #7c74ff; }
-.tile-art-y { width: 18px; height: 11px; background: #2dd4bf; }
-.tile-art-x2 { width: 22px; height: 22px; background: #7c74ff; }
-.tile-art-xy { width: 25px; height: 18px; background: #a855f7; }
-.tile-art-diff { width: 16px; height: 11px; background: #38bdf8; }
+/* The sizes are the tile proportions -- x is wider than the unit, x2 is
+   square, xy is x by y -- so they scale together rather than being normalised
+   into one box. --tile-scale lets a panel enlarge the set without retyping
+   seven pairs of numbers and losing the relationships between them. */
+.tile-chip-art {
+  width: calc(var(--tile-w) * var(--tile-scale, 1));
+  height: calc(var(--tile-h) * var(--tile-scale, 1));
+}
+
+.tile-art-unit { --tile-w: 11px; --tile-h: 11px; background: #fbbf24; }
+.tile-art-x { --tile-w: 25px; --tile-h: 11px; background: var(--accent); }
+.tile-art-y { --tile-w: 18px; --tile-h: 11px; background: #2dd4bf; }
+.tile-art-x2 { --tile-w: 22px; --tile-h: 22px; background: var(--accent); }
+.tile-art-xy { --tile-w: 25px; --tile-h: 18px; background: #a855f7; }
+.tile-art-diff { --tile-w: 16px; --tile-h: 11px; background: #38bdf8; }
 .tile-art-free {
-  width: 22px;
-  height: 14px;
+  --tile-w: 22px;
+  --tile-h: 14px;
   background: transparent;
   box-shadow: inset 0 0 0 1.5px rgba(148, 163, 184, 0.9);
 }
@@ -6222,7 +5179,7 @@ body.toolbar-location-down .geometry-inspector.is-collapsed {
   z-index: 30000;
   pointer-events: none;
   opacity: 0.94;
-  border-color: rgba(133, 126, 255, 0.7);
+  border-color: var(--accent);
   background: rgba(18, 22, 34, 0.96);
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.45);
 }
@@ -6253,13 +5210,13 @@ body.tile-dragging {
   padding: 1px 4px;
   border-radius: var(--r-sm);
   background: rgba(139, 132, 255, 0.18);
-  color: #c9c5ff;
+  color: var(--accent);
   font-size: 0.62rem;
 }
 
 [data-theme="light"] .tile-hint code {
-  color: #4c43c7;
-  background: rgba(99, 88, 231, 0.12);
+  color: var(--accent);
+  background: var(--accent-wash);
 }
 
 .tile-sign-toggle {
@@ -6271,10 +5228,10 @@ body.tile-dragging {
 }
 
 .tile-sign-btn {
-  min-height: 34px;
+  min-height: var(--tap);
   border: 1px solid var(--w-3);
   border-radius: var(--r-lg);
-  color: rgba(229, 233, 246, 0.68);
+  color: var(--ink-2);
   background: var(--w-1);
   font: inherit;
   font-size: 0.66rem;
@@ -6284,16 +5241,15 @@ body.tile-dragging {
 }
 
 [data-theme="light"] .tile-sign-btn {
-  border-color: rgba(35, 50, 79, 0.1);
-  color: rgba(40, 55, 84, 0.7);
-  background: rgba(43, 59, 91, 0.04);
+  border-color: var(--d-2);
+  background: var(--d-1);
 }
 
 .tile-sign-btn[data-tile-sign="positive"].active,
 .tile-sign-btn[data-tile-inspector-sign="positive"].active {
-  border-color: rgba(133, 126, 255, 0.6);
-  color: #e9e7ff;
-  background: rgba(106, 96, 255, 0.22);
+  border-color: var(--accent);
+  color: var(--ink);
+  background: var(--accent-wash);
 }
 
 .tile-sign-btn[data-tile-sign="negative"].active,
@@ -6331,7 +5287,7 @@ body.tile-dragging {
 
 .tile-variable-name {
   min-width: 18px;
-  color: #c9c5ff;
+  color: var(--accent);
   font-size: 0.82rem;
   font-style: italic;
   font-weight: 800;
@@ -6339,7 +5295,7 @@ body.tile-dragging {
 }
 
 [data-theme="light"] .tile-variable-name {
-  color: #4c43c7;
+  color: var(--accent);
 }
 
 .tile-variable-input {
@@ -6412,8 +5368,8 @@ body.tile-dragging {
 }
 
 .tile-label-field input[type="text"]:focus {
-  border-color: rgba(133, 126, 255, 0.68);
-  box-shadow: 0 0 0 3px rgba(106, 96, 255, 0.16);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-wash);
 }
 
 .tile-value-input {
@@ -6432,8 +5388,8 @@ body.tile-dragging {
 }
 
 .tile-value-input:focus-within {
-  border-color: rgba(133, 126, 255, 0.68);
-  box-shadow: 0 0 0 3px rgba(106, 96, 255, 0.16);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-wash);
 }
 
 .tile-value-input.is-locked {
@@ -6465,9 +5421,9 @@ body.tile-dragging {
 }
 
 .tile-suggestion:hover {
-  border-color: rgba(133, 126, 255, 0.55);
-  color: #e9e7ff;
-  background: rgba(106, 96, 255, 0.18);
+  border-color: var(--accent);
+  color: var(--ink);
+  background: var(--accent-wash);
 }
 
 [data-theme="light"] .tile-suggestion {
@@ -6501,20 +5457,25 @@ body.tile-dragging {
    Algebra tiles — docked rail layout (48px)
    ============================================================ */
 
+/* One centred 38px column stacked all seven tiles into a 338px tower inside a
+   232px panel: 194px of the width unused, the panel pushed into a scroll, an
+   8px label and an 11px swatch. Three columns fit the width, the art scales
+   with the chip, and the label goes back on the type scale. */
 .tool-dock .tile-tray {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s2);
+  width: 100%;
 }
 
 .tool-dock .tile-chip {
+  --tile-scale: 1.55;
   flex-direction: column;
   justify-content: center;
-  width: 38px;
-  min-height: 44px;
-  padding: 4px 2px;
-  gap: 3px;
+  width: 100%;
+  min-height: 62px;
+  padding: 8px 4px;
+  gap: 6px;
 }
 
 .tool-dock .tile-chip-label {
@@ -6522,7 +5483,7 @@ body.tile-dragging {
   flex: none;
   width: 100%;
   overflow: visible;
-  font-size: 0.5rem;
+  font-size: var(--t-1);
   letter-spacing: 0.01em;
   text-align: center;
   opacity: 0.82;
@@ -6542,7 +5503,7 @@ body.tile-dragging {
 }
 
 .tool-dock .tile-sign-btn {
-  min-height: 26px;
+  min-height: var(--tap);
   font-size: 0;
 }
 
@@ -6630,9 +5591,9 @@ body.tile-dragging {
 /* Light-theme contrast for the tile sign toggle and status lines */
 [data-theme="light"] .tile-sign-btn[data-tile-sign="positive"].active,
 [data-theme="light"] .tile-sign-btn[data-tile-inspector-sign="positive"].active {
-  border-color: rgba(99, 88, 231, 0.5);
+  border-color: var(--accent);
   color: #3a3390;
-  background: rgba(99, 88, 231, 0.14);
+  background: var(--accent-wash);
 }
 
 [data-theme="light"] .tile-sign-btn[data-tile-sign="negative"].active,
@@ -6647,7 +5608,7 @@ body.tile-dragging {
 }
 
 [data-theme="light"] .tile-status[data-tone="bound"] { color: #0f766e; }
-[data-theme="light"] .tile-status[data-tone="locked"] { color: #4c43c7; }
+[data-theme="light"] .tile-status[data-tone="locked"] { color: var(--accent); }
 [data-theme="light"] .tile-status[data-tone="warn"] { color: #a16207; }
 [data-theme="light"] .tile-status[data-tone="bad"] { color: #b3253c; }
 
@@ -6693,6 +5654,13 @@ body.tile-dragging {
 /* Two-up toggles: the three-column default leaves a hole with only a pair. */
 .geometry-toggle-grid.is-pair {
   grid-template-columns: repeat(2, 1fr);
+}
+
+/* A toggle on its own takes the whole row. The Angle panel's "Show the
+   angle" is alone in an .is-pair grid, so it got half the width and its
+   label broke over two lines. */
+.geometry-toggle-grid > label:only-child {
+  grid-column: 1 / -1;
 }
 
 .line-label-row {
@@ -6842,11 +5810,156 @@ footer {
   bottom: 6px;
   pointer-events: none;
   font-size: 0.72rem;
+}
+
+/* The 0.4 lives on the credit, not on <footer>: dimming the whole bar took the
+   privacy/cookies/terms/CCPA row down to 2.24 : 1 with it. See the note by
+   `footer .left` below. */
+footer .left {
   opacity: 0.4;
 }
 
 footer a {
   pointer-events: auto;
+}
+
+/* ---------- the credit's signature ----------
+   TT is written in ink: calligraphic strokes revealed through masks, a nib
+   that writes and lifts, wet ochre that dries to the footer's ink, and a
+   sheen of fresh ink when pointed at (static/js/footer-signature.js). The one
+   place the app moves for its own sake, asked for by name -- so it plays once,
+   is 40px wide, and at rest sits at the footer's 40%.
+
+   It opens in a new tab: following it must never cost someone their page. */
+.footer-credit-words {
+  display: inline-block;
+  will-change: opacity, transform;
+}
+
+.footer-credit-link {
+  position: relative;
+  display: inline-block;
+  /* A little more to hit than the 20px signature, without reaching far
+     enough into the canvas to take a stroke that starts near the corner. */
+  padding: 4px 3px;
+  margin: -4px -3px;
+  border-radius: var(--r-sm);
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--fast) ease-out;
+}
+
+.footer-signature {
+  display: inline-block;
+  /* Sized to hold its own beside 12px caps: the T's stand a little taller
+     than the letters of INKYSCIB, the way a signature does. */
+  width: 40px;
+  height: 20px;
+  vertical-align: -6px;
+  overflow: visible;
+  /* 1 while the ink is wet, easing to 0 as it dries; the sheen's strength. */
+  --wet: 0;
+  --sheen: 0;
+}
+
+/* The mask strokes: white reveals, and their width covers the widest ink. */
+.sig-reveal,
+.sig-sheen-reveal {
+  fill: none;
+  stroke: #ffffff;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sig-ink path {
+  /* Wet ink is the accent; dry ink is whatever colour the footer is. */
+  fill: color-mix(in oklab, var(--accent) calc(var(--wet) * 100%), currentColor);
+}
+
+.sig-sheen {
+  opacity: var(--sheen);
+}
+
+.sig-sheen path {
+  /* Fresh ink, a step brighter than the accent, so it reads even while the
+     hovered signature is already ochre. */
+  /* A glint of fresh ink: close to white-hot, so it reads as it travels even
+     though the hovered signature is already ochre underneath. */
+  fill: color-mix(in oklab, var(--accent) 22%, #fff8ee);
+}
+
+[data-theme="light"] .sig-sheen path {
+  /* On a light ground white would vanish; a bright amber reads instead. */
+  fill: color-mix(in oklab, var(--accent) 35%, #ffb347);
+}
+
+.sig-nib {
+  pointer-events: none;
+}
+
+.sig-nib-tip {
+  fill: var(--accent);
+}
+
+.sig-nib-halo {
+  fill: var(--accent);
+  opacity: 0.22;
+}
+
+footer .footer-credit-link:hover,
+footer .footer-credit-link:focus-visible {
+  color: var(--accent);
+}
+
+.footer-credit-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* The letters themselves, for copying and for anything that reads text
+   rather than the link's name. Present, invisible, taking no room. */
+.footer-signature-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The credit rests at 0.4, which would leave the signing at 40% ink and the
+   hovered accent as mud. It comes forward while the pen is moving and while
+   the credit is pointed at, then settles back.
+
+   The 0.4 is on .left, not on <footer>. It used to be on the footer, which
+   dimmed the legal row with it: .editor-legal asks for --ink-2 (7.70 : 1 on
+   the canvas) and rendered at 2.24 : 1, well under AA, at 12px -- and those
+   are the privacy, cookie, terms and CCPA opt-out links, the ones that most
+   need to be legible. Opacity on an ancestor cannot be undone by a child, and
+   it is also why axe missed this: it cannot resolve a colour through a
+   composited layer over a canvas. Dimming the half that is decorative leaves
+   the half that is load-bearing at its declared contrast. */
+footer .left {
+  opacity: 0.4;
+  transition: opacity 0.6s ease-out;
+}
+
+footer.is-signing .left,
+footer:has(.footer-credit-link:hover) .left,
+footer:has(.footer-credit-link:focus-visible) .left {
+  opacity: 0.9;
+  transition-duration: 0.15s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  footer {
+    transition: none;
+  }
+
+  .sig-nib,
+  .sig-sheen {
+    display: none;
+  }
 }
 
 /* ---------- exact line length ---------- */
@@ -6890,8 +6003,10 @@ footer a {
 }
 
 .line-fixed-clear {
-  width: 32px;
-  height: 32px;
+  /* 32px was under the tap floor, beside a 44px field it clears. */
+  width: var(--tap);
+  height: var(--tap);
+  flex: 0 0 auto;
   border: 1px solid var(--w-3);
   border-radius: var(--r-md);
   background: transparent;
@@ -6968,12 +6083,17 @@ footer a {
  * it, so it stays label-sized and only grows a border on hover and focus.
  */
 
+/* 44px tall, looking exactly as it did at 20. It reads as the unit label it
+   replaced, so the box is invisible at rest -- but a 40x20 target beside a
+   44px field is one a fingertip misses. The width keeps the old content-box
+   measure (4.2ch plus the 8px padding and 2px border). */
 .unit-name-input {
-  width: 4.2ch;
-  min-width: 4.2ch;
+  width: max(var(--tap), calc(4.2ch + 10px));
+  min-width: max(var(--tap), calc(4.2ch + 10px));
+  min-height: var(--tap);
   flex: none;
-  box-sizing: content-box;
-  padding: 2px 4px;
+  box-sizing: border-box;
+  padding: 0 4px;
   border: 1px solid transparent;
   border-radius: var(--r-sm);
   background: transparent;
@@ -6991,10 +6111,14 @@ footer a {
    to say "editable" without competing with the value beside it. It has to be a
    border rather than text-decoration, which browsers do not paint on an
    input's value. */
+/* The dotted rule is drawn as a background rather than a bottom border now:
+   on a 44px box a border would sit 12px below the value, and the hint only
+   works tight under the text it annotates. */
 .unit-name-input:not(:hover):not(:focus) {
-  border-bottom-style: dotted;
-  border-bottom-color: currentColor;
-  border-bottom-width: 1px;
+  background-image: linear-gradient(90deg, currentColor 1px, transparent 1px);
+  background-size: 3px 1px;
+  background-repeat: repeat-x;
+  background-position: 0 calc(50% + 0.72em);
 }
 
 .unit-name-input:hover {
@@ -7007,7 +6131,7 @@ footer a {
   outline: none;
   opacity: 1;
   background: var(--w-3);
-  border-color: rgba(110, 231, 221, 0.7);
+  border-color: var(--accent-wash);
 }
 
 [data-theme="light"] .unit-name-input:hover {
@@ -7051,24 +6175,33 @@ footer a {
 }
 
 .studio-trigger:hover { opacity: 1; transform: scale(1.08); }
-.studio-trigger:focus-visible { outline: 2px solid #6ee7dd; outline-offset: 2px; }
+.studio-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 [data-theme="light"] .studio-trigger { border-color: var(--d-4); }
 
+/* On the core tokens (2026-09-21). It carried its own blue-black glass --
+   rgba(14,17,24,.97) under a 16px backdrop blur, #f1f5f9 text in Segoe UI --
+   and a second private palette for light mode. --surface is opaque in both
+   themes, so the blur only blurred pixels the fill covered (DESIGN.md removed
+   the same bargain from the rail, the top bar and the dock), and the tokens
+   flip with the theme on their own, so the light-mode block is gone.
+   border-box because color-studio.js now caps its height to the free area:
+   in content-box the padding landed outside that cap, 25px past the footer. */
 .color-studio {
   position: fixed;
   z-index: 10050;
+  box-sizing: border-box;
   width: 268px;
-  padding: 12px;
+  padding: var(--s3);
   border-radius: var(--r-lg);
-  background: rgba(14, 17, 24, 0.97);
-  border: 1px solid var(--w-3);
-  box-shadow: 0 20px 52px -20px rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(16px);
-  color: #f1f5f9;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  box-shadow: 0 20px 52px -20px var(--d-5);
+  color: var(--ink);
+  font-family: var(--sans);
   display: flex;
   flex-direction: column;
   gap: 10px;
+  overscroll-behavior: contain;
 }
 
 /* THE BUG behind "the close button does nothing".
@@ -7081,12 +6214,6 @@ footer a {
   display: none !important;
 }
 
-[data-theme="light"] .color-studio {
-  background: rgba(248, 250, 253, 0.98);
-  border-color: var(--d-3);
-  color: #0f172a;
-  box-shadow: 0 20px 48px -22px rgba(15, 23, 42, 0.45);
-}
 
 .studio-head { display: flex; align-items: center; gap: 8px; }
 
@@ -7234,8 +6361,19 @@ footer a {
   height: 10px;
   border-radius: var(--r-sm);
   background: var(--track, #888);
+  /* An edge that does not depend on the track's own colours: picking white
+     makes the saturation track white-to-white, which vanished completely
+     against the light theme's surface. */
+  box-shadow: inset 0 0 0 1px var(--rule);
   outline: none;
   cursor: pointer;
+}
+
+/* outline: none above removed the only focus cue, so a keyboard user could
+   not tell which of the three sliders the arrow keys would move. */
+.studio-slider-row input[type="range"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 .studio-hue {
@@ -7283,7 +6421,7 @@ footer a {
   transition: transform 0.12s ease;
 }
 .studio-swatch:hover { transform: scale(1.12); }
-.studio-swatch:focus-visible { outline: 2px solid #6ee7dd; outline-offset: 2px; }
+.studio-swatch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 [data-theme="light"] .studio-swatch { border-color: var(--d-4); }
 
 .studio-empty { font-size: 0.74rem; opacity: 0.5; }
@@ -7354,10 +6492,10 @@ footer a {
 .tool-help-btn:hover,
 .tool-help-btn[aria-expanded="true"] {
   opacity: 1;
-  border-color: rgba(110, 231, 221, 0.75);
+  border-color: var(--accent-wash);
 }
 
-.tool-help-btn:focus-visible { outline: 2px solid #6ee7dd; outline-offset: 2px; }
+.tool-help-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 [data-theme="light"] .tool-help-btn { border-color: var(--d-5); }
 [data-theme="light"] .tool-help-btn:hover,
@@ -7378,8 +6516,8 @@ footer a {
   margin-top: 8px;
   padding: 9px 12px;
   border-radius: var(--r-md);
-  border: 1px solid rgba(110, 231, 221, 0.5);
-  background: rgba(110, 231, 221, 0.12);
+  border: 1px solid var(--accent-wash);
+  background: var(--accent-wash);
   color: inherit;
   font: inherit;
   font-size: 0.83rem;
@@ -7396,14 +6534,14 @@ footer a {
   display: none !important;
 }
 
-.compass-new-arc:hover { background: rgba(110, 231, 221, 0.2); transform: translateY(-1px); }
-.compass-new-arc:focus-visible { outline: 2px solid #6ee7dd; outline-offset: 2px; }
+.compass-new-arc:hover { background: var(--accent-wash); transform: translateY(-1px); }
+.compass-new-arc:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .compass-new-arc-plus {
   font-size: 1.05rem;
   line-height: 1;
   font-weight: 700;
-  color: #6ee7dd;
+  color: var(--accent);
 }
 
 [data-theme="light"] .compass-new-arc {
@@ -7419,10 +6557,11 @@ footer a {
 
 /* ---------- touch targets ----------
  *
- * A design audit measured five controls under the 44px floor: the pomodoro
- * auto-break checkbox at 13px, the pen style buttons at 22px, and the zoom
- * pair at 35px. Small visuals are fine; small *targets* are not, so these keep
- * their size and gain the hit area around them.
+ * A design audit measured five controls under the 44px floor: the pen style
+ * buttons at 22px and the zoom pair at 35px among them. Small visuals are
+ * fine; small *targets* are not, so these keep their size and gain the hit
+ * area around them. (The pomodoro checkbox it also named is gone: the focus
+ * timer's switches are 44px labels in pomodoro.css.)
  */
 
 #zoomIn,
@@ -7437,21 +6576,6 @@ footer a {
   min-height: 44px;
   display: inline-grid;
   place-items: center;
-}
-
-/* A 13px checkbox is unhittable. Grow the box and let the whole label work. */
-#pomoAutoBreak {
-  width: 20px;
-  height: 20px;
-  flex: none;
-}
-
-label:has(> #pomoAutoBreak) {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  cursor: pointer;
 }
 
 /* ---------- the menu button stops sharing the toolbar's band ----------

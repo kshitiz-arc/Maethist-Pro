@@ -1,0 +1,169 @@
+/* Canvas theme presets: the ground under the ink, and the popover that picks it.
+ *
+ * --canvas-ground is a content colour, like the user's ink, not a chrome token:
+ * the chrome around it stays on tokens.css, light or dark, and each preset
+ * names which of the two it pairs with (static/js/canvas-theme.js). The ids and
+ * grounds here must match that file.
+ */
+
+html[data-canvas="graphite"]   { --canvas-ground: #0A0D12; }
+html[data-canvas="paper"]      { --canvas-ground: #FBFBF9; }
+html[data-canvas="chalkboard"] { --canvas-ground: #1E2B24; }
+html[data-canvas="blueprint"]  { --canvas-ground: #0B1D31; }
+html[data-canvas="midnight"]   { --canvas-ground: #0D1321; }
+html[data-canvas="cream"]      { --canvas-ground: #F5EEDC; }
+html[data-canvas="whiteboard"] { --canvas-ground: #FFFFFF; }
+html[data-canvas="contrast"]   { --canvas-ground: #000000; }
+
+/* This file loads after write.css. `html[data-canvas] .workspace-stage` is
+   (0,2,1), which out-ranks both `.workspace-stage` and
+   `[data-theme="light"] .workspace-stage` there, so the ground wins without
+   editing the older rules. */
+html[data-canvas] .workspace-stage {
+  background: var(--canvas-ground);
+}
+
+/* ---------- the popover ---------- */
+
+.canvas-theme-pop {
+  position: fixed;
+  z-index: 10001;
+  box-sizing: border-box;
+  width: min(344px, calc(100vw - var(--s6)));
+  max-height: calc(100vh - var(--s7));
+  overflow-y: auto;
+  padding: var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: 0 12px 32px var(--d-4);
+  color: var(--ink);
+  font-family: var(--sans);
+}
+
+/* The class sets display through its children's layout; say it plainly. */
+.canvas-theme-pop[hidden] {
+  display: none;
+}
+
+.canvas-theme-heading {
+  margin: 0 0 var(--s2);
+  color: var(--ink-2);
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.canvas-theme-grid,
+.canvas-pattern-row {
+  display: grid;
+  gap: var(--s2);
+}
+
+.canvas-theme-grid {
+  grid-template-columns: repeat(4, 1fr);
+  margin-bottom: var(--s4);
+}
+
+.canvas-pattern-row {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.canvas-theme-tile,
+#canvasThemePop .pattern-option {
+  box-sizing: border-box;
+  width: auto;
+  min-height: var(--tap);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  /* Top-aligned so every swatch in a row lines up even when one label, like
+     "High contrast", wraps to a second line. */
+  justify-content: flex-start;
+  gap: var(--s1);
+  padding: var(--s1);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--t-1);
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--fast) ease-out;
+}
+
+.canvas-theme-tile:hover,
+#canvasThemePop .pattern-option:hover {
+  background: var(--raised);
+  color: var(--ink);
+}
+
+.canvas-theme-tile[aria-checked="true"],
+#canvasThemePop .pattern-option[aria-checked="true"] {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+  color: var(--ink);
+}
+
+.canvas-theme-tile:focus-visible,
+#canvasThemePop .pattern-option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.canvas-theme-swatch {
+  display: block;
+  height: 34px;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  background-color: var(--swatch-ground);
+  background-image:
+    linear-gradient(var(--swatch-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--swatch-grid) 1px, transparent 1px);
+  background-size: 8px 8px;
+}
+
+.canvas-theme-swatch svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.canvas-pattern-swatch {
+  align-self: center;
+  width: 36px;
+  height: 22px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  background-color: var(--canvas-ground, var(--paper));
+}
+
+.canvas-pattern-swatch.is-dot {
+  background-image: radial-gradient(var(--ink-3) 1px, transparent 1.3px);
+  background-size: 6px 6px;
+}
+
+.canvas-pattern-swatch.is-lines {
+  background-image: linear-gradient(to bottom, var(--ink-3) 1px, transparent 1px);
+  background-size: 100% 6px;
+}
+
+.canvas-pattern-swatch.is-graph {
+  background-image:
+    linear-gradient(var(--ink-3) 1px, transparent 1px),
+    linear-gradient(90deg, var(--ink-3) 1px, transparent 1px);
+  background-size: 6px 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas-theme-tile,
+  #canvasThemePop .pattern-option {
+    transition: none;
+  }
+}

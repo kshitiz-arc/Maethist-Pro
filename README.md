@@ -72,7 +72,7 @@ On a laptop with a webcam, draw in the air with your finger using hand tracking.
 Inkyscib is a solo project. I came up with the problem and designed every feature myself, and built it with the help of AI coding tools.
 
 - **Backend:** Python + Flask. The PowerPoint and PDF import/export is handled server-side (PowerPoint files are parsed from the raw Office Open XML format; PDFs are rendered with PyMuPDF).
-- **Frontend:** Plain HTML, CSS, and vanilla JavaScript — no framework, no build step. The drawing engine is built directly on the HTML Canvas.
+- **Frontend:** Plain HTML, CSS, and vanilla JavaScript — no framework, no build step. The drawing engine is built directly on the HTML Canvas. The two typefaces are self-hosted from `static/fonts/`, so a visit sends nothing to a font CDN.
 - **Storage:** Local-first. Your drawings and preferences are saved in your browser (localStorage + IndexedDB), so nothing leaves your device.
 
 ---
@@ -81,7 +81,7 @@ Inkyscib is a solo project. I came up with the problem and designed every featur
 
 ```bash
 # 1. Install dependencies
-pip install -r requirements.txt
+pip install -r requirements.txt      # add -r requirements-dev.txt to run the tests
 
 # 2. Start the app
 python app.py
@@ -96,14 +96,51 @@ For production, run it behind Gunicorn:
 gunicorn wsgi:app
 ```
 
+**Deploying to Render:** `render.yaml` is a ready blueprint. In the Render
+dashboard choose *New > Blueprint*, point it at this repository, and set
+`SITE_ORIGIN` to your public address. It generates `SECRET_KEY` for you and
+health-checks `/healthz`.
+
+**In production**, these environment variables matter — see
+`docs/seo/search-console.md` for the SEO ones:
+
+```bash
+SECRET_KEY=...                       # required; the app refuses to start without it
+INKYSCIB_ENV=production              # set automatically on Render
+YOUTUBE_FULL_FRAMES=false            # leave off on a public host (see below)
+SITE_ORIGIN=https://your-domain      # canonical URLs, sitemap, social cards
+TRUST_PROXY_HEADERS=true             # behind nginx/Render/Fly; enables HSTS
+FORCE_HTTPS=true                     # 301 http -> https
+SEARCH_CONSOLE_TOKEN=...             # optional, verification only
+```
+
+And drop the IP out of Gunicorn's access log while you're there — the app's own
+logs are scrubbed by `logging_filters.py`, but Gunicorn writes its own, and it
+doesn't need to know who asked:
+
+```bash
+gunicorn wsgi:app --access-logformat '%(t)s "%(r)s" %(s)s %(b)s %(M)sms'
+```
+
 **Notes**
+- **No analytics.** Version 2 removed Google Analytics and the cookie banner. A visit sends nothing to any third party unless you open a YouTube lecture.
+- **Works offline.** After one visit online, the canvas opens with no connection: a service worker keeps a copy of the app itself. Your notes were always stored on your device.
+- **Saved video moments** use YouTube's own preview image. Full-resolution frames need `pip install -r requirements-optional.txt` and `YOUTUBE_FULL_FRAMES=true`, and are meant for running Inkyscib on your own machine.
 - **PDF import** works on any platform (via PyMuPDF).
 - **PowerPoint import** is best on Windows with Microsoft PowerPoint installed (used for the highest-fidelity rendering). Without it, Inkyscib falls back to a built-in basic `.pptx` renderer.
 
 ---
 
+## Credits
+
+The border beam, the sliding link underline and the odometer digits are ported
+by hand from [VengeanceUI](https://github.com/Ashutoshx7/VengeanceUI) (MIT, by
+Ashutosh). Inkyscib has no build step, so nothing is installed — the techniques
+are rewritten in plain CSS against this project's own tokens. See
+`static/css/vengeance.css`.
+
 ## License
 
 [MIT](LICENSE) © 2025 Salaj — free to use, learn from, and build on.
 
-Built by [@SalajPro](https://github.com/SalajPro).
+Created by [@kshitizarc](https://www.linkedin.com/in/kshitiz47/).

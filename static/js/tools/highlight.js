@@ -4,34 +4,20 @@ function initHighlightTool() {
     const highlightSizeInput = document.getElementById('highlightSizeInput');
     const highlightCustomColor = document.getElementById('highlightCustomColor');
     
-    let highlightClickTimer = null;
     
     if (!window.appState.toolSettings.highlight.color) {
         window.appState.toolSettings.highlight.color = 'rgba(255,255,0,0.3)';
     }
     
     highlightTool.onclick = () => {
-        if (window.Inkyscib?.ToolDock?.isDockMode?.()) {
-            closeAllToolboxes();
-            setTool('highlight');
-            return;
-        }
-        const state = window.appState;
-        
-        if (state.currentTool === 'highlight' && !state.panMode) {
-            if (highlightClickTimer) {
-                clearTimeout(highlightClickTimer);
-                highlightClickTimer = null;
-                toggleToolbox('highlightOptions');
-            } else {
-                highlightClickTimer = setTimeout(() => {
-                    highlightClickTimer = null;
-                }, 300);
-            }
-        } else {
-            closeAllToolboxes();
-            setTool('highlight');
-        }
+        // Opening and closing this tool's panel is tool-dock.js's job at every
+        // width: it sees the tap in the capture phase and toggles on a second
+        // tap. This handler only selects the tool. A second owner here -- a
+        // double-tap timer below 1180px, writing style.display directly -- is
+        // what left the panels out of step with the dock and, for Algebra
+        // tiles, hid the panel the moment the tool was picked.
+        closeAllToolboxes();
+        setTool('highlight');
     };
     
     highlightSize.oninput = () => {

@@ -1,0 +1,166 @@
+/* The three legal pages: /legal/privacy, /legal/cookies, /legal/terms.
+ *
+ * Linked from templates/legal/_legal.html, inside the body, so nothing here
+ * can reach the rest of the site. Every value is a token from tokens.css:
+ * there is no --legal-* palette and there must not be one (DESIGN.md), and
+ * every class below is a descendant of .legal-prose for the same reason.
+ *
+ * Reading width is --measure (62ch). A privacy policy is running prose, not a
+ * card grid, and 62ch is the width DESIGN.md already sets for prose.
+ */
+
+/* TEMPORARY, remove when the heading-ladder change lands.
+ * marketing.css styles `.page-head h2`, because /features and /about still
+ * open at h2. That change renames the selector to `.page-head h1` site-wide;
+ * until it does, a legal page's h1 would render at the browser default size.
+ * These five declarations are `.page-head h2` from marketing.css verbatim, so
+ * the two agree while both exist, and this block is redundant the moment the
+ * rename lands. */
+.page-head h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.024em;
+  margin: 0;
+}
+
+.legal-prose {
+  max-width: var(--measure);
+  padding: var(--s7) 0 var(--s8);
+}
+
+.legal-prose h2 {
+  margin: var(--s7) 0 var(--s3);
+  font-size: var(--t-5);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.legal-prose h3 {
+  margin: var(--s5) 0 var(--s2);
+  font-size: var(--t-4);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.legal-prose p,
+.legal-prose ul,
+.legal-prose ol {
+  margin: 0 0 var(--s4);
+  color: var(--ink-2);
+}
+
+.legal-prose ul,
+.legal-prose ol { padding-left: var(--s5); }
+
+.legal-prose li { margin-bottom: var(--s2); }
+
+.legal-prose strong { color: var(--ink); font-weight: 600; }
+
+/* `a { color: inherit }` in marketing.css makes a link in running prose look
+   like text. In a document about rights, a link to a regulator has to be
+   findable. */
+.legal-prose a { color: var(--accent); }
+
+.legal-prose code {
+  font-family: var(--mono);
+  font-size: var(--t-2);
+  padding: 0 var(--s1);
+  background: var(--raised);
+  border-radius: var(--r-sm);
+}
+
+/* The draft banner. It uses the accent wash rather than a new colour, and it
+   is the first thing in the document on purpose. */
+.legal-prose .legal-draft {
+  margin: 0 0 var(--s6);
+  padding: var(--s4);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-md);
+  background: var(--accent-wash);
+  color: var(--ink);
+}
+
+.legal-prose .legal-foot {
+  margin: var(--s7) 0 0;
+  padding-top: var(--s4);
+  border-top: 1px solid var(--rule);
+  font-size: var(--t-2);
+}
+
+/* The cookie table has five columns and still has to be readable on a 360px
+   phone, so it scrolls inside its own box instead of pushing the page
+   sideways. */
+.legal-prose .table-scroll {
+  overflow-x: auto;
+  margin: 0 0 var(--s5);
+}
+
+/* The box scrolls, so it is a control: someone on a keyboard has to be able to
+   focus it and use the arrow keys. tabindex="0" in the markup does that; this
+   makes the focus visible. */
+.legal-prose .table-scroll:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.legal-prose table {
+  width: 100%;
+  min-width: 34rem;
+  border-collapse: collapse;
+  font-size: var(--t-2);
+}
+
+/* --ink-2, not --ink-3: a caption is the sentence that explains the table,
+   and at 13px it needs 4.5:1. axe-core measured --ink-3 here at 3.51:1. */
+.legal-prose caption {
+  caption-side: top;
+  text-align: left;
+  padding-bottom: var(--s2);
+  color: var(--ink-2);
+  font-size: var(--t-2);
+}
+
+.legal-prose th,
+.legal-prose td {
+  padding: var(--s3);
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--rule);
+}
+
+.legal-prose th {
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+  border-bottom-color: var(--ink-3);
+}
+
+.legal-prose td { color: var(--ink-2); }
+
+.legal-prose td code { white-space: nowrap; }
+
+/* The data-rights controls come styled from privacy.css, which every page
+   already loads. .legal-prose p adds a bottom margin that the control's own
+   grid gap already provides, so it is taken back here. */
+.legal-prose .privacy-control p { margin: 0; }
+
+.legal-prose .privacy-control a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--tap);
+  padding-inline: var(--s4);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+  font: 600 var(--t-3) / 1 var(--sans);
+  text-decoration: none;
+}
+
+.legal-prose .privacy-control a:hover { border-color: var(--ink-3); }
+
+@media (max-width: 44rem) {
+  .legal-prose .privacy-control a { justify-content: center; inline-size: 100%; }
+}

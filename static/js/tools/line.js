@@ -6,7 +6,6 @@ function initLineTool() {
     const arrowStylesPanel = document.getElementById('arrowStyles');
     const arrowStylesSection = document.getElementById('arrowStylesSection');
 
-    let lineClickTimer = null;
     // legacy: 'arrow' was a line type; it is now a separate arrow tip
     if (window.appState.toolSettings.line.lineType === 'arrow') {
         window.appState.toolSettings.line.lineType = 'solid';
@@ -25,27 +24,14 @@ function initLineTool() {
         window.appState.toolSettings.line.arrowStyle = 'triangle';
     }
     lineTool.onclick = () => {
-        if (window.Inkyscib?.ToolDock?.isDockMode?.()) {
-            closeAllToolboxes();
-            setTool('line');
-            return;
-        }
-        const state = window.appState;
-
-        if (state.currentTool === 'line' && !state.panMode) {
-            if (lineClickTimer) {
-                clearTimeout(lineClickTimer);
-                lineClickTimer = null;
-                toggleToolbox('lineOptions');
-            } else {
-                lineClickTimer = setTimeout(() => {
-                    lineClickTimer = null;
-                }, 300);
-            }
-        } else {
-            closeAllToolboxes();
-            setTool('line');
-        }
+        // Opening and closing this tool's panel is tool-dock.js's job at every
+        // width: it sees the tap in the capture phase and toggles on a second
+        // tap. This handler only selects the tool. A second owner here -- a
+        // double-tap timer below 1180px, writing style.display directly -- is
+        // what left the panels out of step with the dock and, for Algebra
+        // tiles, hid the panel the moment the tool was picked.
+        closeAllToolboxes();
+        setTool('line');
     };
     lineSize.oninput = () => {
         window.appState.toolSettings.line.size = +lineSize.value;
@@ -83,31 +69,20 @@ function initLineTool() {
             if (typeof window.saveDrawing === 'function') window.saveDrawing();
         };
     });
-    // Geometric kind: segment / ray / line. Independent of the visual style,
-    // because a dotted ray and a solid ray are the same object mathematically.
-    if (!window.appState.toolSettings.line.lineKind) {
-        window.appState.toolSettings.line.lineKind = 'segment';
+    // The editor uses a bounded page, so legacy ray/line defaults are migrated
+    // to the one finite line object the tool now creates.
+    window.appState.toolSettings.line.lineKind = 'segment';
+
+    // The lines currently selected, if any. Selection survives opening this
+    // panel so its controls can act as an inspector.
+    function selectedLinePaths() {
+        var selection = window.Inkyscib && window.Inkyscib.Selection;
+        if (!selection || typeof selection.selectedIndices !== 'function') return [];
+        var paths = (window.appState && window.appState.paths) || [];
+        return selection.selectedIndices()
+            .map(function (index) { return paths[index]; })
+            .filter(function (path) { return path && path.tool === 'line'; });
     }
-    document.querySelectorAll('.line-kind-btn').forEach(btn => {
-        btn.onclick = () => {
-            window.appState.toolSettings.line.lineKind = btn.dataset.linekind;
-            updateLineKindSelection();
-            if (typeof window.savePreferences === 'function') window.savePreferences();
-            else if (typeof window.saveDrawing === 'function') window.saveDrawing();
-        };
-    });
-    function updateLineKindSelection() {
-        var current = window.appState.toolSettings.line.lineKind || 'segment';
-        document.querySelectorAll('.line-kind-btn').forEach(btn => {
-            var on = btn.dataset.linekind === current;
-            btn.classList.toggle('active', on);
-            btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-        });
-        // an infinite line has no end to put an arrow on
-        var arrowRow = document.getElementById('arrowStylesSection');
-        if (arrowRow) arrowRow.style.display = current === 'line' ? 'none' : '';
-    }
-    updateLineKindSelection();
 
     document.querySelectorAll('.arrow-style-btn').forEach(btn => {
         btn.onclick = () => {
@@ -188,60 +163,57 @@ function initLineTool() {
     ];
 
     function syncDetailToggles() {
+        var selected = selectedLinePaths();
         DETAIL_TOGGLES.forEach(function (pair) {
             var box = document.getElementById(pair[0]);
-            if (box) box.checked = window.appState.toolSettings.line[pair[1]] === true;
+            if (!box) return;
+            box.checked = selected.length
+                ? selected.every(function (path) { return path[pair[1]] === true; })
+                : window.appState.toolSettings.line[pair[1]] === true;
         });
+        var hint = document.getElementById('lineLegendHint');
+        if (hint) {
+            hint.lastChild.textContent = selected.length
+                ? ' Editing the selected segment' + (selected.length > 1 ? 's' : '') + '.'
+                : ' With nothing selected, these are the defaults for new segments.';
+        }
     }
 
     DETAIL_TOGGLES.forEach(function (pair) {
         var box = document.getElementById(pair[0]);
         if (!box) return;
         box.onchange = () => {
-            window.appState.toolSettings.line[pair[1]] = box.checked;
-            if (typeof window.savePreferences === 'function') window.savePreferences();
+            var selected = selectedLinePaths();
+            if (selected.length) {
+                if (typeof window.commitHistory === 'function') window.commitHistory();
+                selected.forEach(function (path) {
+                    path[pair[1]] = box.checked;
+                    if (pair[1] === 'showLabels' && box.checked) {
+                        window.Inkyscib?.LineLabels?.ensure?.(path);
+                    }
+                });
+                if (typeof window.invalidateCanvasDrawingCache === 'function') {
+                    window.invalidateCanvasDrawingCache();
+                }
+                if (typeof window.saveDrawing === 'function') window.saveDrawing();
+                if (typeof window.render === 'function') window.render();
+            } else {
+                window.appState.toolSettings.line[pair[1]] = box.checked;
+                if (typeof window.savePreferences === 'function') window.savePreferences();
+            }
+            syncDetailToggles();
         };
     });
     syncDetailToggles();
-    // The arrow tip is always offered now (with an explicit "none"); it is only
-    // hidden for an infinite line, which has no end to decorate.
+    document.addEventListener('selectionChanged', syncDetailToggles);
+    document.addEventListener('toolChanged', syncDetailToggles);
+    // Every line has a real end, so arrow tips are always available.
     if (arrowStylesPanel) arrowStylesPanel.style.display = 'flex';
-    updateLineKindSelection();
 }
-// A segment stops at its endpoints; a ray continues past the second point;
-// a line continues past both. Only the drawn extent changes — the two defining
-// points stay exactly where the user put them, so measurements, snapping and
-// intersections keep referring to the real geometry.
+// Kept as a compatibility boundary for callers and old documents. All lines
+// now stop at the two points the user placed.
 function extendLineForKind(p1, p2, kind, ctx) {
-    if (kind !== 'ray' && kind !== 'line') return [p1, p2];
-
-    var dx = p2.x - p1.x;
-    var dy = p2.y - p1.y;
-    var length = Math.hypot(dx, dy);
-    if (!isFinite(length) || length < 1e-9) return [p1, p2];
-
-    // Reach beyond the visible canvas in world units, whatever the zoom.
-    var scale = Math.max(0.05, (window.appState && window.appState.transform
-        ? window.appState.transform.scale : 1) || 1);
-    // canvas.width is in DEVICE pixels; world units come from CSS pixels, so the
-    // device-pixel ratio has to be divided out before dividing by the zoom.
-    // (Same screen-vs-world unit confusion that misplaced the compass centre —
-    // harmless here since it only over-extends, but wrong is wrong.)
-    var canvas = ctx && ctx.canvas ? ctx.canvas : null;
-    var cssWidth = canvas ? (canvas.getBoundingClientRect().width || canvas.width) : 0;
-    var ratio = canvas && cssWidth ? canvas.width / cssWidth : 1;
-    var diagonalCss = canvas ? Math.hypot(canvas.width, canvas.height) / (ratio || 1) : 4000;
-    var span = (diagonalCss / scale) + length;
-
-    var ux = dx / length;
-    var uy = dy / length;
-
-    var start = kind === 'line'
-        ? { x: p1.x - ux * span, y: p1.y - uy * span }
-        : p1;
-    var end = { x: p2.x + ux * span, y: p2.y + uy * span };
-
-    return [start, end];
+    return [p1, p2];
 }
 
 // Small ticks mark where the defining points sit once the stroke runs past
@@ -268,7 +240,7 @@ function drawLineWithType(ctx, path) {
 
     var p1 = path.points[0];
     var p2 = path.points[1];
-    var lineKind = path.lineKind || 'segment';
+    var lineKind = 'segment';
     var lineType = normalizeLineType(path.lineType);
     var arrowStyle = normalizeArrowStyle(path.arrowStyle, path.lineType);
     var size = path.size || 2;
@@ -638,6 +610,9 @@ function initLineInspector() {
     var angleEl = document.getElementById('lineMeasureAngle');
     var labelsToggle = document.getElementById('lineShowLabels');
     var lengthToggle = document.getElementById('lineShowLength');
+    var angleToggle = document.getElementById('lineShowAngle');
+    var coordsToggle = document.getElementById('lineShowCoords');
+    var midpointToggle = document.getElementById('lineShowMidpoint');
     var fields = document.getElementById('lineLabelFields');
     var startInput = document.getElementById('lineLabelStart');
     var endInput = document.getElementById('lineLabelEnd');
@@ -645,7 +620,7 @@ function initLineInspector() {
 
     var signature = '';
 
-    var KIND_TITLES = { segment: 'Segment', ray: 'Ray', line: 'Line' };
+    var KIND_TITLES = { segment: 'Segment' };
 
     function selectedLine() {
         var selection = window.Inkyscib && window.Inkyscib.Selection;
@@ -692,6 +667,18 @@ function initLineInspector() {
         edit((path) => { path.showLength = lengthToggle.checked; });
     });
 
+    angleToggle.addEventListener('change', () => {
+        edit((path) => { path.showAngle = angleToggle.checked; });
+    });
+
+    coordsToggle.addEventListener('change', () => {
+        edit((path) => { path.showCoords = coordsToggle.checked; });
+    });
+
+    midpointToggle.addEventListener('change', () => {
+        edit((path) => { path.showMidpoint = midpointToggle.checked; });
+    });
+
     startInput.addEventListener('change', () => {
         edit((path) => { path.labelStart = cleanLabel(startInput.value); });
     });
@@ -713,14 +700,15 @@ function initLineInspector() {
         var a = path.points[0];
         var b = path.points[1];
         var next = [
-            path.lineKind, path.showLabels, path.showLength,
+            path.lineKind, path.showLabels, path.showLength, path.showAngle,
+            path.showCoords, path.showMidpoint,
             path.labelStart, path.labelEnd,
             a.x, a.y, b.x, b.y
         ].join(':');
         if (next === signature) return;
         signature = next;
 
-        titleEl.textContent = KIND_TITLES[path.lineKind] || 'Segment';
+        titleEl.textContent = 'Segment';
         var length = Math.hypot(b.x - a.x, b.y - a.y);
         lengthEl.textContent = formatLineLength(length);
         var degrees = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
@@ -729,6 +717,9 @@ function initLineInspector() {
 
         labelsToggle.checked = path.showLabels === true;
         lengthToggle.checked = path.showLength === true;
+        angleToggle.checked = path.showAngle === true;
+        coordsToggle.checked = path.showCoords === true;
+        midpointToggle.checked = path.showMidpoint === true;
         fields.hidden = path.showLabels !== true;
         if (document.activeElement !== startInput) startInput.value = path.labelStart || '';
         if (document.activeElement !== endInput) endInput.value = path.labelEnd || '';

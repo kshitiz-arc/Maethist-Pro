@@ -84,16 +84,21 @@
    *
    * Annotations are stored in the space PDF.js reports at scale 1, which has y
    * growing downward and already has the page's /Rotate applied. PDF user
-   * space has y growing upward and an origin at the MediaBox corner. Emitting
-   * the inverse of the viewport transform as a `cm` prologue lets every
-   * coordinate below be written exactly as it is stored — no per-point
-   * arithmetic, and rotated or offset pages come out right for free.
+   * space has y growing upward. Emitting the inverse of the viewport transform
+   * as a `cm` prologue lets every coordinate below be written exactly as it is
+   * stored — no per-point arithmetic, and rotated or offset pages come out
+   * right for free.
+   *
+   * `viewBox` must be the box PDF.js laid the page out in — its CropBox
+   * clipped to its MediaBox, which is what `Page#view` returns — and NOT the
+   * MediaBox alone. On a cropped page the two differ, and passing the MediaBox
+   * shifts every stroke on the page by the offset between them.
    */
-  function viewportToPdfMatrix(rotation, mediaBox) {
-    const x0 = Math.min(mediaBox[0], mediaBox[2]);
-    const y0 = Math.min(mediaBox[1], mediaBox[3]);
-    const x1 = Math.max(mediaBox[0], mediaBox[2]);
-    const y1 = Math.max(mediaBox[1], mediaBox[3]);
+  function viewportToPdfMatrix(rotation, viewBox) {
+    const x0 = Math.min(viewBox[0], viewBox[2]);
+    const y0 = Math.min(viewBox[1], viewBox[3]);
+    const x1 = Math.max(viewBox[0], viewBox[2]);
+    const y1 = Math.max(viewBox[1], viewBox[3]);
 
     const turn = ((Math.round((rotation || 0) / 90) * 90) % 360 + 360) % 360;
 
@@ -272,7 +277,7 @@
     if (path.tool === "highlight") return highlightOps(path, points, resources);
     if (path.tool === "pen") return penOps(path, points, resources);
     if (path.tool === "line") return lineOps(path, points);
-    if (path.tool === "shape") return shapeOps(path, points);
+    if (path.tool === "shape") return shapeOps(path, points, resources);
     return null;
   }
 
@@ -400,30 +405,106 @@
     ].join("\n");
   }
 
-  function shapeOps(path, points) {
+  const SMART_POLYGON_KINDS = new Set([
+    "triangle", "rectangle", "parallelogram", "rhombus", "kite",
+    "square", "trapezium", "pentagon", "hexagon", "octagon"
+  ]);
+
+  // Mirrors paintShape in tools/select.js, which paints the same shapes on the
+  // canvas: a tint is the shape's colour at 22% under a full-strength outline,
+  // and dash lengths grow with the line width. If either changes there it has
+  // to change here, or an exported shape stops matching the page.
+  const SHAPE_TINT_ALPHA = 0.22;
+
+  function shapeDash(path) {
+    const width = Math.max(0.5, path.size || 2);
+    if (path.dash === "dashed") return `[${n(width * 3 + 6)} ${n(width * 2 + 6)}] 0 d`;
+    // A zero-length dash with round caps is a dot.
+    if (path.dash === "dotted") return `[0 ${n(width * 2 + 4)}] 0 d`;
+    return null;
+  }
+
+  /**
+   * The set-up before a shape's outline and the paint operator after it.
+   *
+   * Returns null for a tint when there is no resource dictionary to register
+   * its transparency in: drawn opaque it would hide whatever is under it, so
+   * the caller falls back for that path instead.
+   */
+  function shapePaint(path, resources) {
+    const color = path.color || "#ffffff";
+    const filled = path.fill === "tint" || path.fill === "solid";
+    const before = ["1 J 1 j"];
+    if (path.fill === "tint") {
+      if (typeof resources?.alpha !== "function") return null;
+      before.push(`/${resources.alpha(SHAPE_TINT_ALPHA, 1, null)} gs`);
+    }
+    before.push(setStroke(color, path.size || 2));
+    if (filled) before.push(setFill(color));
+    const dash = shapeDash(path);
+    if (dash) before.push(dash);
+    return { before, paint: filled ? "B" : "S" };
+  }
+
+  // Four cubics through the ends of an ellipse's axes: circle()'s quarter arcs
+  // drawn in the frame of its two semi-axes, so a tilted ellipse is as exact as
+  // a circle.
+  function ellipse(points) {
+    const cx = (points[0].x + points[1].x + points[2].x + points[3].x) / 4;
+    const cy = (points[0].y + points[1].y + points[2].y + points[3].y) / 4;
+    const u = { x: points[0].x - cx, y: points[0].y - cy };
+    const v = { x: points[1].x - cx, y: points[1].y - cy };
+    const k = 0.5523;
+    const at = (along, across) =>
+      `${n(cx + u.x * along + v.x * across)} ${n(cy + u.y * along + v.y * across)}`;
+    return [
+      `${at(1, 0)} m`,
+      `${at(1, k)} ${at(k, 1)} ${at(0, 1)} c`,
+      `${at(-k, 1)} ${at(-1, k)} ${at(-1, 0)} c`,
+      `${at(-1, -k)} ${at(-k, -1)} ${at(0, -1)} c`,
+      `${at(k, -1)} ${at(1, -k)} ${at(1, 0)} c`,
+      "h"
+    ].join("\n");
+  }
+
+  function shapeOps(path, points, resources) {
     if (points.length < 2) return null;
     const kind = path.shapeType || "rect";
     const [a, b] = points;
-    const stroke = setStroke(path.color || "#ffffff", path.size || 2);
+    const style = shapePaint(path, resources);
+    if (!style) return null;
+    const draw = (outline) => [...style.before, outline, style.paint].join("\n");
+    const smart = Number(path.geometryVersion) === 1 && path.geometryKind === kind;
 
-    if (kind === "circle" || kind === "ellipse") {
+    // A smart polygon stores every corner, so it is traced corner to corner.
+    // Reading only the first two as a box exported a smart rectangle
+    // ([TL, TR, BR, BL]) as a zero-height rectangle, and every other smart
+    // polygon fell back to raster.
+    if (smart && SMART_POLYGON_KINDS.has(kind) && points.length >= 3) {
+      return draw([
+        `${n(points[0].x)} ${n(points[0].y)} m`,
+        ...points.slice(1).map((point) => `${n(point.x)} ${n(point.y)} l`),
+        "h"
+      ].join("\n"));
+    }
+
+    if (smart && kind === "ellipse" && points.length >= 4) {
+      return draw(ellipse(points));
+    }
+
+    if (kind === "circle") {
       const cx = (a.x + b.x) / 2;
       const cy = (a.y + b.y) / 2;
       const rx = Math.abs(b.x - a.x) / 2;
       const ry = Math.abs(b.y - a.y) / 2;
-      if (Math.abs(rx - ry) > 0.01) return null; // ellipse needs a scaled circle
-      return ["1 J 1 j", stroke, circle(cx, cy, rx), "S"].join("\n");
+      if (Math.abs(rx - ry) > 0.01) return null; // an old stretched circle; raster keeps its look
+      return draw(`${circle(cx, cy, rx)}\nh`);
     }
 
     if (kind === "rect" || kind === "rectangle" || kind === "square") {
       const x = Math.min(a.x, b.x);
       const y = Math.min(a.y, b.y);
-      return [
-        "1 J 1 j",
-        stroke,
-        `${n(x)} ${n(y)} ${n(Math.abs(b.x - a.x))} ${n(Math.abs(b.y - a.y))} re`,
-        "S"
-      ].join("\n");
+      return draw(`${n(x)} ${n(y)} ${n(Math.abs(b.x - a.x))} ${n(Math.abs(b.y - a.y))} re`);
     }
 
     return null;

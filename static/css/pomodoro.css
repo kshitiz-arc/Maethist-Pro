@@ -1,0 +1,706 @@
+/* The focus timer.
+ *
+ * Rebuilt 2026-09-15 on the core tokens alone (tokens.css). The panel it
+ * replaces had a gradient ground, a blurred scrim, and repainted itself green
+ * for breaks and amber for long breaks - two colours outside a palette that
+ * has one accent and no warning colour - and 14 of its controls were under
+ * the 44px floor. See docs/superpowers/specs/2026-09-14-editor-feedback-design.md
+ * section 2.
+ */
+
+/* ---------- overlay and panel ---------- */
+
+.pomo-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s4);
+  background: var(--d-5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--slow) ease-out;
+}
+
+.pomo-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pomo-panel {
+  box-sizing: border-box;
+  width: min(380px, 100%);
+  max-height: calc(100vh - var(--s6));
+  max-height: calc(100svh - var(--s6));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--s3) var(--s4) var(--s4);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: 0 18px 48px var(--d-4);
+  color: var(--ink);
+  font-family: var(--sans);
+  transform: translateY(8px);
+  transition: transform var(--slow) ease-out;
+}
+
+.pomo-overlay.active .pomo-panel {
+  transform: none;
+}
+
+.pomo-panel button,
+.pomo-pill button {
+  font: inherit;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pomo-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- head ---------- */
+
+.pomo-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  margin-bottom: var(--s3);
+}
+
+.pomo-title {
+  flex: 1;
+  margin: 0;
+  padding-left: var(--s1);
+  font-size: var(--t-4);
+  font-weight: 600;
+  letter-spacing: -0.008em;
+}
+
+.pomo-back + .pomo-title {
+  padding-left: 0;
+}
+
+.pomo-icon-btn {
+  flex: none;
+  width: var(--tap);
+  height: var(--tap);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background-color var(--fast) ease-out, color var(--fast) ease-out;
+}
+
+.pomo-icon-btn:hover {
+  background: var(--raised);
+  color: var(--ink);
+}
+
+/* These classes set display, which outranks the browser's [hidden] rule. */
+.pomo-icon-btn[hidden],
+.pomo-view[hidden] {
+  display: none;
+}
+
+.pomo-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+/* ---------- mode tabs ---------- */
+
+.pomo-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s1);
+  padding: var(--s1);
+  border-radius: var(--r-md);
+  background: var(--raised);
+}
+
+.pomo-tab {
+  min-height: var(--tap);
+  padding: 0 var(--s2);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-2);
+  font-size: var(--t-2);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pomo-tab:hover {
+  color: var(--ink);
+}
+
+.pomo-tab.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+/* ---------- the clock ---------- */
+
+.pomo-stage {
+  position: relative;
+  width: min(208px, 36vh);
+  aspect-ratio: 1;
+  margin: 0 auto;
+}
+
+.pomo-ring {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.pomo-ring-track,
+.pomo-ring-fill {
+  fill: none;
+  stroke-width: 6;
+}
+
+.pomo-ring-track {
+  stroke: var(--rule);
+}
+
+.pomo-ring-fill {
+  stroke: var(--accent);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 250ms linear;
+}
+
+.pomo-stage-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s1);
+}
+
+.pomo-time {
+  font-family: var(--mono);
+  font-size: var(--t-7);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.022em;
+  line-height: 1;
+}
+
+.pomo-stage-mode {
+  color: var(--ink-2);
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.pomo-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: var(--s1);
+}
+
+.pomo-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-circle);
+  background: var(--rule);
+}
+
+.pomo-dot.done {
+  background: var(--accent);
+}
+
+.pomo-dot.current {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+/* ---------- controls ---------- */
+
+.pomo-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s3);
+}
+
+.pomo-ctrl {
+  width: var(--tap);
+  height: var(--tap);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.pomo-ctrl:hover {
+  background: var(--raised);
+  color: var(--ink);
+}
+
+.pomo-main {
+  min-width: 132px;
+  min-height: var(--s7);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  padding: 0 var(--s5);
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--t-3);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pomo-main:hover {
+  box-shadow: inset 0 0 0 999px var(--d-2);
+}
+
+.pomo-panel button:focus-visible,
+.pomo-panel input:focus-visible,
+.pomo-pill button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- what you are working on ---------- */
+
+.pomo-task-row {
+  display: block;
+}
+
+.pomo-task-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-3);
+}
+
+.pomo-task-input::placeholder {
+  color: var(--ink-3);
+}
+
+/* ---------- focus sound ---------- */
+
+.pomo-sound {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.pomo-sound-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s1);
+  padding: var(--s1);
+  border-radius: var(--r-md);
+  background: var(--raised);
+}
+
+.pomo-sound-option {
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--s1);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-2);
+  font-size: var(--t-1);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pomo-sound-option:hover {
+  color: var(--ink);
+}
+
+.pomo-sound-option[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+.pomo-volume-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  color: var(--ink-3);
+}
+
+.pomo-volume {
+  flex: 1;
+  min-width: var(--tap);
+  height: var(--tap);
+  margin: 0;
+  background: transparent;
+  accent-color: var(--accent);
+}
+
+.pomo-stats-line {
+  margin: 0;
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* ---------- settings ---------- */
+
+.pomo-view-settings {
+  gap: var(--s2);
+}
+
+.pomo-settings-heading {
+  margin: var(--s2) 0 0;
+  color: var(--ink-2);
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.pomo-settings-heading:first-child {
+  margin-top: 0;
+}
+
+.pomo-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s2);
+}
+
+.pomo-preset {
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--s1);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--t-2);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pomo-preset em {
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: var(--t-1);
+  font-style: normal;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.pomo-preset:hover {
+  background: var(--raised);
+}
+
+.pomo-preset.active {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+  color: var(--accent);
+}
+
+.pomo-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s3);
+}
+
+.pomo-settings-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  color: var(--ink-2);
+  font-size: var(--t-2);
+}
+
+.pomo-settings-grid input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: var(--t-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.pomo-switch {
+  position: relative;
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  color: var(--ink);
+  font-size: var(--t-2);
+  cursor: pointer;
+}
+
+.pomo-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+}
+
+.pomo-switch-track {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  border-radius: var(--r-pill);
+  background: var(--rule);
+  transition: background-color var(--fast) ease-out;
+}
+
+.pomo-switch-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--r-circle);
+  background: var(--surface);
+  transition: transform var(--fast) ease-out;
+}
+
+.pomo-switch input:checked + .pomo-switch-track {
+  background: var(--accent);
+}
+
+.pomo-switch input:checked + .pomo-switch-track::after {
+  transform: translateX(16px);
+}
+
+.pomo-switch input:focus-visible + .pomo-switch-track {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- the floating pill ---------- */
+
+.pomo-pill {
+  position: fixed;
+  right: var(--s4);
+  bottom: var(--s6);
+  z-index: 9990;
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  padding: 0 var(--s1) 0 var(--s3);
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: 0 4px 16px var(--d-3);
+  color: var(--ink);
+  font-family: var(--sans);
+  cursor: pointer;
+}
+
+.pomo-pill-icon {
+  display: inline-flex;
+  color: var(--accent);
+}
+
+.pomo-pill-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--s1) var(--s1);
+}
+
+.pomo-pill-time {
+  font-family: var(--mono);
+  font-size: var(--t-3);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.pomo-pill-task {
+  max-width: 140px;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: var(--t-1);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pomo-pill-play,
+.pomo-pill-close {
+  width: var(--tap);
+  height: var(--tap);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-circle);
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.pomo-pill-play:hover,
+.pomo-pill-close:hover {
+  background: var(--raised);
+  color: var(--ink);
+}
+
+.pomo-pill-bar {
+  position: absolute;
+  left: var(--s3);
+  right: var(--s3);
+  bottom: 0;
+  height: 2px;
+  overflow: hidden;
+  background: var(--rule);
+}
+
+.pomo-pill-bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 250ms linear;
+}
+
+@keyframes pomoPillPop {
+  from { box-shadow: 0 0 0 4px var(--accent-wash), 0 4px 16px var(--d-3); }
+  to   { box-shadow: 0 4px 16px var(--d-3); }
+}
+
+.pomo-pill-pop {
+  animation: pomoPillPop var(--slow) ease-out;
+}
+
+/* ---------- toasts and the finish ---------- */
+
+.pomo-toast-host {
+  position: fixed;
+  top: var(--s6);
+  left: 50%;
+  z-index: 10001;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.pomo-toast {
+  padding: var(--s2) var(--s4);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: 0 4px 16px var(--d-3);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--t-2);
+  opacity: 0;
+  transition: opacity var(--slow) ease-out;
+}
+
+.pomo-toast.show {
+  opacity: 1;
+}
+
+.pomo-confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 10002;
+  pointer-events: none;
+}
+
+/* The top-bar trigger says a session is live without animating at you. */
+#pomodoroBtn.timer-running {
+  color: var(--accent);
+}
+
+#pomodoroBtn.timer-paused {
+  color: var(--ink-2);
+}
+
+/* ---------- small screens ---------- */
+
+@media (max-height: 640px) {
+  .pomo-stage {
+    width: min(150px, 30vh);
+  }
+
+  .pomo-time {
+    font-size: var(--t-6);
+  }
+
+  .pomo-view {
+    gap: var(--s3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pomo-overlay,
+  .pomo-panel,
+  .pomo-ring-fill,
+  .pomo-pill-bar span,
+  .pomo-toast,
+  .pomo-switch-track,
+  .pomo-switch-track::after {
+    transition: none;
+  }
+
+  .pomo-pill-pop {
+    animation: none;
+  }
+}

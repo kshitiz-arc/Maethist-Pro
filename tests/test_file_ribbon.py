@@ -18,11 +18,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from app import app
+from browser_server import make_browser_server
 from pdf_quality import build_vector_pdf
 
 try:
     from playwright.sync_api import sync_playwright
-    from werkzeug.serving import make_server
 
     BROWSER_AVAILABLE = True
 except ImportError:  # pragma: no cover - optional dependency
@@ -34,7 +34,7 @@ class RibbonTestBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         app.config["TESTING"] = True
-        cls.server = make_server("127.0.0.1", 0, app, threaded=True)
+        cls.server = make_browser_server(app)
         cls.port = cls.server.server_port
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
@@ -67,7 +67,7 @@ class RibbonTestBase(unittest.TestCase):
         # The first-run feature tour covers the screen and would swallow every
         # click; mark it seen, then load the editor for real.
         page.evaluate(
-            "localStorage.setItem('inkyscib-feature-tour-v1', JSON.stringify({seen: true}))"
+            "localStorage.setItem('inkyscib-consent-v1', JSON.stringify({version: 1, analytics: false})); localStorage.setItem('inkyscib-feature-tour-v1', JSON.stringify({seen: true}))"
         )
         page.goto(url)
         page.wait_for_function("window.Inkyscib?.FileRibbon !== undefined", timeout=30000)
@@ -119,13 +119,26 @@ class RibbonTestBase(unittest.TestCase):
     def open_backstage(self, page, tab):
         """Show `tab`, whether or not the backstage is already up.
 
-        The bar tabs toggle, so clicking "file" while the File pane is open
-        closes it. Always drive from the rail once the backstage is showing.
+        Insert, Export and Tools are the ribbon's own tabs and are no longer
+        repeated in the File panel's rail, so they open from the ribbon. File
+        and Recent are the rail. The bar tabs toggle, so a tab that is already
+        showing is never clicked again.
         """
-        already_open = page.evaluate(
-            "!!document.querySelector('.file-backstage.is-open')"
+        if tab in ("insert", "export", "tools"):
+            ribbon_tab = '[data-ribbon-tab="%s"]' % tab
+            if page.get_attribute(ribbon_tab, "aria-expanded") != "true":
+                page.click(ribbon_tab)
+            page.wait_for_selector(ribbon_tab + '[aria-expanded="true"]', timeout=5000)
+            page.wait_for_selector(".file-backstage.is-open", timeout=5000)
+            return
+
+        rail_showing = page.evaluate(
+            """() => {
+              const rail = document.querySelector('.file-backstage.is-open .file-backstage-rail');
+              return !!rail && getComputedStyle(rail).display !== 'none';
+            }"""
         )
-        if not already_open:
+        if not rail_showing:
             page.click('[data-ribbon-tab="file"]')
             page.wait_for_selector(".file-backstage.is-open", timeout=5000)
 
@@ -143,6 +156,65 @@ class RibbonTestBase(unittest.TestCase):
 class RibbonSurfaceTest(RibbonTestBase):
     """The bar itself, and which commands it offers when."""
 
+    def test_the_file_panel_rail_does_not_repeat_the_ribbon_tabs(self):
+        """Insert, Export and Tools are tabs on the ribbon itself.
+
+        The File panel's left rail used to list all five sections, so those
+        three were offered twice, a few centimetres apart. The rail keeps what
+        belongs to File alone - its commands and Recent - and stands aside when
+        the panel was opened from one of the other tabs.
+        """
+        rail_display = (
+            "() => getComputedStyle(document.querySelector('.file-backstage-rail')).display"
+        )
+        with sync_playwright() as playwright:
+            browser, context, page = self.start(playwright)
+            try:
+                self.open_editor(page)
+                page.click('[data-ribbon-tab="file"]')
+                page.wait_for_selector(".file-backstage.is-open", timeout=5000)
+                rail_tabs = page.eval_on_selector_all(
+                    ".file-rail-btn", "els => els.map(e => e.dataset.railTab)"
+                )
+                on_file = page.evaluate(rail_display)
+
+                on_others = {}
+                for tab, command in (
+                    ("insert", "importPdf"),
+                    ("export", "exportPdf"),
+                    ("tools", "planner"),
+                ):
+                    page.click('[data-ribbon-tab="%s"]' % tab)
+                    page.wait_for_selector(
+                        '[data-ribbon-tab="%s"][aria-expanded="true"]' % tab, timeout=5000
+                    )
+                    page.wait_for_selector(
+                        '#fileBackstagePane [data-command="%s"]' % command, timeout=5000
+                    )
+                    on_others[tab] = page.evaluate(rail_display)
+
+                page.click('[data-ribbon-tab="file"]')
+                page.wait_for_selector(
+                    '[data-ribbon-tab="file"][aria-expanded="true"]', timeout=5000
+                )
+                back_on_file = page.evaluate(rail_display)
+
+                page.click('[data-rail-tab="recent"]')
+                page.wait_for_selector(
+                    '[data-rail-tab="recent"][aria-selected="true"]', timeout=5000
+                )
+                file_tab_on_recent = page.get_attribute('[data-ribbon-tab="file"]', "aria-expanded")
+            finally:
+                context.close()
+                browser.close()
+
+        self.raise_for_page_errors()
+        self.assertEqual(rail_tabs, ["file", "recent"])
+        self.assertNotEqual(on_file, "none")
+        self.assertEqual(on_others, {"insert": "none", "export": "none", "tools": "none"})
+        self.assertNotEqual(back_on_file, "none")
+        self.assertEqual(file_tab_on_recent, "true", "Recent is part of the File tab")
+
     def test_ribbon_renders_with_its_tabs(self):
         with sync_playwright() as playwright:
             browser, context, page = self.start(playwright)
@@ -157,7 +229,7 @@ class RibbonSurfaceTest(RibbonTestBase):
                 browser.close()
 
         self.raise_for_page_errors()
-        self.assertEqual(tabs, ["File", "Insert", "Export"])
+        self.assertEqual(tabs, ["File", "Insert", "Export", "Tools"])
 
     def test_file_pane_offers_the_document_commands(self):
         with sync_playwright() as playwright:
@@ -178,6 +250,9 @@ class RibbonSurfaceTest(RibbonTestBase):
             titles,
             [
                 "New notebook", "Open", "Save", "Save as", "My Notebooks",
+                # Pages arrived here when the hamburger drawer was deleted: it
+                # changes the shape of the document, so it is a File command.
+                "Notebook pages",
                 "Back up everything",
                 # Clear canvas moved here from the top bar, where it sat one
                 # control away from Undo. It is last on purpose: the only

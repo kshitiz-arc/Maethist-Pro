@@ -37,3 +37,24 @@ credentials.json
 *.log
 .gstack/
 .backup-*/
+
+# Consent audit chain: real records, never committed
+data/consent-log.jsonl
+
+# Local-only material that is not part of Inkyscib
+.review_hye_set_a/
+.review_hye_set_b/
+.codex_qa_audit/
+*Introspection_Forms/
+_qa_final/
+_qa_original/
+qa_redesign_pages/
+qa_redesign_pdf/
+output/
+tmp/
+graphify-out/
+.pytest_cache/
+*.docx
+*.bak
+tools/*introspection*
+data/

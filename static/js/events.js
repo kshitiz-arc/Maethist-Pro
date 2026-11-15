@@ -20,6 +20,12 @@
   function safeSave() {
     if (typeof window.saveDrawing === "function") window.saveDrawing();
   }
+
+  function clearSelectionForCanvasAction() {
+    if (state()?.currentTool !== "select" && window.Inkyscib?.Selection?.clear) {
+      window.Inkyscib.Selection.clear({ render: false });
+    }
+  }
   function safeSavePreferences() {
     // Debounced: this runs from wheel, pan and pinch, where an immediate
     // synchronous write would land inside the gesture's own frames.
@@ -85,8 +91,41 @@
       filtered: { ...point },
       speed: 0,
       time: point.time,
+      // Every sample as the pen reported it. On lift the stroke is rebuilt
+      // from these (static/js/ink-smooth.js), so the live filter below only
+      // has to keep the ink tidy while it is being drawn.
+      rawPoints: [{ ...point }],
+      // Display only: the renderer draws the live stroke through to here, the
+      // newest sample, so the ink on screen reaches the nib.
+      tip: { ...point },
     });
   }
+  // Off, then the two useful amounts. Values are cutoff frequencies in Hz.
+  // They used to be 4.5 and 2.4, which smoothed hard enough to trail the nib by
+  // ~10px and ~16px; the heavy smoothing now happens on lift, with no lag, so
+  // the live filter is light enough to stay a few pixels behind.
+  const INK_SMOOTHING = {
+    off: null,
+    natural: { base: 11, gain: 18, ceiling: 28 },
+    strong: { base: 9.5, gain: 16, ceiling: 22 },
+  };
+
+  // The pen's write-assist level, 0-100. Stored as a number since the slider;
+  // older saves hold "off" / "natural" / "strong", which ink-smooth.js maps
+  // onto 0 / 40 / 70. The fallback only matters if that file failed to load.
+  function smoothingStrength() {
+    const value = state()?.toolSettings?.pen?.smoothing;
+    const level = window.Inkyscib?.InkSmooth?.assistLevel;
+    if (typeof level === "function") return level(value);
+    return Object.prototype.hasOwnProperty.call(INK_SMOOTHING, value) ? value : "natural";
+  }
+
+  function liveFilterFor(strength) {
+    const live = window.Inkyscib?.InkSmooth?.liveFilter;
+    if (typeof live === "function") return live(strength);
+    return INK_SMOOTHING[strength] || null;
+  }
+
   function smoothingAlpha(cutoff, elapsedMs) {
     const elapsedSeconds = Math.max(0.001, Math.min(0.05, elapsedMs / 1000));
     const timeConstant = 1 / (Math.PI * 2 * cutoff);
@@ -103,11 +142,25 @@
       beginInkInput(path, path.points[0] || point, e);
       tracker = path.__inkInput;
     }
+    // Recorded before any filtering, for the lift-time rebuild, and shown as
+    // the tip so the ink on screen reaches the nib.
+    tracker.rawPoints.push({ ...point });
+    tracker.tip = { ...point };
 
-    // Pens already provide carefully sampled input. Mouse handwriting needs
-    // adaptive stabilization: suppress slow hand tremor but release quickly
-    // during fast strokes so the ink never feels as though it trails behind.
-    if (tracker.type !== "mouse") {
+    // Write assist. This used to run for the mouse only, on the reasoning that
+    // "pens already provide carefully sampled input" -- but a stylus reports a
+    // clean sample of a shaky hand, and a fingertip is shakier still. On the
+    // tablet this product is written for, that left handwriting unassisted.
+    // It is a setting now rather than a device check: the filter suppresses
+    // slow tremor and releases quickly as the stroke speeds up, so the ink
+    // never feels like it is trailing behind the nib.
+    //
+    // Render-time smoothing (canvas.js smoothPoints + soften) fits a curve
+    // through whatever is recorded; it cannot remove a wobble that is already
+    // in the points. This is the layer that can.
+    const preset = liveFilterFor(smoothingStrength());
+
+    if (!preset) {
       path.points.push(point);
       tracker.raw = { ...point };
       tracker.filtered = { ...point };
@@ -121,7 +174,9 @@
     const speedAlpha = smoothingAlpha(7.5, elapsed);
     tracker.speed += (instantSpeed - tracker.speed) * speedAlpha;
 
-    const cutoff = 4.5 + Math.min(14, tracker.speed * 9);
+    // A lower cutoff smooths harder. It rises with speed so a fast stroke
+    // stays responsive while slow, deliberate writing gets the most help.
+    const cutoff = preset.base + Math.min(preset.ceiling, tracker.speed * preset.gain);
     const alpha = smoothingAlpha(cutoff, elapsed);
     const filtered = {
       ...point,
@@ -146,18 +201,16 @@
     const tracker = path?.__inkInput;
     if (!tracker) return;
 
-    if (tracker.type === "mouse" && path.points.length > 1) {
-      const last = path.points[path.points.length - 1];
-      const raw = tracker.raw;
-      const distance = Math.hypot(raw.x - last.x, raw.y - last.y);
+    // On lift the stroke is rebuilt from what the pen actually reported, with
+    // symmetric smoothing that has no lag (static/js/ink-smooth.js), so it ends
+    // exactly where the pen lifted. The catch-up that used to stand here ran
+    // for the mouse only, and pen and touch strokes stopped ~11px short.
+    // Off keeps the raw points it already stored.
+    const strength = smoothingStrength();
+    const smoothStroke = window.Inkyscib?.InkSmooth?.smoothStroke;
+    if (liveFilterFor(strength) && smoothStroke && tracker.rawPoints.length >= 3) {
       const scale = Math.max(0.15, state()?.transform?.scale || 1);
-      if (distance > 0.3 / scale) {
-        path.points.push({
-          ...raw,
-          x: last.x + (raw.x - last.x) * 0.82,
-          y: last.y + (raw.y - last.y) * 0.82,
-        });
-      }
+      path.points = smoothStroke(tracker.rawPoints, strength, scale, tracker.type);
     }
 
     delete path.__inkInput;
@@ -431,6 +484,7 @@
     }
 
     safeCloseToolboxes();
+    clearSelectionForCanvasAction();
 
     s.isDrawing = true;
     s.isPanning = false;
@@ -487,21 +541,59 @@
         }
       }
     } else {
-      const coalesced = typeof e.getCoalescedEvents === "function"
-        ? e.getCoalescedEvents()
-        : [];
-      const samples = coalesced.length ? coalesced : [e];
-      samples.forEach((sample) => {
-        let pos = getDrawingPoint(sample);
-        if (s.notebook?.active && typeof window.normalizeNotebookPoint === "function") {
-          pos = window.normalizeNotebookPoint(pos, { clamp: true });
-          if (!pos) return;
-        }
-        appendInkPoint(s.currentPath, pos, sample);
-      });
+      takeInkSamples(e);
     }
 
     requestRedraw();
+  }
+
+  // Chromium holds pointermove back to the next frame. pointerrawupdate carries
+  // the same samples as soon as they arrive - measured 10.7 ms earlier for the
+  // mouse and 13 ms for touch at the median - so ink is taken from whichever
+  // brings a sample first. Each sample is appended once, in order, so the
+  // smoothing filter in appendInkPoint sees exactly what it always did.
+  const lastSampleTime = new WeakMap();
+  let rawInputEnabled = true;
+
+  // Test seam: off leaves drawing to pointermove alone.
+  window.__inkyscibSetRawInput = (enabled) => {
+    rawInputEnabled = enabled !== false;
+  };
+
+  function takeInkSamples(e) {
+    const s = state();
+    const path = s.currentPath;
+    const coalesced = typeof e.getCoalescedEvents === "function"
+      ? e.getCoalescedEvents()
+      : [];
+    const samples = coalesced.length ? coalesced : [e];
+    let taken = 0;
+    samples.forEach((sample) => {
+      const time = Number.isFinite(sample.timeStamp) ? sample.timeStamp : null;
+      const previous = lastSampleTime.get(path);
+      if (time !== null && previous !== undefined && time <= previous) return;
+      let pos = getDrawingPoint(sample);
+      if (s.notebook?.active && typeof window.normalizeNotebookPoint === "function") {
+        pos = window.normalizeNotebookPoint(pos, { clamp: true });
+        if (!pos) return;
+      }
+      appendInkPoint(path, pos, sample);
+      if (time !== null) lastSampleTime.set(path, time);
+      taken++;
+    });
+    return taken;
+  }
+
+  function onPointerRawUpdate(e) {
+    if (!rawInputEnabled) return;
+    const s = state();
+    const tool = s.currentPath?.tool;
+    if (!s.isDrawing || (tool !== "pen" && tool !== "highlight")) return;
+    if (s.isPanning || s.isTouchZooming) return;
+    if (e.pointerType !== "mouse" && (!pointers.has(e.pointerId) || pointers.size >= 2)) return;
+    if (takeInkSamples(e) && typeof window.renderNow === "function") {
+      window.renderNow();
+    }
   }
 
   function endDrawing() {
@@ -535,7 +627,13 @@
       let createdPath = null;
       let createdIndex = -1;
       if (meaningful) {
-          if (s.currentPath.tool === "eraser" && typeof window.applyInkyscibEraserToPaths === "function") {
+          if (s.currentPath.tool === "eraser" && s.currentPath.eraseMode === "object" &&
+              typeof window.eraseInkyscibObjectsTouched === "function") {
+              const beforeErase = typeof window.captureHistory === "function" ? window.captureHistory() : null;
+              if (window.eraseInkyscibObjectsTouched(s.paths, s.currentPath)) {
+                  if (beforeErase && typeof window.commitHistory === "function") window.commitHistory(beforeErase);
+              }
+          } else if (s.currentPath.tool === "eraser" && typeof window.applyInkyscibEraserToPaths === "function") {
               // Snapshot before erasing so undo can restore the split/removed strokes.
               const beforeErase = typeof window.captureHistory === "function" ? window.captureHistory() : null;
               if (window.applyInkyscibEraserToPaths(s.paths, s.currentPath)) {
@@ -560,14 +658,32 @@
       s.isDrawing = false;
       s.currentPath = null;
       clearConstructionSnaps();
-    
+
+      // Write assist, second half. appendInkPoint above steadies the hand as
+      // the stroke is made, but it is causal and can only ever see the past;
+      // snapping an outline to a shape or straightening a run needs the
+      // finished stroke, so it happens here. It may hand back a different path
+      // object — a promoted geometry shape — which is what the dispatch below
+      // then belongs to.
+      let promotedByAssist = false;
+      if (createdPath?.tool === "pen" && window.Inkyscib?.Handwriting?.assist) {
+          const assisted = window.Inkyscib.Handwriting.assist(createdPath, createdIndex);
+          if (assisted) {
+              promotedByAssist = assisted !== createdPath;
+              createdPath = assisted;
+          }
+      }
+
       requestRedraw();
       if (typeof window.saveDrawing === 'function') {
           window.saveDrawing();
       }
+      // A shape that shape assist made keeps the pen in hand. afterPathCreated
+      // switches to Select, which under someone mid-sentence turns their next
+      // stroke into a marquee; the chip's Edit button does that on request.
       if (createdPath?.tool === "manipulative") {
         window.Inkyscib?.Manipulatives?.afterTileCreated?.(createdPath, createdIndex);
-      } else if (createdPath && window.Inkyscib?.SmartGeometry?.afterPathCreated) {
+      } else if (createdPath && !promotedByAssist && window.Inkyscib?.SmartGeometry?.afterPathCreated) {
         window.Inkyscib.SmartGeometry.afterPathCreated(createdPath, createdIndex);
       }
   }
@@ -620,6 +736,8 @@
         s.start = point;
         canvas.style.cursor = "grabbing";
       } else {
+        if (s.currentTool !== "select" && s.currentTool !== "eraser") clearSelectionForCanvasAction();
+        if (s.currentTool === "eraser" && armEraserHold(e, "mouse")) return;
         if (s.currentTool === "select" && window.Inkyscib?.Selection?.handleDown) {
           window.Inkyscib.Selection.handleDown(e);
           return;
@@ -647,6 +765,8 @@
     if (window.sizePreview && window.sizePreview.isVisible) {
       window.sizePreview.updatePosition(e.clientX, e.clientY);
     }
+
+    if (continueEraserHold(e, "mouse")) return;
 
     if (s.isPanning) {
       const point = clientToCanvas(e.clientX, e.clientY);
@@ -694,6 +814,7 @@
     }
 
     if (e.button === 0) {
+      if (finishEraserHold(e, "mouse")) return;
       if (s.isPanning) {
         s.isPanning = false;
         canvas.style.cursor = s.panMode ? "grab" : "default";
@@ -723,6 +844,7 @@
 
     s.isDrawing = false;
     s.isPanning = false;
+    clearEraserHold(true);
     if (wasPanning) safeSavePreferences();
     if (window.Inkyscib?.Selection?.handleUp) window.Inkyscib.Selection.handleUp();
 
@@ -738,6 +860,92 @@
     }
   }
   const pointers = new Map();
+
+  const ERASER_HOLD_MS = 520;
+  const ERASER_HOLD_SLOP_PX = 9;
+  let eraserHold = null;
+
+  function heldEvent(e) {
+    return {
+      clientX: e.clientX,
+      clientY: e.clientY,
+      pointerType: e.pointerType || "mouse",
+      pressure: e.pressure,
+      timeStamp: e.timeStamp,
+      getCoalescedEvents: () => []
+    };
+  }
+
+  function clearEraserHold(cancelLasso = false) {
+    if (!eraserHold) return;
+    if (eraserHold.timer) window.clearTimeout(eraserHold.timer);
+    if (cancelLasso) window.Inkyscib?.Eraser?.cancelLasso?.();
+    eraserHold = null;
+  }
+
+  function armEraserHold(e, pointerId) {
+    const s = state();
+    const eraser = window.Inkyscib?.Eraser;
+    if (s?.currentTool !== "eraser" || !eraser?.beginLasso) return false;
+
+    clearSelectionForCanvasAction();
+    const down = heldEvent(e);
+    const world = getDrawingPoint(down);
+    eraserHold = {
+      pointerId,
+      down,
+      world,
+      startClient: { x: e.clientX, y: e.clientY },
+      active: false,
+      timer: window.setTimeout(() => {
+        if (!eraserHold || eraserHold.pointerId !== pointerId) return;
+        eraserHold.active = true;
+        eraserHold.timer = null;
+        eraser.beginLasso(eraserHold.world);
+        announceGesture("Lasso erase");
+        if (navigator.vibrate) navigator.vibrate(18);
+      }, ERASER_HOLD_MS)
+    };
+    return true;
+  }
+
+  function continueEraserHold(e, pointerId) {
+    if (!eraserHold || eraserHold.pointerId !== pointerId) return false;
+    if (eraserHold.active) {
+      window.Inkyscib?.Eraser?.extendLasso?.(getDrawingPoint(e));
+      return true;
+    }
+
+    const moved = Math.hypot(
+      e.clientX - eraserHold.startClient.x,
+      e.clientY - eraserHold.startClient.y
+    );
+    if (moved < ERASER_HOLD_SLOP_PX) return true;
+
+    const down = eraserHold.down;
+    clearEraserHold();
+    startDrawing(down);
+    continueDrawing(e);
+    return true;
+  }
+
+  function finishEraserHold(e, pointerId) {
+    if (!eraserHold || eraserHold.pointerId !== pointerId) return false;
+    const active = eraserHold.active;
+    const down = eraserHold.down;
+    clearEraserHold();
+
+    if (active) {
+      window.Inkyscib?.Eraser?.finishLasso?.(getDrawingPoint(e));
+      return true;
+    }
+
+    // A quick tap is still a normal eraser dab.
+    startDrawing(down);
+    continueDrawing(e);
+    endDrawing();
+    return true;
+  }
   let lastPinchDist = null;
   let lastPinchMid = null;
 
@@ -874,6 +1082,7 @@
       gesture = null;
     }
     if (pointers.size >= 2) {
+      clearEraserHold(true);
       // Late arrival means a palm, or a second finger joining an action already
       // in progress. Either way it is not a tap gesture, so leave it disarmed.
       if (pointers.size === 2) {
@@ -901,6 +1110,7 @@
       s.start = point;
       return;
     }
+    if (s.currentTool !== "select" && s.currentTool !== "eraser") clearSelectionForCanvasAction();
     if (s.currentTool === "select" && window.Inkyscib?.Selection?.handleDown) {
       window.Inkyscib.Selection.handleDown(e);
       return;
@@ -917,6 +1127,7 @@
       handleCustomTrianglePoint(e);
       return;
     }
+    if (s.currentTool === "eraser" && armEraserHold(e, e.pointerId)) return;
     startDrawing(e);
   }
 
@@ -995,6 +1206,7 @@
       startSmoothTransform();
       return;
     }
+    if (continueEraserHold(e, e.pointerId)) return;
     if (s.currentTool === "select" && window.Inkyscib?.Selection?.handleMove) {
       window.Inkyscib.Selection.handleMove(e);
       return;
@@ -1025,6 +1237,15 @@
     }
     if (pointers.size === 0) {
       s.isPanning = false;
+      if (eraserHold?.pointerId === e.pointerId) {
+        if (e.type === "pointercancel") {
+          clearEraserHold(true);
+        } else {
+          finishEraserHold(e, e.pointerId);
+        }
+        releasePointer(canvas, e.pointerId);
+        return;
+      }
       // Resolved before the transform is committed below, because a tap moved
       // nothing and has no transform to commit. Undo redraws for itself.
       if (resolveGesture()) {
@@ -1102,6 +1323,15 @@
 
     requestRedraw();
     safeSave();
+  }
+
+  function handleCanvasDoubleClick(e) {
+    if (e.button !== 0 || typeof window.setTool !== "function") return;
+    e.preventDefault();
+    window.Inkyscib?.Selection?.clear?.({ render: false });
+    window.setTool("pen");
+    window.Inkyscib?.ToolDock?.setCollapsed?.(true);
+    requestRedraw();
   }
   // ---------------------------------------------------------------------
   // Keyboard command layer
@@ -1303,6 +1533,7 @@
   }
   function setupModeIndicators() {
     document.addEventListener("toolChanged", (e) => {
+      clearEraserHold(true);
       updateCursor(e.detail.tool);
       clearConstructionSnaps();
     });
@@ -1372,9 +1603,13 @@
     canvas.addEventListener("pointerdown", trackTouchDownPoint, { passive: false });
     canvas.addEventListener("pointerdown", onPointerDown, { passive: false });
     canvas.addEventListener("pointermove", onPointerMove, { passive: false });
+    if ("onpointerrawupdate" in window) {
+      canvas.addEventListener("pointerrawupdate", onPointerRawUpdate, { passive: true });
+    }
     canvas.addEventListener("pointerup", onPointerUp, { passive: false });
     canvas.addEventListener("pointercancel", onPointerUp, { passive: false });
     canvas.addEventListener("wheel", handleWheel, { passive: false });
+    canvas.addEventListener("dblclick", handleCanvasDoubleClick);
     document.addEventListener("keydown", handleKeyboardShortcuts);
     labelToolShortcuts();
     document.addEventListener("keyup", handleSpaceUp);

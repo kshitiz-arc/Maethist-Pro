@@ -232,8 +232,7 @@
       visual: visuals.library,
       features: [["notebook", "Multi-notebook library"], ["pattern", "3 canvas patterns"], ["backup", "Backup + restore"], ["local", "Stored on this device"]],
       hint: "The menu is also where you switch between infinite canvas and page-based notes.",
-      target: "#libraryBtn",
-      menu: true,
+      target: '[data-ribbon-tab="file"]',
       padding: 7,
       radius: 13,
     },
@@ -244,8 +243,10 @@
       visual: visuals.files,
       features: [["pdf", "PDF import"], ["slides", "PPT / PPTX import"], ["pages", "A4 notebook pages"], ["export", "PDF / PPTX export"]],
       hint: "Export buttons appear only when a deck or paged notebook is active, so the toolbar stays calm.",
-      target: "#pptImportBtn",
-      menu: true,
+      // Was "#pptImportBtn" with menu: true, which opened the hamburger drawer
+      // to point at a button inside it. The drawer is gone and importing now
+      // lives in the ribbon, so point at the tab that actually opens it.
+      target: '[data-ribbon-tab="insert"]',
       padding: 7,
       radius: 13,
     },
@@ -267,8 +268,7 @@
       visual: visuals.planner,
       features: [["calendar", "One-year calendar"], ["bell", "Timed + smart nudges"], ["repeat", "Daily + weekly plans"], ["progress", "Live completion progress"]],
       hint: "Everything stays on this device. Tasks without a time get a smart reminder after three hours.",
-      target: "#plannerBtn",
-      menu: true,
+      target: '[data-ribbon-tab="tools"]',
       padding: 7,
       radius: 14,
     },
@@ -277,17 +277,9 @@
       title: "Go hands-free, or move the controls.",
       copy: "On supported laptops, experimental <strong>AR Inky</strong> uses the webcam and hand tracking to draw in the air. You can also dock the toolbar at the top or bottom and swap light or dark themes.",
       visual: visuals.ar,
-      features: [["camera", "AR air drawing"], ["location", "Toolbar top / bottom"], ["theme", "Light + dark themes"], ["move", "Desktop + touch layouts"]],
+      features: [["camera", "AR air drawing"], ["theme", "Light + dark themes"], ["move", "Desktop + touch layouts"]],
       hint: "AR is shown only on compatible desktop devices and asks for camera permission when you choose it.",
-      target: function () {
-        const arSection = document.getElementById("arSection");
-        if (arSection) {
-          const rect = arSection.getBoundingClientRect();
-          if (rect.width && rect.height) return arSection;
-        }
-        return document.getElementById("toolbarLocationToggle");
-      },
-      menu: true,
+      target: '[data-ribbon-tab="tools"]',
       padding: 7,
       radius: 13,
     },

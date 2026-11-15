@@ -1347,5 +1347,10 @@
   };
 
   document.addEventListener("DOMContentLoaded", initPptUi);
-  document.addEventListener("canvasRendered", updatePptUi);
+  // Eight getElementById calls per frame; the deck cannot change while a
+  // stroke is being drawn.
+  document.addEventListener("canvasRendered", (event) => {
+    if (event?.detail?.liveInk) return;
+    updatePptUi();
+  });
 })();

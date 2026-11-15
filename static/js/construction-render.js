@@ -403,6 +403,33 @@
     ctx.restore();
   }
 
+  function drawPickedAngleSide(ctx, picked, colors) {
+    if (!picked?.a || !picked?.b) return;
+    ctx.save();
+    setStroke(ctx, colors.accent, 3.2);
+    ctx.globalAlpha = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(picked.a.x, picked.a.y);
+    ctx.lineTo(picked.b.x, picked.b.y);
+    ctx.stroke();
+
+    [picked.a, picked.b].forEach((point) => {
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, px(5), 0, Math.PI * 2);
+      ctx.fillStyle = colors.surface || colors.halo;
+      ctx.fill();
+      ctx.stroke();
+    });
+
+    if (picked.pickedAt) {
+      ctx.beginPath();
+      ctx.arc(picked.pickedAt.x, picked.pickedAt.y, px(4), 0, Math.PI * 2);
+      ctx.fillStyle = colors.accent;
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
   function drawOverlay(ctx) {
     const compass = window.Inkyscib?.Compass;
     const construction = C();
@@ -410,6 +437,7 @@
 
     const colors = palette();
     const overlay = compass?.getOverlayState ? compass.getOverlayState() : null;
+    const angleOverlay = window.Inkyscib?.AngleTool?.getOverlayState?.() || null;
 
     // A crossing belongs to the drawing, not to the tool that happened to be
     // open when it appeared. Once two arcs meet, the mark stays there under
@@ -445,6 +473,7 @@
 
     if (overlay?.preview) drawCompassPreview(ctx, overlay.preview, colors);
     if (overlay?.selected) drawSelection(ctx, overlay.selected, colors);
+    if (angleOverlay?.firstPicked) drawPickedAngleSide(ctx, angleOverlay.firstPicked, colors);
     if (snap) drawSnapIndicator(ctx, snap, colors);
   }
 

@@ -187,9 +187,9 @@
       const page = pdf.getPage(index);
       const resources = makeResources(PDFLib, page);
 
-      const mediaBox = readMediaBox(page);
+      const viewBox = readViewBox(page);
       const rotation = page.getRotation()?.angle || 0;
-      const matrix = vec.viewportToPdfMatrix(rotation, mediaBox);
+      const matrix = vec.viewportToPdfMatrix(rotation, viewBox);
 
       const body = [];
       const overlays = [];
@@ -266,19 +266,62 @@
     return Object.is(rounded, -0) ? "0" : String(rounded);
   }
 
-  function readMediaBox(page) {
+  /**
+   * The box PDF.js laid this page out in: its CropBox clipped to its MediaBox.
+   *
+   * Annotations are stored in viewport coordinates, and PDF.js builds that
+   * viewport from `Page#view` — not from the MediaBox. The two are the same
+   * only on an uncropped page; where they differ, using the MediaBox here
+   * moves every stroke on the page by the offset between the boxes, which on
+   * a page cropped at the top reads as ink sitting slightly too high.
+   *
+   * Mirrors PDF.js' own rule: a missing CropBox, one with no area, or one that
+   * misses the MediaBox entirely is ignored in favour of the MediaBox.
+   */
+  function readViewBox(page) {
+    const mediaBox = readPageBox(page, "MediaBox") || fallbackBox(page);
+    const cropBox = readPageBox(page, "CropBox");
+    if (!cropBox) return mediaBox;
+    return intersectBoxes(cropBox, mediaBox) || mediaBox;
+  }
+
+  /** One page box as a normalised [x0, y0, x1, y1], or null if unusable. */
+  function readPageBox(page, name) {
+    let raw = null;
     try {
-      const box = page.node.MediaBox();
+      const box = name === "CropBox" ? page.node.CropBox() : page.node.MediaBox();
       if (box && typeof box.asRectangle === "function") {
         const rect = box.asRectangle();
-        return [rect.x, rect.y, rect.x + rect.width, rect.y + rect.height];
-      }
-      if (box && typeof box.size === "function" && box.size() >= 4) {
-        return [0, 1, 2, 3].map((index) => box.lookup(index).asNumber());
+        raw = [rect.x, rect.y, rect.x + rect.width, rect.y + rect.height];
+      } else if (box && typeof box.size === "function" && box.size() >= 4) {
+        raw = [0, 1, 2, 3].map((index) => box.lookup(index).asNumber());
       }
     } catch (error) {
-      console.warn("Could not read a page's MediaBox; assuming its reported size.", error);
+      console.warn("Could not read a page's " + name + ".", error);
+      return null;
     }
+    if (!raw || !raw.every((value) => Number.isFinite(value))) return null;
+
+    const normalised = [
+      Math.min(raw[0], raw[2]),
+      Math.min(raw[1], raw[3]),
+      Math.max(raw[0], raw[2]),
+      Math.max(raw[1], raw[3])
+    ];
+    // A box with no area would collapse the page to a point.
+    if (!(normalised[2] > normalised[0]) || !(normalised[3] > normalised[1])) return null;
+    return normalised;
+  }
+
+  function intersectBoxes(a, b) {
+    const x0 = Math.max(a[0], b[0]);
+    const y0 = Math.max(a[1], b[1]);
+    const x1 = Math.min(a[2], b[2]);
+    const y1 = Math.min(a[3], b[3]);
+    return x1 > x0 && y1 > y0 ? [x0, y0, x1, y1] : null;
+  }
+
+  function fallbackBox(page) {
     const size = page.getSize();
     return [0, 0, size.width, size.height];
   }
@@ -291,6 +334,8 @@
   window.Inkyscib.PdfExport = {
     exportDeckOntoOriginal,
     canExportOntoOriginal,
-    loadPdfLib
+    loadPdfLib,
+    // exported for tests
+    readViewBox
   };
 })();

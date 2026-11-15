@@ -172,8 +172,10 @@
             thumb.height = height;
             const ctx = thumb.getContext('2d');
 
+            // The preview sits on the notebook's own canvas ground.
+            const ground = window.Inkyscib?.CanvasTheme?.get?.().ground;
             const isLight = (document.documentElement.dataset.theme || 'dark') === 'light';
-            ctx.fillStyle = isLight ? '#f7f3ec' : '#0f1219';
+            ctx.fillStyle = ground || (isLight ? '#f7f3ec' : '#0f1219');
             ctx.fillRect(0, 0, width, height);
             if (pattern && pattern.width && pattern.height) {
                 ctx.drawImage(pattern, 0, 0, width, height);
@@ -506,7 +508,10 @@
         });
     }
 
-    function renameDocument(id) {
+    // nextName is optional. Without it this still raises its own prompt, which
+    // is what the Library modal's pencil relies on; with it the caller has
+    // already collected the name its own way (Recents edits it in the row).
+    function renameDocument(id, nextName) {
         return runExclusive('rename', async () => {
             const library = await ensureLibrary();
             if (!library) return;
@@ -514,7 +519,9 @@
             const entry = library.documents.find((doc) => doc.id === id);
             if (!entry) return;
 
-            const input = window.prompt('Rename notebook', entry.name);
+            const input = typeof nextName === 'string'
+                ? nextName
+                : window.prompt('Rename notebook', entry.name);
             if (input === null) return;
 
             const name = input.trim().slice(0, MAX_NAME_LENGTH);
@@ -528,7 +535,10 @@
         });
     }
 
-    function deleteDocument(id) {
+    // Pass { confirmed: true } when the caller has already asked. Recents does,
+    // through the app's own confirm dialog: window.confirm looks nothing like
+    // the app and Playwright auto-dismisses it, so it cannot be tested.
+    function deleteDocument(id, options) {
         return runExclusive('delete', async () => {
             const library = await ensureLibrary();
             if (!library) return;
@@ -536,10 +546,14 @@
             const entry = library.documents.find((doc) => doc.id === id);
             if (!entry) return;
 
-            const confirmed = window.confirm(
+            const confirmed = options?.confirmed === true || window.confirm(
                 `Delete “${entry.name}”? It will be permanently removed from this device.`
             );
             if (!confirmed) return;
+
+            // Read before the record goes: afterwards there is no way back to
+            // what this notebook imported.
+            const doomedOriginal = originalIdOf(await readStoredRecord(DOC_PREFIX + id));
 
             const wasActive = id === library.activeId;
             library.documents = library.documents.filter((doc) => doc.id !== id);
@@ -569,9 +583,52 @@
                 await saveLibrary();
             }
 
+            // The notebook's imported original used to live on in the
+            // documents store with nothing referencing it -- a PDF or deck's
+            // worth of bytes kept forever, on a device chosen for being cheap.
+            // Released after the library is saved, so a failure here cannot
+            // undo the delete.
+            await releaseOriginals([doomedOriginal]);
+
             setStatus(`Deleted “${entry.name}”.`, 'success');
             renderGrid();
         });
+    }
+
+    // The imported original a notebook points at, if any. A PDF and a deck
+    // both land in the `ppt` slot (pdf-local-import sets renderMode 'pdf' on
+    // the same deck object), and storage.js persists only `ppt.docId`.
+    function originalIdOf(docData) {
+        const id = docData?.ppt?.docId;
+        return typeof id === 'string' && id ? id : null;
+    }
+
+    // Deliberately NOT DocStore.collectGarbage: a global sweep deletes
+    // everything absent from the list it is handed, so one missed reference
+    // destroys an original that is still in use. This removes only the ids the
+    // deleted notebook held, and only once nothing else points at them -- a
+    // mistake here can leave garbage behind, never lose a document.
+    async function releaseOriginals(candidateIds) {
+        const store = window.Inkyscib?.DocStore;
+        if (!store || typeof store.deleteDocument !== 'function') return;
+        const wanted = (candidateIds || []).filter(Boolean);
+        if (!wanted.length) return;
+
+        try {
+            const library = await ensureLibrary();
+            const stillUsed = new Set();
+            for (const doc of library?.documents || []) {
+                const stored = await readStoredRecord(DOC_PREFIX + doc.id);
+                const id = originalIdOf(stored);
+                if (id) stillUsed.add(id);
+            }
+            for (const id of new Set(wanted)) {
+                if (!stillUsed.has(id)) await store.deleteDocument(id);
+            }
+        } catch (e) {
+            // Reclaiming space must never be the thing that breaks a delete.
+            console.warn('Could not release the notebook original:', e);
+        }
     }
 
     function backupFilename() {

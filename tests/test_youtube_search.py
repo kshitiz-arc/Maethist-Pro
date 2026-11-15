@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import patch
 
 from app import YOUTUBE_SEARCH_CACHE, _parse_youtube_search_html, app
+from browser_server import make_browser_server
 
 
 class YouTubeSearchParserTests(unittest.TestCase):
@@ -65,7 +66,6 @@ class YouTubeSearchParserTests(unittest.TestCase):
 
 try:
     from playwright.sync_api import sync_playwright
-    from werkzeug.serving import make_server
 
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
@@ -76,7 +76,7 @@ except ImportError:
 class YouTubeSearchFallbackBrowserTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.server = make_server("127.0.0.1", 0, app, threaded=True)
+        cls.server = make_browser_server(app)
         cls.server_thread = threading.Thread(
             target=cls.server.serve_forever,
             daemon=True,

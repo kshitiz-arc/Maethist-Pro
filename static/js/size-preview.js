@@ -5,6 +5,7 @@ class SizePreview {
         this.state = window.appState;
         this.isVisible = false;
         this.currentTool = null;
+        this.lastScale = null;
         
         this.init();
     }
@@ -28,6 +29,19 @@ class SizePreview {
             }
         });
         
+        // The ring's diameter is size * zoom, but it was only recomputed on
+        // mouseenter and when the size input changed -- so zooming with the
+        // pointer held still left it showing the previous zoom's thickness.
+        // The renderer fires this on every frame, so compare before touching
+        // the DOM.
+        document.addEventListener('canvasRendered', () => {
+            if (!this.isVisible) return;
+            const scale = this.state.transform.scale;
+            if (scale === this.lastScale) return;
+            this.lastScale = scale;
+            this.updateSize();
+        });
+
         this.canvas.addEventListener('mouseleave', () => {
             this.hide();
         });
@@ -125,6 +139,7 @@ class SizePreview {
         const scale = this.state.transform.scale;
         
         const displaySize = size * scale;
+        this.lastScale = scale;
         
         this.preview.style.width = `${displaySize}px`;
         this.preview.style.height = `${displaySize}px`;

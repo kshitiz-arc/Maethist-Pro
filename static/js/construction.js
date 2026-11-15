@@ -58,11 +58,9 @@
       !!path.points[1];
   }
 
-  // A ray keeps going past its second point and a line past both, so anything
-  // measured along one has to use the same extent the stroke is drawn with.
+  // The editor works on a finite page: legacy ray/line values are treated as
+  // ordinary segments when rebuilding the construction index.
   function drawnLineMode(path) {
-    if (path.lineKind === "ray") return "ray";
-    if (path.lineKind === "line") return "line";
     return "segment";
   }
 

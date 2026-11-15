@@ -1,0 +1,5 @@
+# Everything needed to run the tests. After installing, run once:
+#   python -m playwright install chromium
+-r requirements.txt
+pytest==9.0.3
+playwright==1.62.0

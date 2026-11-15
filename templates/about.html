@@ -1,8 +1,49 @@
 {% extends "_marketing.html" %}
 
-{% block title %}About &mdash; Inkyscib{% endblock %}
+{% block title %}About Inkyscib — who builds it, and why it stays free{% endblock %}
 {% block description %}Who builds Inkyscib: a mathematics educator and applied-ML researcher in Ranchi, building the classroom tools he needed in front of his own students.{% endblock %}
 {% block body_class %}page-content{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Home", "item": "{{ site_url('/') }}"},
+    {"@type": "ListItem", "position": 2, "name": "About", "item": "{{ site_url('/about') }}"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Inkyscib",
+  "url": "{{ site_url('/') }}",
+  "logo": "{{ site_url(url_for('static', filename='icons/inkyscib-512.png', v='pwa-1')) }}",
+  "founder": [
+    {
+      "@type": "Person",
+      "name": "Kshitiz Kumar Sinha",
+      "jobTitle": "Mathematics educator and applied-ML researcher",
+      "sameAs": [
+        "https://www.linkedin.com/in/kshitiz47/",
+        "https://github.com/kshitiz-arc"
+      ]
+    },
+    {
+      "@type": "Person",
+      "name": "Salaj Shekhar",
+      "sameAs": [
+        "https://www.linkedin.com/in/salajs/",
+        "https://github.com/SalajPro"
+      ]
+    }
+  ]
+}
+</script>
+{% endblock %}
 
 {#
   Profile facts come from Kshitiz's own CV. Deliberately kept off this public
@@ -16,7 +57,7 @@
 {% block content %}
     <div class="page-head">
       <div class="system-label">Who builds it</div>
-      <h2>About</h2>
+      <h1>About</h1>
     </div>
 
     <p class="statement">
@@ -56,7 +97,7 @@
     <section class="section">
       <div class="section-title">
         <i>01</i>
-        <h3>Who builds it</h3>
+        <h2>Who builds it</h2>
       </div>
 
       <article class="profile panel clip-hud">
@@ -72,7 +113,7 @@
 
         <div>
           <span class="profile-tier">Teacher</span>
-          <h4 class="profile-name">Kshitiz Kumar Sinha</h4>
+          <h3 class="profile-name">Kshitiz Kumar Sinha</h3>
           <p class="profile-role">
             EdTech developer · Applied ML researcher · Mathematics educator
           </p>
@@ -145,7 +186,7 @@
 
         <div>
           <span class="profile-tier">Student</span>
-          <h4 class="profile-name">Salaj Shekhar</h4>
+          <h3 class="profile-name">Salaj Shekhar</h3>
           <p class="profile-role">
             Student · Developer · Security enthusiast
           </p>
@@ -191,7 +232,7 @@
     <section class="section">
       <div class="section-title">
         <i>02</i>
-        <h3>Built before this</h3>
+        <h2>Built before this</h2>
       </div>
 
       <div class="panel clip-hud">
@@ -259,14 +300,14 @@
     <section class="section">
       <div class="section-title">
         <i>03</i>
-        <h3>How it works</h3>
+        <h2>How it works</h2>
       </div>
 
       <div class="card-grid">
 
         <article class="card panel clip-hud">
           <span class="card-index">On your device</span>
-          <h4>Your work stays on your device</h4>
+          <h3>Your work stays on your device</h3>
           <p>
             There is no login and no cloud. Notebooks are stored in your own
             browser, and you can export the whole library as a single file and
@@ -276,7 +317,7 @@
 
         <article class="card panel clip-hud">
           <span class="card-index">Free</span>
-          <h4>Free, and staying free</h4>
+          <h3>Free, and staying free</h3>
           <p>
             Nothing to upgrade to, no trial that runs out, and no ads paying for
             it behind your back.
@@ -285,13 +326,75 @@
 
         <article class="card panel clip-hud">
           <span class="card-index">Open source</span>
-          <h4>Open on GitHub</h4>
+          <h3>Open on GitHub</h3>
           <p>
             Bugs, ideas and pull requests are all welcome — if something is
             missing for the way you study or teach, say so.
           </p>
           <div class="maker-links">
             <a href="https://github.com/SalajPro" target="_blank" rel="noopener noreferrer">REPOSITORY ↗</a>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    {# WCAG 2.1 AA conformance is a claim, and a claim needs a page. What does
+       not conform is named here rather than left for someone to discover. #}
+    <section class="section" id="accessibility">
+      <div class="section-title">
+        <i>04</i>
+        <h2>Accessibility</h2>
+      </div>
+
+      <div class="card-grid">
+
+        <article class="card panel clip-hud">
+          <span class="card-index">The target</span>
+          <h3>WCAG 2.1 AA</h3>
+          <p>
+            Every page is checked automatically against WCAG 2.1 level A and
+            AA on each test run, and all of them currently pass with no
+            violations — including the editor. Text meets a 4.5:1 contrast
+            ratio, every control can be reached and used from the keyboard
+            with a visible focus ring, and nothing is explained by colour
+            alone.
+          </p>
+        </article>
+
+        <article class="card panel clip-hud">
+          <span class="card-index">Touch</span>
+          <h3>Built for a tablet, not a mouse</h3>
+          <p>
+            Controls are sized to a 44px touch target, which is the same floor
+            a screen-magnifier user benefits from. The interface is designed
+            around a ~960px budget Android tablet, so nothing important is
+            hidden behind a hover or a wide-screen-only panel.
+          </p>
+        </article>
+
+        <article class="card panel clip-hud">
+          <span class="card-index">Known limits</span>
+          <h3>What does not conform</h3>
+          <p>
+            Drawing on the canvas needs a pointer — a pen, a finger or a
+            mouse. There is no keyboard equivalent for making a stroke, and
+            that is a real gap rather than an oversight. AR Inky needs a camera
+            and a hand it can see. Imported PDF and slide pages are images, so
+            their text is not readable by a screen reader.
+          </p>
+        </article>
+
+        <article class="card panel clip-hud">
+          <span class="card-index">Tell us</span>
+          <h3>If something blocks you</h3>
+          <p>
+            If any part of Inkyscib stops you doing something, please open an
+            issue on the repository and say what you were trying to do. A
+            barrier nobody reports is one nobody fixes.
+          </p>
+          <div class="maker-links">
+            <a href="https://github.com/SalajPro" target="_blank" rel="noopener noreferrer">REPORT A BARRIER ↗</a>
           </div>
         </article>
 

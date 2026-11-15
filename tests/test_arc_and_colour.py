@@ -18,10 +18,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from app import app
+from browser_server import make_browser_server
 
 try:
     from playwright.sync_api import sync_playwright
-    from werkzeug.serving import make_server
 
     BROWSER_AVAILABLE = True
 except ImportError:  # pragma: no cover - optional dependency
@@ -33,7 +33,7 @@ class ArcColourTestBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         app.config["TESTING"] = True
-        cls.server = make_server("127.0.0.1", 0, app, threaded=True)
+        cls.server = make_browser_server(app)
         cls.port = cls.server.server_port
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
@@ -57,7 +57,7 @@ class ArcColourTestBase(unittest.TestCase):
         url = "http://127.0.0.1:%d/write" % self.port
         page.goto(url)
         page.evaluate(
-            "localStorage.setItem('inkyscib-feature-tour-v1', JSON.stringify({seen: true}))"
+            "localStorage.setItem('inkyscib-consent-v1', JSON.stringify({version: 1, analytics: false})); localStorage.setItem('inkyscib-feature-tour-v1', JSON.stringify({seen: true}))"
         )
         page.goto(url)
         page.wait_for_function("window.appState?.storageReady === true", timeout=30000)
@@ -364,8 +364,8 @@ class ArcWorkflowTest(ArcColourTestBase):
         self.assertTrue(before, "nothing drawn yet, so nothing to follow on from")
         self.assertFalse(after, "the + button should appear once an arc exists")
 
-    def test_new_arc_keeps_the_centre_and_radius(self):
-        """A compass draws several arcs from one centre; that is the point."""
+    def test_new_arc_returns_to_step_one(self):
+        """New arc starts a fresh construction instead of continuing the old one."""
         with sync_playwright() as playwright:
             browser, context, page = self.start(playwright)
             try:
@@ -384,8 +384,8 @@ class ArcWorkflowTest(ArcColourTestBase):
                 browser.close()
 
         self.raise_for_page_errors()
-        self.assertEqual(after["radius"], 120, "the radius should survive starting another arc")
-        self.assertTrue(after["centre"])
+        self.assertIsNone(after["radius"], "a new construction must not inherit the old radius")
+        self.assertFalse(after["centre"], "a new construction must ask for a fresh centre")
         self.assertIsNone(after["last"], "the new arc has not been drawn yet")
 
     def test_tapping_an_arcs_body_picks_it_back_up(self):

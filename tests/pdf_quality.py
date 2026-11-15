@@ -138,6 +138,41 @@ def build_form_pdf(directory, name="form.pdf"):
     return path
 
 
+def build_cropped_pdf(directory, name="cropped.pdf", crop=True):
+    """A page whose CropBox is inset from its MediaBox — the cropped-scan case.
+
+    PDF.js lays a page out in its CropBox, so annotations are stored relative
+    to that box while the MediaBox stays larger and offset. This is the only
+    fixture where the two differ, and it exists because an exporter that
+    confuses them still looks perfect on every other page here: the error is
+    exactly the offset between the boxes, which is zero when they agree.
+
+    The four insets are deliberately all different, so a box picked wrongly
+    cannot cancel itself out into a passing result. Pass ``crop=False`` for the
+    identical page with no CropBox at all — the control that holds every other
+    variable steady. The page carries no vector art of its own so that anything
+    ``ink_bounds`` finds on it is annotation.
+    """
+    document = fitz.open()
+    page = document.new_page(width=612, height=792)
+    page.insert_text((60, 90), "Cropped page", fontsize=15, fontname="hebo")
+    for index in range(14):
+        page.insert_text(
+            (60, 130 + index * 16),
+            "%02d. Body text that must survive being annotated." % (index + 1),
+            fontsize=9,
+        )
+    if crop:
+        # fitz takes this y-down from the MediaBox top, so the stored CropBox
+        # is [18, 22, 588, 768] — inset 18 left, 24 right, 24 top, 22 bottom.
+        page.set_cropbox(fitz.Rect(18, 24, 588, 770))
+
+    path = Path(directory) / name
+    document.save(path)
+    document.close()
+    return path
+
+
 def build_heavy_pdf(directory, name="heavy.pdf", megabytes=8):
     """A deliberately large file, well past the old 2 MB media ceiling.
 
@@ -173,6 +208,7 @@ FIXTURE_BUILDERS = {
     "mixed": build_mixed_orientation_pdf,
     "cjk": build_cjk_pdf,
     "form": build_form_pdf,
+    "cropped": build_cropped_pdf,
 }
 
 
@@ -269,6 +305,33 @@ def compare_renders(left, right):
         "changed_fraction": (changed / total) if total else 0.0,
         "identical": changed == 0,
     }
+
+
+def ink_bounds(pdf_bytes, index=0):
+    """The bounding box of the vector drawings on a page, or None if it has none.
+
+    This is every drawing on the page, so it only measures annotation on a
+    fixture that has no vector art of its own — `build_cropped_pdf` is the one
+    built for it. On a page that draws its own shapes this returns their union
+    with the ink and means nothing.
+
+    PyMuPDF reports drawings in page coordinates — the origin at the CropBox's
+    top-left corner with y growing downward — which is precisely the space
+    PDF.js hands the editor and the space annotations are stored in. So for ink
+    that landed correctly this box comes back in the same numbers the stroke
+    was drawn at, and any offset between the two is the misplacement in points.
+    """
+    with fitz.open(stream=pdf_bytes, filetype="pdf") as document:
+        page = document[index]
+        box = None
+        for drawing in page.get_drawings():
+            rect = drawing.get("rect")
+            if rect is None:
+                continue
+            box = rect if box is None else (box | rect)
+    if box is None:
+        return None
+    return (box.x0, box.y0, box.x1, box.y1)
 
 
 def measure(pdf_bytes):

@@ -1,0 +1,191 @@
+/* The Shape tool: its rail icon, its panel, and fill and outline in the
+ * geometry inspector.
+ *
+ * See docs/superpowers/specs/2026-09-14-editor-feedback-design.md section 8.
+ * Replaces seven 32px icon-only buttons - a Font Awesome square for the
+ * square, a play glyph for the triangle - and a triangle-type row of 30x26px
+ * buttons that appeared only once a triangle was picked. Tokens only.
+ */
+
+/* ---------- rail button: show the chosen shape ---------- */
+
+.shape-tool .shape-tool-svg {
+  position: absolute;
+  inset: 0;
+  display: none;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.shape-tool[data-shape="circle"] .shape-tool-circle,
+.shape-tool[data-shape="ellipse"] .shape-tool-ellipse,
+.shape-tool[data-shape="square"] .shape-tool-square,
+.shape-tool[data-shape="rectangle"] .shape-tool-rectangle,
+.shape-tool[data-shape="parallelogram"] .shape-tool-parallelogram,
+.shape-tool[data-shape="rhombus"] .shape-tool-rhombus,
+.shape-tool[data-shape="kite"] .shape-tool-kite,
+.shape-tool[data-shape="trapezium"] .shape-tool-trapezium,
+.shape-tool[data-shape="pentagon"] .shape-tool-pentagon,
+.shape-tool[data-shape="hexagon"] .shape-tool-hexagon,
+.shape-tool[data-shape="octagon"] .shape-tool-octagon,
+.shape-tool[data-shape="triangle"][data-triangle-type="isosceles"] .shape-tool-triangle-isosceles,
+.shape-tool[data-shape="triangle"][data-triangle-type="equilateral"] .shape-tool-triangle-equilateral,
+.shape-tool[data-shape="triangle"][data-triangle-type="right"] .shape-tool-triangle-right,
+.shape-tool[data-shape="triangle"][data-triangle-type="custom"] .shape-tool-triangle-custom {
+  display: block;
+}
+
+.shape-tool.is-changing .shape-tool-icon {
+  animation: shape-tool-swap var(--slow) ease-out;
+}
+
+@keyframes shape-tool-swap {
+  from {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shape-tool.is-changing .shape-tool-icon {
+    animation: none;
+  }
+}
+
+/* ---------- panel ---------- */
+
+/* No width here. This used to fix the floating Shape panel at 280px so its
+   three columns got steady room; every floating panel now has one fixed width
+   (.tool-options.is-floating in write.css), and at ID specificity this rule
+   was the one thing still making Shape 24px narrower than the other seven. */
+
+#shapeOptions .shape-picker,
+#shapeOptions .shape-style {
+  align-items: stretch;
+  gap: var(--s3);
+}
+
+#shapeOptions .shape-group,
+#shapeOptions .shape-style-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  width: 100%;
+  min-width: 0;
+}
+
+#shapeOptions .shape-group-heading {
+  color: var(--ink-2);
+  font-size: var(--t-1);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+#shapeOptions .shape-grid,
+#shapeOptions .shape-style-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s1);
+}
+
+#shapeOptions .shape-btn,
+#shapeOptions .shape-style-option {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 58px;
+  margin: 0;
+  padding: var(--s1) 2px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--fast) ease-out,
+    border-color var(--fast) ease-out;
+}
+
+#shapeOptions .shape-style-option {
+  min-height: 52px;
+}
+
+#shapeOptions .shape-btn:hover,
+#shapeOptions .shape-style-option:hover {
+  background: var(--raised);
+  transform: none;
+}
+
+#shapeOptions .shape-btn[aria-pressed="true"],
+#shapeOptions .shape-style-option[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+  box-shadow: none;
+}
+
+#shapeOptions .shape-btn:focus-visible,
+#shapeOptions .shape-style-option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+#shapeOptions .shape-btn svg,
+#shapeOptions .shape-style-option svg {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  overflow: visible;
+}
+
+/* "Parallelogram" is the longest label and the narrowest column in the dock is
+   about 70px. The markup gives it a soft hyphen, so it breaks as Parallel-ogram
+   only when it must. Not `hyphens: auto`: Chromium has no hyphenation
+   dictionary on Windows, and the label broke as "Parallelogra / m". */
+#shapeOptions .shape-btn-label {
+  max-width: 100%;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.15;
+  text-align: center;
+  hyphens: manual;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- geometry inspector: fill and outline of a selected shape ---------- */
+
+.geometry-style-row select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 var(--s2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-2);
+  cursor: pointer;
+}
+
+.geometry-style-row select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

@@ -1,0 +1,162 @@
+{% extends "legal/_legal.html" %}
+
+{% block title %}Inkyscib terms and conditions — plain and short{% endblock %}
+{% block description %}The terms for using Inkyscib: your work stays yours, fair use of the import pipeline, no warranty, liability limits, offline use and governing law.{% endblock %}
+{% block legal_title %}Terms and conditions{% endblock %}
+
+{% block legal_body %}
+
+      <p>
+        Inkyscib is free, has no accounts and takes no payments, so these terms
+        are short. They are between you and Kshitiz Kumar Sinha, who builds and
+        runs the site from Ranchi, India. Using the site means accepting them.
+      </p>
+
+      <h2>Your work is yours</h2>
+
+      <p>
+        We claim no licence of any kind over anything you write, draw, import or
+        export. That is not generosity, it is arithmetic: your work is stored in
+        your own browser and is never uploaded, so there is nothing for us to
+        licence. A file you import for conversion is held only for the seconds
+        the conversion takes and is then deleted. We do not read it, keep it,
+        index it, train anything on it, or show it to anyone.
+      </p>
+
+      <h2>Intellectual property</h2>
+
+      <p>
+        The source code of Inkyscib is published under the
+        <a href="https://github.com/SalajPro" rel="noopener noreferrer" target="_blank">MIT licence</a>,
+        so you may read it, run it, modify it and build on it under that licence's
+        terms. The name "Inkyscib", the logo and the site's own copy are not
+        covered by that licence and remain ours: fork the code freely, but do not
+        run a copy that presents itself as Inkyscib.
+      </p>
+
+      <h2>Acceptable use</h2>
+
+      <ul>
+        <li>
+          Do not import material you have no right to copy or convert. You are
+          responsible for what you upload; we have no way of knowing what it is.
+        </li>
+        <li>
+          Do not attack the conversion endpoints. Uploads are capped at 120 MB per
+          request, PDFs at 300 pages and exports at 300 slides, and those caps
+          exist so one request cannot exhaust a small server. Working around them
+          with automated or parallel requests is not permitted.
+        </li>
+        <li>
+          Do not use the site to break the law, to harass anyone, or to attempt to
+          reach data belonging to another visitor. There is no such data to reach,
+          which does not make the attempt acceptable.
+        </li>
+        <li>
+          Do not present a modified copy of the site as the original, and do not
+          strip the privacy notices from a copy you host.
+        </li>
+      </ul>
+
+      <h2>Third-party content</h2>
+
+      <p>
+        Lecture search and playback go through YouTube. Those videos are neither
+        hosted nor licensed by us; they are played under Google's own terms and
+        the rights of whoever uploaded them. Inkyscib passes your search to
+        YouTube and embeds its player, and that is the whole of the relationship.
+        If a video is wrong, missing or unavailable in your country, that is
+        YouTube's to answer.
+      </p>
+
+      <h2>Your work can be lost</h2>
+
+      <p>
+        This is the clause that matters most in practice. Because your notebooks
+        live in your browser, they disappear if you clear site data, if you use
+        private or incognito mode, if the browser evicts storage to reclaim space,
+        or if the device is lost. There is no cloud copy and no account to restore
+        from. <strong>Export a backup.</strong> The library exports the whole thing
+        as a single <code>.inky</code> file you can keep anywhere and restore on
+        any device.
+      </p>
+
+      <h2>No warranty</h2>
+
+      <p>
+        Inkyscib is provided as it is, with no warranty of any kind: not that it
+        will be available, not that it is free of defects, not that a conversion
+        will be accurate, and not that it fits any particular purpose. It is a
+        free tool written by one person, and it is offered in that spirit. Where
+        your local consumer law gives you rights that cannot be excluded, those
+        rights stand and nothing here affects them.
+      </p>
+
+      <h2>Limitation of liability</h2>
+
+      <p>
+        To the fullest extent the applicable law allows, we are not liable for
+        lost work, lost time, lost profit, or any indirect or consequential loss
+        arising from using the site — including work lost because browser storage
+        was cleared, which is why the backup clause above exists.
+      </p>
+
+      <p>
+        <strong>Nothing in these terms excludes or limits liability for death or
+        personal injury caused by negligence, for fraud or fraudulent
+        misrepresentation, or for anything else that cannot lawfully be
+        excluded.</strong> An unqualified exclusion is void in the United Kingdom,
+        across the EU and in India, and a clause that is void protects nobody, so
+        this one is written to survive.
+      </p>
+
+      <h2>Installation and offline use</h2>
+
+      <p>
+        Inkyscib can be added to a home screen and used offline. That is a
+        progressive web app: the "install" creates a shortcut to this same
+        website and caches its files in your browser. No program is downloaded,
+        no binary is licensed to you, and nothing is installed into the operating
+        system. There is therefore no end-user licence agreement, and these terms
+        plus the MIT licence on the source are the whole arrangement. If a
+        packaged desktop or mobile client is ever released, it will come with its
+        own licence and this section will say so.
+      </p>
+
+      <h2>Changes, and ending it</h2>
+
+      <p>
+        These terms can change; the date at the top of this page is the version
+        marker, and continuing to use the site is how you accept a change. You can
+        stop at any time by closing the tab, and you can remove everything with the
+        erase button in the
+        <a href="{{ url_for('privacy') }}">privacy policy</a>. We may suspend or
+        withdraw the site, or any feature of it, at any time — it is free, and
+        nothing here promises it will exist for ever. Your exported files keep
+        working regardless: a <code>.inky</code> backup and an exported PDF are
+        yours, on your device.
+      </p>
+
+      <h2>Governing law</h2>
+
+      <p>
+        These terms are governed by the laws of India, and the courts at Ranchi,
+        Jharkhand have jurisdiction over any dispute arising from them. That is
+        without prejudice to the mandatory consumer protection rights of the
+        country you live in: if your own law gives you the right to bring a claim
+        locally, this clause does not take it away.
+      </p>
+
+      <h2>How to reach us</h2>
+
+      <p>
+        <strong>Contact address: to be set before this page is published.</strong>
+        The placeholder is deliberate — see <code>docs/legal/README.md</code> in
+        the source. Until it is filled in, the public route is
+        <a href="https://github.com/SalajPro" rel="noopener noreferrer" target="_blank">github.com/SalajPro</a>.
+        For anything about data, start with the
+        <a href="{{ url_for('privacy') }}">privacy policy</a>, which names the
+        30-day window for a rights request.
+      </p>
+
+{% endblock %}

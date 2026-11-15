@@ -1,0 +1,13 @@
+# Scoping for graphify: exclude throwaway render/QA artifacts and build junk.
+tmp/
+_qa_final/
+_qa_original/
+.review_hye_set_a/
+.review_hye_set_b/
+output/
+.backup-*/
+__pycache__/
+.pytest_cache/
+debug.log
+DESIGN.md.bak
+static/js/vendor/

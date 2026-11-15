@@ -89,7 +89,7 @@
 
       const distance = engine.distance(world, projected.point);
       if (distance <= bestDistance) {
-        best = segment;
+        best = { ...segment, pickedAt: projected.point };
         bestDistance = distance;
       }
     });
@@ -104,6 +104,14 @@
   // them, and that is the common case when a corner is drawn by hand.
   function vertexOf(one, two) {
     const engine = G();
+    const sharedTolerance = engine.screenDistanceToWorld(PICK_SCREEN_PX, state()?.transform);
+    for (const a of [one.a, one.b]) {
+      for (const b of [two.a, two.b]) {
+        if (engine.distance(a, b) <= sharedTolerance) {
+          return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        }
+      }
+    }
     return engine.lineLineIntersection(one.a, one.b, two.a, two.b, { mode: "line" });
   }
 
@@ -186,34 +194,61 @@
       return true;
     }
 
+    // Consume the pair before committing. A render or save during commit can
+    // never leak the previous first side into the next angle session.
+    const chosenFirst = first;
+    first = null;
     // A refusal (parallel lines) has already explained itself; overwriting that
     // with the idle prompt would leave the user with two clicks and no reason.
-    if (commit(first, picked)) {
+    if (commit(chosenFirst, picked)) {
       setStatus("Click the first line.");
     }
-    first = null;
     return true;
   }
 
   function getOverlayState() {
     if (state()?.currentTool !== "angle") return null;
-    return { firstPicked: first ? { a: first.a, b: first.b } : null };
+    return {
+      firstPicked: first ? { a: first.a, b: first.b, pickedAt: first.pickedAt } : null
+    };
+  }
+
+  function selectedAngleMarks() {
+    const s = state();
+    const indices = window.Inkyscib?.Selection?.selectedIndices?.() || [];
+    return indices.map((index) => s?.paths?.[index]).filter((path) => (
+      path?.tool === "construction" && path.geomType === "angle"
+    ));
+  }
+
+  function mutateSelectedAngles(mutate) {
+    const marks = selectedAngleMarks();
+    if (!marks.length) return false;
+    if (typeof window.commitHistory === "function") window.commitHistory();
+    marks.forEach(mutate);
+    if (typeof window.saveDrawing === "function") window.saveDrawing();
+    render();
+    return true;
   }
 
   function syncPanel() {
     const a = settings();
+    const selected = selectedAngleMarks();
+    const shown = selected[0] || a;
     const size = document.getElementById("angleSize");
     const sizeInput = document.getElementById("angleSizeInput");
     const showText = document.getElementById("angleShowText");
     const picker = document.getElementById("angleCustomColor");
 
-    if (size) size.value = a.size;
-    if (sizeInput && document.activeElement !== sizeInput) sizeInput.value = a.size;
-    if (showText) showText.checked = a.showText !== false;
-    if (picker && a.color) picker.value = a.color;
+    const shownSize = Number.isFinite(shown.size) ? shown.size : a.size;
+    const shownText = selected.length ? selected.every((mark) => mark.showAngle !== false) : a.showText !== false;
+    if (size) size.value = shownSize;
+    if (sizeInput && document.activeElement !== sizeInput) sizeInput.value = shownSize;
+    if (showText) showText.checked = shownText;
+    if (picker && shown.color) picker.value = shown.color;
 
     document.querySelectorAll("[data-angle-color]").forEach((swatch) => {
-      const on = (swatch.dataset.angleColor || null) === (a.color || null);
+      const on = (swatch.dataset.angleColor || null) === (shown.color || null);
       swatch.classList.toggle("selected", on);
     });
   }
@@ -231,30 +266,40 @@
     const setSize = (value) => {
       const next = Math.min(8, Math.max(1, Number(value)));
       if (!Number.isFinite(next)) return;
-      settings().size = next;
+      if (!mutateSelectedAngles((mark) => { mark.size = next; })) {
+        settings().size = next;
+        saveSettings();
+      }
       syncPanel();
-      saveSettings();
     };
 
     size?.addEventListener("input", () => setSize(size.value));
     sizeInput?.addEventListener("input", () => setSize(sizeInput.value));
 
     showText?.addEventListener("change", () => {
-      settings().showText = showText.checked;
-      saveSettings();
+      if (!mutateSelectedAngles((mark) => { mark.showAngle = showText.checked; })) {
+        settings().showText = showText.checked;
+        saveSettings();
+      }
+      syncPanel();
     });
 
     picker?.addEventListener("input", () => {
-      settings().color = picker.value;
+      if (!mutateSelectedAngles((mark) => { mark.color = picker.value; })) {
+        settings().color = picker.value;
+        saveSettings();
+      }
       syncPanel();
-      saveSettings();
     });
 
     document.querySelectorAll("[data-angle-color]").forEach((swatch) => {
       swatch.addEventListener("click", () => {
-        settings().color = swatch.dataset.angleColor || null;
+        const color = swatch.dataset.angleColor || null;
+        if (!mutateSelectedAngles((mark) => { mark.color = color; })) {
+          settings().color = color;
+          saveSettings();
+        }
         syncPanel();
-        saveSettings();
       });
     });
 
@@ -275,7 +320,9 @@
 
     document.addEventListener("toolChanged", (event) => {
       if (event.detail?.tool !== "angle") first = null;
+      syncPanel();
     });
+    document.addEventListener("selectionChanged", syncPanel);
   }
 
   window.Inkyscib = window.Inkyscib || {};

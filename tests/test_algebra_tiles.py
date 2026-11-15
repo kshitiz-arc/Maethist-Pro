@@ -2,11 +2,11 @@ import threading
 import unittest
 
 from app import app
+from browser_server import make_browser_server
 
 
 try:
     from playwright.sync_api import sync_playwright
-    from werkzeug.serving import make_server
 
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
@@ -17,7 +17,7 @@ except ImportError:
 class AlgebraTileBrowserTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.server = make_server("127.0.0.1", 0, app, threaded=True)
+        cls.server = make_browser_server(app)
         cls.server_thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.server_thread.start()
         cls.base_url = f"http://127.0.0.1:{cls.server.server_port}"

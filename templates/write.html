@@ -4,47 +4,117 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#10131d" />
+  <meta name="theme-color" content="#0E2238" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Inkyscib" />
-  <title>Inkyscib - Write</title>
+  <title>Open the canvas — write, draw and annotate | Inkyscib</title>
+  <meta name="description" content="Open the Inkyscib canvas: handwrite notes, construct live geometry, annotate a PDF or a deck, and export clean vector PDF. Free, no account, offline." />
+  <link rel="canonical" href="{{ canonical_url }}">
+  {% if search_console_token %}
+  <meta name="google-site-verification" content="{{ search_console_token }}" />
+  {% endif %}
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Inkyscib" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:title" content="Open the canvas — write, draw and annotate | Inkyscib" />
+  <meta property="og:description" content="Open the Inkyscib canvas: handwrite notes, construct live geometry, annotate a PDF or a deck, and export clean vector PDF. Free, no account, offline." />
+  <meta property="og:url" content="{{ canonical_url }}" />
+  <meta property="og:image" content="{{ site_url(url_for('static', filename='img/og-cover.png')) }}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="The Inkyscib homepage: a live ruler-and-compass construction beside the words 'the geometry is real'." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Open the canvas — write, draw and annotate | Inkyscib" />
+  <meta name="twitter:description" content="Open the Inkyscib canvas: handwrite notes, construct live geometry, annotate a PDF or a deck, and export clean vector PDF. Free, no account, offline." />
+  <meta name="twitter:image" content="{{ site_url(url_for('static', filename='img/og-cover.png')) }}" />
+
   <!-- Same face as the marketing pages, so the walk from / into /write no
-       longer changes typeface mid-journey. display=swap keeps first paint. -->
-  <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+       longer changes typeface mid-journey, and served from this origin so no
+       visitor's IP reaches Google. Regenerate with tools/vendor_fonts.py; do
+       not hand-edit css/fonts.css. The faces carry display=swap, so text
+       still paints immediately in the fallback and swaps when Archivo lands. -->
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="{{ url_for('static', filename='fonts/archivo-400-900-2.woff2') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/privacy.css', v='v2') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/write.css', v='hex-1') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/icons.css', v='icons-2') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/onboarding.css', v='feature-tour-2') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/planner.css', v='planner-3') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/editor-chrome.css', v='panels-1') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/file-ribbon.css', v='ribbon-1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/write-assist.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pomodoro.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/canvas-theme.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/shape-picker.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/vengeance.css', v='veng-1') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/chrome-compact.css') }}">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest', v='pwa-1') }}">
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/inkyscib-180.png', v='pwa-1') }}">
   <link rel="icon" href="{{ url_for('static', filename='logo.ico') }}" type="image/x-icon">
   <script src="{{ url_for('static', filename='js/icons.js', v='icons-2') }}" defer></script>
   <script>
     try {
-      // The editor's stylesheets key off an explicit data-theme, so one is
-      // always stamped here, before first paint. What changed: with nothing
-      // saved this used to fall through to a hardcoded dark on <html>, so a
+      // The editor's stylesheets key off an explicit data-theme, and the
+      // canvas off data-canvas, so both are stamped here, before first paint.
+      // A canvas preset names the chrome theme it pairs with; this table
+      // duplicates static/js/canvas-theme.js because it has to run first.
+      // With nothing saved this used to fall through to a hardcoded dark, so a
       // light-mode visitor got a light marketing site and then a dark editor.
-      const savedWriteTheme = localStorage.getItem("theme");
-      document.documentElement.dataset.theme =
-        (savedWriteTheme === "light" || savedWriteTheme === "dark")
-          ? savedWriteTheme
-          : (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      const root = document.documentElement;
+      const CANVAS_CHROME = {
+        graphite: "dark", paper: "light", chalkboard: "dark", blueprint: "dark",
+        midnight: "dark", cream: "light", whiteboard: "light", contrast: "dark"
+      };
+      const savedCanvas = localStorage.getItem("inkyscib-canvas-theme");
+      if (Object.prototype.hasOwnProperty.call(CANVAS_CHROME, savedCanvas)) {
+        root.dataset.canvas = savedCanvas;
+        root.dataset.theme = CANVAS_CHROME[savedCanvas];
+      } else {
+        const savedWriteTheme = localStorage.getItem("theme");
+        root.dataset.theme =
+          (savedWriteTheme === "light" || savedWriteTheme === "dark")
+            ? savedWriteTheme
+            : (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+        root.dataset.canvas = root.dataset.theme === "light" ? "paper" : "blueprint";
+      }
+      const savedPattern = localStorage.getItem("inkyscib-pattern");
+      if (savedPattern === "dot" || savedPattern === "lines" || savedPattern === "graph") {
+        root.dataset.pattern = savedPattern;
+      }
     } catch (error) {
       // Keep the server-rendered theme if storage is blocked.
     }
   </script>
 
   <style>
+    /* The chrome is assembled by JavaScript: the tool rail and the File ribbon
+       are both created at runtime, and the ten tool buttons are authored in
+       the top bar and moved into the rail afterwards. Until that has run, the
+       markup paints as a different editor -- every tool crammed into one
+       centred bar, no rail, no ribbon -- which then rearranges itself in front
+       of the user. Hold the chrome until it is assembled. The canvas is real
+       markup and still paints immediately, so the wait is not a blank screen.
+
+       Scoped through `body:not(.chrome-ready)` rather than the bare classes:
+       the dock sets `opacity: 1` from inside a `@media (min-width: 1180px)`
+       block at (0,2,0), which a plain `.tool-dock` rule loses to.
+
+       Opacity, not display: editor-chrome.js measures the toolbar's height to
+       place the rail and the dock, and a display:none bar measures zero. No
+       transition -- the chrome appears once it is correct, and a fade here
+       would override the transitions these elements already define. */
+    body:not(.chrome-ready) .toolbar,
+    body:not(.chrome-ready) .file-ribbon,
+    body:not(.chrome-ready) .tool-rail,
+    body:not(.chrome-ready) .tool-dock {
+      opacity: 0;
+    }
+
     #patternCanvas,
     #drawingCanvas {
       position: absolute;
@@ -59,6 +129,47 @@
       pointer-events: none;
     }
 
+    /* The blank canvas carries one line of guidance and nothing else. It is
+       real text rather than something painted on a canvas: selectable, on the
+       type scale, in the page font, and readable by a screen reader.
+       `visibility` rather than opacity alone, so it leaves the accessibility
+       tree once there is drawing on the page. */
+    #emptyHint {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      margin: 0;
+      z-index: 3;
+      pointer-events: none;
+      font-family: var(--mono);
+      font-size: var(--t-1);
+      font-weight: 500;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      color: rgba(242, 242, 238, 0.62);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 180ms ease-out, visibility 0s linear 180ms;
+    }
+
+    [data-theme="light"] #emptyHint {
+      color: rgba(27, 27, 24, 0.62);
+    }
+
+    body.canvas-empty #emptyHint {
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 180ms ease-out, visibility 0s;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #emptyHint {
+        transition: none;
+      }
+    }
+
     #drawingCanvas {
       z-index: 1;
       background: transparent;
@@ -70,24 +181,31 @@
     }
   </style>
 
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-5SW3NRK6X6"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag() { dataLayer.push(arguments); }
-    gtag('js', new Date());
-
-    gtag('config', 'G-5SW3NRK6X6');
-  </script>
+  <script src="{{ url_for('static', filename='js/chrome-compact.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/sw-register.js') }}" defer></script>
 </head>
 
 <body>
+  {# The editor is a canvas, not a document, so its heading is for screen
+     readers and crawlers rather than sighted users. .sr-only comes from
+     editor-chrome.css, which this page already loads. #}
+  <h1 class="sr-only">Inkyscib — the writing canvas</h1>
+  <script>
+    // Failsafe. The chrome is held at opacity:0 until editor-chrome.js says it
+    // is assembled; if any of those scripts fail to run, the editor must not
+    // stay invisible. `load` fires after everything either way, and the class
+    // is idempotent.
+    addEventListener('load', function () {
+      document.body.classList.add('chrome-ready');
+    }, { once: true });
+  </script>
   <div id="workspaceShell" class="workspace-shell">
     <div id="workspaceStage" class="workspace-stage">
       <div id="canvas-container">
         <video id="arVideo" autoplay playsinline muted></video>
         <canvas id="patternCanvas"></canvas>
         <canvas id="drawingCanvas"></canvas>
+        <p id="emptyHint">Draw anywhere to start</p>
       </div>
     </div>
   </div>
@@ -195,6 +313,22 @@
       <label for="geometryColorInput"><span>Stroke</span><input id="geometryColorInput" type="color" value="#ffffff"></label>
       <label for="geometryWidthInput"><span>Width</span><input id="geometryWidthInput" type="number" min="0.5" max="50" step="0.5"></label>
     </div>
+    <div class="geometry-style-row">
+      <label for="geometryFillInput"><span>Fill</span>
+        <select id="geometryFillInput">
+          <option value="none">None</option>
+          <option value="tint">Tint</option>
+          <option value="solid">Solid</option>
+        </select>
+      </label>
+      <label for="geometryDashInput"><span>Outline</span>
+        <select id="geometryDashInput">
+          <option value="solid">Solid</option>
+          <option value="dashed">Dashed</option>
+          <option value="dotted">Dotted</option>
+        </select>
+      </label>
+    </div>
 
     <div id="geometryConstructWrap" class="geometry-construct-wrap">
       <button id="geometryConstructToggle" class="geometry-construct-toggle" type="button" aria-expanded="false">
@@ -243,9 +377,12 @@
         <div class="geometry-measure-card"><span>Direction</span><strong id="lineMeasureAngle">0&deg;</strong></div>
       </div>
 
-      <div class="geometry-toggle-grid is-pair">
+      <div class="geometry-toggle-grid">
         <label><input id="lineShowLabels" type="checkbox"><span>Name the ends</span></label>
         <label><input id="lineShowLength" type="checkbox"><span>Show length</span></label>
+        <label><input id="lineShowAngle" type="checkbox"><span>Show slope</span></label>
+        <label><input id="lineShowCoords" type="checkbox"><span>Coordinates</span></label>
+        <label><input id="lineShowMidpoint" type="checkbox"><span>Midpoint</span></label>
       </div>
 
       <div id="lineLabelFields" class="geometry-field-stack line-label-field" hidden>
@@ -348,13 +485,13 @@
       </div>
     </div>
   </aside>
-
-  <button id="menuBtn" class="menu-btn" aria-label="Open menu" title="Menu" type="button">
-    <span></span><span></span><span></span>
-  </button>
-
-  <div id="menuOverlay" class="menu-overlay"></div>
-  <nav id="sideMenu" class="side-menu" aria-hidden="true">
+  <!-- Not a menu any more. The hamburger and its drawer are gone; what is left
+       are the triggers the File ribbon fires by id. They stay in the DOM because
+       ppt.js and image.js bind each file input's change handler INSIDE
+       `if (button && input)`, so deleting a button would silently unbind its
+       import. `hidden` keeps them out of layout and out of the tab order.
+       See DESIGN.md, decision log. -->
+  <div id="chromeTriggers" hidden>
     <div class="menu-section feature-guide-menu-section">
       <button id="featureTourBtn" class="menu-action-btn feature-guide-menu-btn" type="button">
         <span class="ppt-import-label">
@@ -372,7 +509,7 @@
       </button>
     </div>
 
-    <a class="menu-item" href="https://github.com/SalajPro" target="_blank" rel="noopener noreferrer">GitHub</a>
+    
 
     <div class="menu-section library-menu-section">
       <button id="libraryBtn" class="menu-action-btn ppt-import-btn" type="button">
@@ -382,32 +519,6 @@
         </span>
         <span id="libraryMenuChip" class="ppt-import-chip">Open</span>
       </button>
-    </div>
-
-    <div class="menu-section">
-      <button id="patternBtn" class="menu-action-btn" type="button">
-        <span>Pattern</span>
-        <span class="chev">▾</span>
-      </button>
-
-      <div id="patternPreview" class="pattern-preview" aria-label="Pattern preview"></div>
-
-      <div id="patternPop" class="pattern-pop" role="menu" aria-hidden="true">
-        <button class="pattern-option" data-pattern="dot" role="menuitem" type="button">
-          <span class="mini-swatch dot"></span>
-          Dot Grid
-        </button>
-
-        <button class="pattern-option" data-pattern="lines" role="menuitem" type="button">
-          <span class="mini-swatch lines"></span>
-          Ruled Lines
-        </button>
-
-        <button class="pattern-option" data-pattern="graph" role="menuitem" type="button">
-          <span class="mini-swatch graph"></span>
-          Graph Grid
-        </button>
-      </div>
     </div>
 
     <div class="menu-section ppt-menu-section">
@@ -477,25 +588,12 @@
       </button>
     </div>
 
-    <div class="menu-section toolbar-location-section" aria-labelledby="toolbarLocationLabel">
-      <div id="toolbarLocationLabel" class="menu-section-label">Toolbar location</div>
-      <div id="toolbarLocationToggle" class="toolbar-location-toggle" role="group" aria-label="Toolbar location">
-        <button class="toolbar-location-btn active" data-toolbar-location="up" type="button" aria-pressed="true">
-          <i class="fas fa-arrow-up" aria-hidden="true"></i>
-          <span>Up</span>
-        </button>
-        <button class="toolbar-location-btn" data-toolbar-location="down" type="button" aria-pressed="false">
-          <i class="fas fa-arrow-down" aria-hidden="true"></i>
-          <span>Down</span>
-        </button>
-      </div>
-    </div>
-  </nav>
+    
+  </div>
 
   <aside id="toolDock" class="tool-dock" aria-hidden="true">
     <div class="tool-dock-frame">
       <p id="toolDockKicker" class="tool-dock-kicker">Tool controls</p>
-      <h3 id="toolDockTitle" class="tool-dock-title">Select a tool</h3>
       <div id="toolDockBody" class="tool-dock-body">
         <div id="toolDockEmpty" class="tool-dock-empty">
           Pick a drawing tool to keep colors, size, and related controls on the left.
@@ -569,6 +667,76 @@
             <input type="number" id="penSizeInput" min="1" max="200" value="2">
           </div>
         </label>
+      </div>
+      <div class="tool-option-section">
+        <div class="tool-option-heading">Write assist</div>
+        {# A level, 0-100, rather than three buttons. 40 is exactly the old
+           Natural and 70 exactly the old Strong (static/js/ink-smooth.js,
+           LIFT_ANCHORS); past Strong the smoothing itself stops growing --
+           measured, Strong already reaches the ideal line's smoothness -- and
+           the slider buys uniformity instead: even line weight, end hooks
+           trimmed, tidier digits. The preview runs the real smoother. #}
+        <div class="assist-spectrum" id="writeAssistSpectrum">
+          <div class="assist-spectrum-readout">
+            <output class="assist-spectrum-name" id="writeAssistName" for="writeAssistLevel">Natural</output>
+            <span class="assist-spectrum-number" id="writeAssistNumber" aria-hidden="true">40</span>
+          </div>
+          <svg class="assist-spectrum-preview" viewBox="0 0 220 40" preserveAspectRatio="none" aria-hidden="true">
+            <path class="assist-spectrum-ghost" id="writeAssistGhost" />
+            <path class="assist-spectrum-ink" id="writeAssistPreview" />
+          </svg>
+          <div class="assist-spectrum-track">
+            <input type="range" id="writeAssistLevel" class="assist-spectrum-input" min="0" max="100" step="1" value="40"
+              aria-label="Write assist strength" aria-valuetext="Natural, 40 of 100">
+            <div class="assist-spectrum-stops" aria-hidden="true">
+              <span style="--p: 0" data-stop="0">Off</span>
+              <span style="--p: 0.4" data-stop="40">Natural</span>
+              <span style="--p: 0.7" data-stop="70">Strong</span>
+              <span style="--p: 1" data-stop="100">Max</span>
+            </div>
+          </div>
+        </div>
+        <p class="geometry-control-hint">
+          <span aria-hidden="true">&#x2194;</span>
+          Drag right for steadier, more even writing.
+        </p>
+      </div>
+      <div class="tool-option-section">
+        <div class="tool-option-heading" id="shapeAssistHeading">Shape assist</div>
+        {#
+          Write assist above acts while the stroke is being made, so it can
+          only ever see the past. This acts once the pen lifts, which is the
+          only moment a whole stroke exists to straighten or snap.
+
+          Three steps rather than a switch (handwriting.js, LEVELS): Straight
+          is the figure you meant -- a leaning square becomes a true square,
+          square to the page -- and Exact is the figure you drew, with only
+          the wobble taken out. The preview runs the real recogniser over a
+          wobbly square, triangle and oval, so each step shows its effect
+          rather than describing it.
+        #}
+        <div class="assist-spectrum shape-assist-spectrum" id="shapeAssistSpectrum">
+          <div class="assist-spectrum-readout">
+            <output class="assist-spectrum-name" id="shapeAssistName" for="shapeAssistLevel">Straight</output>
+          </div>
+          <svg class="assist-spectrum-preview shape-assist-preview" viewBox="0 0 220 56" aria-hidden="true">
+            <g class="assist-spectrum-ghost" id="shapeAssistGhost"></g>
+            <g class="assist-spectrum-ink" id="shapeAssistPreview"></g>
+          </svg>
+          <div class="assist-spectrum-track">
+            <input type="range" id="shapeAssistLevel" class="assist-spectrum-input" min="0" max="2" step="1" value="1"
+              aria-labelledby="shapeAssistHeading" aria-describedby="shapeAssistHint" aria-valuetext="Straight">
+            <div class="assist-spectrum-stops" aria-hidden="true">
+              <span style="--p: 0" data-stop="0">Off</span>
+              <span style="--p: 0.5" data-stop="1">Straight</span>
+              <span style="--p: 1" data-stop="2">Exact</span>
+            </div>
+          </div>
+        </div>
+        <p class="geometry-control-hint" id="shapeAssistHint">
+          <span aria-hidden="true">&#x2726;</span>
+          <span id="shapeAssistHintText">Tidies what you meant: a wobbly square becomes a true square, straight to the page.</span>
+        </p>
       </div>
       <div class="tool-option-section">
         <div class="tool-option-heading">Style</div>
@@ -652,6 +820,24 @@
     </button>
     <div id="eraserOptions" class="tool-options" data-tool-panel="eraser" data-tool-title="Eraser">
       <div class="tool-option-section">
+        <div class="tool-option-heading">Erase mode</div>
+        <div class="geometry-toggle-grid is-pair" role="group" aria-label="Erase mode">
+          <button class="eraser-mode-btn active" data-eraser-mode="partial" type="button" aria-pressed="true">Partial</button>
+          <button class="eraser-mode-btn" data-eraser-mode="object" type="button" aria-pressed="false">Whole object</button>
+        </div>
+      </div>
+      <div class="tool-option-section">
+        <div class="tool-option-heading">Hold and draw a loop</div>
+        <div class="geometry-toggle-grid is-pair" role="group" aria-label="Hold and draw a loop">
+          <button class="eraser-mode-btn active" data-eraser-lasso="erase" type="button" aria-pressed="true">Erase them</button>
+          <button class="eraser-mode-btn" data-eraser-lasso="select" type="button" aria-pressed="false">Select them</button>
+        </div>
+        <p class="geometry-control-hint">
+          <span aria-hidden="true">&#x231B;</span>
+          Hold, then circle what you mean.
+        </p>
+      </div>
+      <div class="tool-option-section">
         <label>
           <span>Size</span>
           <div class="tool-size-controls">
@@ -696,97 +882,120 @@
     </div>
 
 
+    {#- One drawing per shape, shared by the rail button and the picker so the two
+        cannot disagree. Each is drawn to show what sets it apart from its
+        neighbours: ticks on the equal sides, a box in the right angle, dots on
+        the corners you place yourself. -#}
+    {% macro shape_icon(kind, class_name='') -%}
+      <svg{% if class_name %} class="{{ class_name }}"{% endif %} width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        {%- if kind == 'circle' %}<circle cx="12" cy="12" r="8.5" />
+        {%- elif kind == 'ellipse' %}<ellipse cx="12" cy="12" rx="10" ry="6" />
+        {%- elif kind == 'triangle-isosceles' %}<path d="M12 3 L18 20 H6 Z" /><path d="M7.5 11 L10.5 12 M16.5 11 L13.5 12" stroke-width="1.5" />
+        {%- elif kind == 'triangle-equilateral' %}<path d="M12 3.5 L21 19.5 H3 Z" /><path d="M6.1 10.7 L8.9 12.3 M17.9 10.7 L15.1 12.3 M12 18 V21" stroke-width="1.5" />
+        {%- elif kind == 'triangle-right' %}<path d="M5 4 V20 H20 Z" /><path d="M5 15.5 H9.5 V20" stroke-width="1.5" />
+        {%- elif kind == 'triangle-custom' %}<path d="M3.5 17 L9.5 4.5 L20.5 14 Z" /><circle cx="3.5" cy="17" r="1.8" fill="currentColor" stroke="none" /><circle cx="9.5" cy="4.5" r="1.8" fill="currentColor" stroke="none" /><circle cx="20.5" cy="14" r="1.8" fill="currentColor" stroke="none" />
+        {%- elif kind == 'square' %}<rect x="5" y="5" width="14" height="14" rx="0.5" />
+        {%- elif kind == 'rectangle' %}<rect x="2.5" y="7" width="19" height="10" rx="0.5" />
+        {%- elif kind == 'parallelogram' %}<path d="M7.5 6 H21.5 L16.5 18 H2.5 Z" />
+        {%- elif kind == 'rhombus' %}<path d="M12 2.5 L20 12 L12 21.5 L4 12 Z" />
+        {%- elif kind == 'kite' %}<path d="M12 2.5 L19 9 L12 21.5 L5 9 Z" />
+        {%- elif kind == 'trapezium' %}<path d="M7 6 H17 L21.5 18 H2.5 Z" />
+        {%- elif kind == 'pentagon' %}<path d="M12 3.3 L21.04 9.86 L17.58 20.49 H6.42 L2.96 9.86 Z" />
+        {%- elif kind == 'hexagon' %}<path d="M7.25 3.77 H16.75 L21.5 12 L16.75 20.23 H7.25 L2.5 12 Z" />
+        {%- elif kind == 'octagon' %}<path d="M8.25 2.95 H15.75 L21.05 8.25 V15.75 L15.75 21.05 H8.25 L2.95 15.75 V8.25 Z" />
+        {%- endif %}
+      </svg>
+    {%- endmacro %}
+    {% set shape_groups = [
+      ('Round', [
+        ('circle', '', 'Circle', 'Circle — drag out from the centre'),
+        ('ellipse', '', 'Ellipse', 'Ellipse — drag corner to corner')
+      ]),
+      ('Triangles', [
+        ('triangle', 'isosceles', 'Isosceles', 'Isosceles triangle — two equal sides'),
+        ('triangle', 'equilateral', 'Equilateral', 'Equilateral triangle — three equal sides'),
+        ('triangle', 'right', 'Right', 'Right triangle — one 90° angle'),
+        ('triangle', 'custom', 'Custom', 'Custom triangle — tap its three corners')
+      ]),
+      ('Quadrilaterals', [
+        ('square', '', 'Square', 'Square — four equal sides, four right angles'),
+        ('rectangle', '', 'Rectangle', 'Rectangle — four right angles'),
+        ('parallelogram', '', 'Parallel|ogram', 'Parallelogram — two pairs of parallel sides'),
+        ('rhombus', '', 'Rhombus', 'Rhombus — four equal sides'),
+        ('kite', '', 'Kite', 'Kite — two pairs of equal neighbouring sides'),
+        ('trapezium', '', 'Trapezium', 'Trapezium — one pair of parallel sides')
+      ]),
+      ('Polygons', [
+        ('pentagon', '', 'Pentagon', 'Regular pentagon — five equal sides'),
+        ('hexagon', '', 'Hexagon', 'Regular hexagon — six equal sides'),
+        ('octagon', '', 'Octagon', 'Regular octagon — eight equal sides')
+      ])
+    ] %}
+
     <button id="shapeTool" class="tool shape-tool" type="button" data-shape="circle" title="Shape" aria-label="Shape">
       <span class="tool-icon shape-tool-icon" aria-hidden="true">
-        <svg class="shape-tool-svg shape-tool-circle" width="23" height="23" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="7.1" fill="none" stroke="currentColor" stroke-width="2.2" />
-        </svg>
-        <svg class="shape-tool-svg shape-tool-square" width="23" height="23" viewBox="0 0 24 24">
-          <rect x="5.4" y="5.4" width="13.2" height="13.2" rx="2" fill="none" stroke="currentColor"
-            stroke-width="2.2" />
-        </svg>
-        <svg class="shape-tool-svg shape-tool-rectangle" width="23" height="23" viewBox="0 0 24 24">
-          <rect x="3.5" y="6.3" width="17" height="11.4" rx="1.8" fill="none" stroke="currentColor"
-            stroke-width="2.2" />
-        </svg>
-        <svg class="shape-tool-svg shape-tool-triangle" width="23" height="23" viewBox="0 0 24 24">
-          <path d="M12 4.8 L20 18.4 H4 Z" fill="none" stroke="currentColor" stroke-width="2.2"
-            stroke-linejoin="round" />
-        </svg>
-        <svg class="shape-tool-svg shape-tool-parallelogram" width="23" height="23" viewBox="0 0 24 24">
-          <path d="M8 5 H20 L16 19 H4 Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" />
-        </svg>
-        <svg class="shape-tool-svg shape-tool-rhombus" width="23" height="23" viewBox="0 0 24 24">
-          <path d="M12 3.8 L20 12 L12 20.2 L4 12 Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" />
-        </svg>
-        <svg class="shape-tool-svg shape-tool-kite" width="23" height="23" viewBox="0 0 24 24">
-          <path d="M12 3.5 L19 10.5 L12 21 L5 10.5 Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" />
-        </svg>
+        {%- for kind in ['circle', 'ellipse', 'triangle-isosceles', 'triangle-equilateral', 'triangle-right',
+                         'triangle-custom', 'square', 'rectangle', 'parallelogram', 'rhombus', 'kite', 'trapezium',
+                         'pentagon', 'hexagon', 'octagon'] %}
+        {{ shape_icon(kind, 'shape-tool-svg shape-tool-' ~ kind) }}
+        {%- endfor %}
       </span>
     </button>
     <div id="shapeOptions" class="tool-options" data-tool-panel="shape" data-tool-title="Shape">
-      <div class="tool-option-section">
-        <div class="tool-option-heading">Shape</div>
-        <div class="shapes">
-          <button class="shape-btn" data-shape="circle" title="Circle" type="button">
-            <i class="fas fa-circle"></i>
-          </button>
-          <button class="shape-btn" data-shape="square" title="Square" type="button">
-            <i class="fas fa-square"></i>
-          </button>
-          <button class="shape-btn" data-shape="rectangle" title="Rectangle" type="button">
-            <svg viewBox="0 0 24 20" aria-hidden="true"><rect x="2" y="4" width="20" height="12" rx="1" /></svg>
-          </button>
-          <button class="shape-btn" data-shape="triangle" title="Triangle" type="button">
-            <i class="fas fa-play" style="transform: rotate(90deg);"></i>
-          </button>
-          <button class="shape-btn" data-shape="parallelogram" title="Parallelogram" type="button">
-            <svg viewBox="0 0 24 20" aria-hidden="true"><path d="M7 3 H22 L17 17 H2 Z" /></svg>
-          </button>
-          <button class="shape-btn" data-shape="rhombus" title="Rhombus" type="button">
-            <svg viewBox="0 0 24 20" aria-hidden="true"><path d="M12 2 L22 10 L12 18 L2 10 Z" /></svg>
-          </button>
-          <button class="shape-btn" data-shape="kite" title="Kite" type="button">
-            <svg viewBox="0 0 24 20" aria-hidden="true"><path d="M12 1.5 L21 8.5 L12 18.5 L3 8.5 Z" /></svg>
-          </button>
+      <div class="tool-option-section shape-picker">
+        {%- for group_name, buttons in shape_groups %}
+        <div class="shape-group" role="group" aria-labelledby="shapeGroup{{ loop.index }}">
+          <div class="shape-group-heading" id="shapeGroup{{ loop.index }}">{{ group_name }}</div>
+          <div class="shape-grid">
+            {%- for shape, triangle_type, label, title in buttons %}
+            <button class="shape-btn{% if triangle_type %} triangle-type-btn{% endif %}" type="button"
+              data-shape="{{ shape }}"{% if triangle_type %} data-triangle-type="{{ triangle_type }}"{% endif %}
+              aria-pressed="false" title="{{ title }}">
+              {{ shape_icon(shape ~ ('-' ~ triangle_type if triangle_type else '')) }}
+              {#- A | in a label marks where it may hyphenate; the dock's narrowest column is too narrow for Parallelogram. -#}
+              <span class="shape-btn-label">{{ label.split('|')|join('&shy;'|safe) }}</span>
+            </button>
+            {%- endfor %}
+          </div>
         </div>
+        {%- endfor %}
       </div>
 
-      <div id="triangleTypesSection" class="tool-option-section triangle-types-section" hidden>
-        <div class="tool-option-heading">Triangle</div>
-        <div class="triangle-types" role="group" aria-label="Triangle type">
-          <button class="triangle-type-btn active" data-triangle-type="isosceles" title="Isosceles triangle"
-            aria-label="Isosceles triangle" type="button">
-            <svg width="24" height="18" viewBox="0 0 24 18" aria-hidden="true">
-              <path d="M12 2 L21 16 H3 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
-            </svg>
-          </button>
-          <button class="triangle-type-btn" data-triangle-type="equilateral" title="Equilateral triangle"
-            aria-label="Equilateral triangle" type="button">
-            <svg width="24" height="18" viewBox="0 0 24 18" aria-hidden="true">
-              <path d="M12 1.8 L21.2 16 H2.8 Z" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linejoin="round" />
-              <path d="M7.1 8.8 L8.5 9.7 M15.5 9.7 L16.9 8.8 M11.2 16 H12.8" fill="none"
-                stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-            </svg>
-          </button>
-          <button class="triangle-type-btn" data-triangle-type="right" title="Right-angle triangle"
-            aria-label="Right-angle triangle" type="button">
-            <svg width="24" height="18" viewBox="0 0 24 18" aria-hidden="true">
-              <path d="M5 3 V15 H20 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
-              <path d="M5 11 H9 V15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
-            </svg>
-          </button>
-          <button class="triangle-type-btn" data-triangle-type="custom" title="Custom triangle"
-            aria-label="Custom triangle" type="button">
-            <svg width="24" height="18" viewBox="0 0 24 18" aria-hidden="true">
-              <path d="M4 14 L10 3 L21 12 Z" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linejoin="round" />
-              <circle cx="4" cy="14" r="1.7" fill="currentColor" />
-              <circle cx="10" cy="3" r="1.7" fill="currentColor" />
-              <circle cx="21" cy="12" r="1.7" fill="currentColor" />
-            </svg>
-          </button>
+      <div class="tool-option-section shape-style">
+        <div class="shape-style-group" role="group" aria-labelledby="shapeFillHeading">
+          <div class="shape-group-heading" id="shapeFillHeading">Fill</div>
+          <div class="shape-style-options">
+            <button class="shape-style-option" type="button" data-fill="none" aria-pressed="true" title="No fill">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="1.5" /></svg>
+              <span class="shape-btn-label">None</span>
+            </button>
+            <button class="shape-style-option" type="button" data-fill="tint" aria-pressed="false" title="A light wash of the shape's colour">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="1.5" fill="currentColor" fill-opacity="0.28" /></svg>
+              <span class="shape-btn-label">Tint</span>
+            </button>
+            <button class="shape-style-option" type="button" data-fill="solid" aria-pressed="false" title="Filled with the shape's colour">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="1.5" fill="currentColor" /></svg>
+              <span class="shape-btn-label">Solid</span>
+            </button>
+          </div>
+        </div>
+        <div class="shape-style-group" role="group" aria-labelledby="shapeDashHeading">
+          <div class="shape-group-heading" id="shapeDashHeading">Outline</div>
+          <div class="shape-style-options">
+            <button class="shape-style-option" type="button" data-dash="solid" aria-pressed="true" title="Solid outline">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 12 H21" /></svg>
+              <span class="shape-btn-label">Solid</span>
+            </button>
+            <button class="shape-style-option" type="button" data-dash="dashed" aria-pressed="false" title="Dashed outline">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 12 H21" stroke-dasharray="4.5 4.5" /></svg>
+              <span class="shape-btn-label">Dashed</span>
+            </button>
+            <button class="shape-style-option" type="button" data-dash="dotted" aria-pressed="false" title="Dotted outline">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M3.5 12 H21" stroke-dasharray="0.01 4.5" /></svg>
+              <span class="shape-btn-label">Dotted</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1023,7 +1232,7 @@
         </div>
         <button type="button" class="compass-link" data-compass-action="clear-radius">Clear radius</button>
         <p class="compass-status" id="compassStatus" role="status" aria-live="polite">Tap a point to place the compass needle.</p>
-        <p class="compass-pinned-note">This panel stays open while you build. Click the compass again to close it.</p>
+        <p class="compass-pinned-note">This panel stays open while you build. Tap the compass again to close it.</p>
       </div>
     </div>
 
@@ -1043,7 +1252,7 @@
           Click one line, then another. The mark lands at the corner they make, with the angle on it.
           A right angle gets a square instead of a number.
         </p>
-        <p class="compass-status" id="angleStatus" role="status" aria-live="polite">Click the first line.</p>
+        <p class="compass-status" id="angleStatus" role="status" aria-live="polite">Tap the first line.</p>
       </div>
 
       <div class="tool-option-section">
@@ -1103,38 +1312,6 @@
     </button>
     <div id="lineOptions" class="tool-options" data-tool-panel="line" data-tool-title="Line">
       <div class="tool-option-section">
-        <div class="tool-option-heading">Kind</div>
-        <div class="line-kinds" role="group" aria-label="Line kind">
-          <button class="line-kind-btn active" data-linekind="segment" type="button"
-            title="Segment — stops at both points" aria-pressed="true">
-            <svg width="30" height="12" viewBox="0 0 30 12" aria-hidden="true">
-              <line x1="5" y1="6" x2="25" y2="6" stroke="currentColor" stroke-width="2" />
-              <circle cx="5" cy="6" r="2.4" fill="currentColor" />
-              <circle cx="25" cy="6" r="2.4" fill="currentColor" />
-            </svg>
-            <span>Segment</span>
-          </button>
-          <button class="line-kind-btn" data-linekind="ray" type="button"
-            title="Ray — starts at the first point, continues past the second" aria-pressed="false">
-            <svg width="30" height="12" viewBox="0 0 30 12" aria-hidden="true">
-              <line x1="5" y1="6" x2="29" y2="6" stroke="currentColor" stroke-width="2" />
-              <circle cx="5" cy="6" r="2.4" fill="currentColor" />
-            </svg>
-            <span>Ray</span>
-          </button>
-          <button class="line-kind-btn" data-linekind="line" type="button"
-            title="Line — continues past both points" aria-pressed="false">
-            <svg width="30" height="12" viewBox="0 0 30 12" aria-hidden="true">
-              <line x1="1" y1="6" x2="29" y2="6" stroke="currentColor" stroke-width="2" />
-              <circle cx="11" cy="6" r="2.2" fill="currentColor" />
-              <circle cx="19" cy="6" r="2.2" fill="currentColor" />
-            </svg>
-            <span>Line</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="tool-option-section">
         <div class="tool-option-heading">Labels</div>
         <div class="geometry-toggle-grid is-pair">
           <label><input id="lineDefaultLabels" type="checkbox"><span>Name the ends</span></label>
@@ -1143,9 +1320,9 @@
           <label><input id="lineDefaultCoords" type="checkbox"><span>Coordinates</span></label>
           <label><input id="lineDefaultMidpoint" type="checkbox"><span>Midpoint</span></label>
         </div>
-        <p class="geometry-control-hint">
+        <p id="lineLegendHint" class="geometry-control-hint">
           <span aria-hidden="true">&#x2194;</span>
-          Whatever is ticked here goes onto every line you draw next, and is recorded on that line: changing this later leaves lines already drawn alone.
+          Select a segment first to change its legends. With nothing selected, these become the defaults for new segments.
         </p>
       </div>
 
@@ -1269,15 +1446,44 @@
       </button>
     </div>
 
-    <div class="bar-zone bar-work" role="group" aria-label="Edit history">
+    <div class="bar-zone bar-work" role="group" aria-label="Edit">
       <button id="undoBtn" class="tool" type="button" title="Undo" aria-label="Undo"><i class="fas fa-undo"></i></button>
       <button id="redoBtn" class="tool" type="button" title="Redo" aria-label="Redo"><i class="fas fa-redo"></i></button>
+      <!-- Shape assist decides what the next stroke becomes, so it sits with
+           the controls that act on the work rather than in the pen panel only.
+           handwriting.js owns the setting and keeps this and the pen panel's
+           switch in step. The icon is what the feature produces: not tidier
+           ink but a real geometry object, so a clean shape with its vertices
+           marked in the accent. Two earlier attempts were checked at the 18px
+           this renders at and both failed there -- a dashed loop beside a
+           small triangle broke into loose specks that read as dirt, and a box
+           with a hand-drawn top edge read as a folder. Draw any replacement at
+           18px before believing it. -->
+      <button id="shapeAssistBtn" class="tool active" type="button" title="Shape assist: on"
+        aria-label="Shape assist" aria-pressed="true">
+        <svg class="tool-icon" width="21" height="21" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 4.6 19 18.4H5Z" fill="none" stroke="currentColor" stroke-width="1.85"
+            stroke-linejoin="round" />
+          <circle class="tool-icon-accent" cx="12" cy="4.6" r="1.9" fill="none" stroke-width="1.7" />
+          <circle class="tool-icon-accent" cx="19" cy="18.4" r="1.9" fill="none" stroke-width="1.7" />
+          <circle class="tool-icon-accent" cx="5" cy="18.4" r="1.9" fill="none" stroke-width="1.7" />
+        </svg>
+      </button>
+      <!-- Clear canvas is back beside history by request, after a spell in the
+           File ribbon. The divider and the destructive colour are what keep it
+           from reading as a third history button now that the least safe and
+           the safest controls are neighbours again; it still goes through
+           clearCanvas()'s confirm modal, and clearing is undoable.
+           See DESIGN.md, Layout > Editor chrome. -->
+      <span class="toolbar-divider" aria-hidden="true"></span>
+      <button id="clearBtn" class="tool tool-destructive" type="button" title="Clear canvas (Ctrl+Delete)"
+        aria-label="Clear canvas" aria-keyshortcuts="Control+Delete"><i class="fas fa-trash"></i></button>
     </div>
 
     <div class="bar-zone bar-view">
       <div class="bar-group" role="group" aria-label="View">
         <button id="zoomOut" class="tool" type="button" title="Zoom out" aria-label="Zoom out"><i class="fas fa-search-minus"></i></button>
-        <output id="zoomLevel" class="zoom-level" aria-live="off">100%</output>
+        <input id="zoomLevel" class="zoom-level" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" value="100%" aria-label="Zoom level, in percent" title="Zoom — type a percentage between 15 and 600">
         <button id="zoomIn" class="tool" type="button" title="Zoom in" aria-label="Zoom in"><i class="fas fa-search-plus"></i></button>
         <button id="panMode" class="tool" type="button" title="Pan" aria-label="Pan"><i class="fas fa-arrows-alt"></i></button>
         <button id="fitView" class="tool" type="button" title="Fit to page" aria-label="Fit to page">
@@ -1291,20 +1497,40 @@
       <span class="toolbar-divider" aria-hidden="true"></span>
 
       <div class="bar-group" role="group" aria-label="Workspace">
-        <button id="themeToggle" class="tool" type="button" title="Toggle theme" aria-label="Toggle theme"><i class="fas fa-adjust"></i></button>
-        <button id="ytToggleBtn" class="tool" type="button" title="YouTube" aria-label="YouTube">
+        <!-- The Canvas button: eight theme presets and the dot / lines / graph
+             pattern in one popover, built by static/js/canvas-theme.js. The
+             pattern used to be a button of its own in the View group. The id
+             stays themeToggle so existing references keep working. -->
+        <button id="themeToggle" class="tool" type="button" title="Canvas" aria-label="Canvas theme and pattern">
+          <svg class="tool-icon" width="21" height="21" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3.5" y="4.5" width="17" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.8" />
+            <circle cx="8" cy="9" r="1.1" fill="currentColor" /><circle cx="12" cy="9" r="1.1" fill="currentColor" /><circle cx="16" cy="9" r="1.1" fill="currentColor" />
+            <path d="M7 15.6c2-2.6 4-2.6 5.5-.6s3.2 2 4.5-.9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+        </button>
+        <button id="ytToggleBtn" class="tool" type="button" title="YouTube" aria-label="YouTube" hidden>
         <svg class="tool-icon yt-tool-icon" width="23" height="23" viewBox="0 0 24 24" aria-hidden="true">
         <rect x="2" y="4.5" width="20" height="15" rx="4" fill="none" stroke="currentColor" stroke-width="1.8" />
         <path d="M10 8.5V15.5L16 12Z" fill="currentColor" />
         </svg>
         </button>
-        <button id="pomodoroBtn" class="tool" type="button" title="Pomodoro timer" aria-label="Pomodoro timer"><i class="fas fa-clock"></i></button>
+        <button id="pomodoroBtn" class="tool" type="button" title="Pomodoro timer" aria-label="Pomodoro timer" hidden><i class="fas fa-clock"></i></button>
       </div>
     </div>
   </div>
 
   <footer>
-    <div class="left">© 2025 INKYSCIB</div>
+    <div class="left"><span class="footer-copyright">© {{ current_year }} INKYSCIB</span> <span class="footer-credit"><span class="footer-credit-words">Created by</span>
+      <a class="footer-credit-link" href="https://www.linkedin.com/in/kshitiz47/" target="_blank"
+        rel="noopener noreferrer" aria-label="Created by @kshitizarc, opens LinkedIn in a new tab">@kshitizarc</a></span></div>
+    {# The editor is where most visitors land from a shared link, so the
+       privacy routes have to be reachable from here too, not only from the
+       marketing footer. #}
+    <div class="editor-legal">
+      <a href="{{ url_for('privacy') }}">Privacy</a> ·
+      <a href="{{ url_for('cookies') }}">Cookies</a> ·
+      <a href="{{ url_for('terms') }}">Terms</a>
+    </div>
   </footer>
 
   <div id="sizePreview" class="size-preview"></div>
@@ -1440,6 +1666,23 @@
 
 
   <script src="{{ url_for('static', filename='js/core.js', v='line-2') }}" defer></script>
+  <!-- The chrome scripts sit here, directly after core.js, because they build
+       the editor's visible frame: the File ribbon, the tool dock and the tool
+       rail are all created at runtime and none of them exist in the markup.
+       At the end of the list they were 17KB queued behind 44 other files and
+       did not land until 712-838ms, so the chrome appeared roughly half a
+       second after the canvas. They only need core.js (appState and
+       syncWorkspaceShellBounds, both defined at its top level), so they run
+       as soon as it has. Order among the three matters: the ribbon and the
+       dock move things, editor-chrome measures the result and releases the
+       chrome-ready hold. -->
+  <script src="{{ url_for('static', filename='js/file-ribbon.js', v='ribbon-1') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/tool-dock.js', v='panels-1') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/editor-chrome.js', v='fullbleed-1') }}" defer></script>
+  <!-- Canvas presets and lift smoothing are pure definitions: they only need
+       to exist before storage.js applies preferences and events.js draws. -->
+  <script src="{{ url_for('static', filename='js/canvas-theme.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/ink-smooth.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/storage.js', v='line-2') }}" defer></script>
   <!-- Keeps imported originals; must load after storage.js, which owns the DB schema. -->
   <script src="{{ url_for('static', filename='js/doc-store.js', v='lossless-1') }}" defer></script>
@@ -1458,12 +1701,16 @@
   <script src="{{ url_for('static', filename='js/tools/shape.js', v='smart-geometry-2') }}" defer></script>
   <script src="{{ url_for('static', filename='js/tools/select.js', v='pages-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/geometry.js', v='algebra-tiles-1') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/ink-recognize.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/handwriting.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/manipulative-expr.js', v='algebra-tiles-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/manipulatives.js', v='algebra-tiles-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/tools/manipulative.js', v='algebra-tiles-1') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/empty-state.js', v='empty-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/canvas.js', v='pages-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/ppt-local-import.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/vendor/pdf.min.js') }}" defer></script>
+  <!-- pdf.min.js is loaded on demand by pdf-local-import.js, not here: it is
+       312 KB and only an import needs it, exactly like pdf-lib below. -->
   <script src="{{ url_for('static', filename='js/pdf-local-import.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/ppt.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/notebook.js', v='pages-1') }}" defer></script>
@@ -1471,14 +1718,12 @@
   <!-- pdf-lib itself is loaded on demand by pdf-export.js, not here. -->
   <script src="{{ url_for('static', filename='js/pdf-export.js', v='lossless-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/inkydoc.js', v='ribbon-1') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/file-ribbon.js', v='ribbon-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/ui.js', v='panmode-fix-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/geometry-engine.js', v='compass-2') }}" defer></script>
   <script src="{{ url_for('static', filename='js/construction.js', v='hex-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/construction-render.js', v='hex-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/compass.js', v='measure-2') }}" defer></script>
   <script src="{{ url_for('static', filename='js/construction-menu.js', v='points-3') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/tool-dock.js', v='panels-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/events.js', v='measure-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/size-preview.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/pomodoro.js') }}" defer></script>
@@ -1486,155 +1731,10 @@
   <script src="{{ url_for('static', filename='js/ar.js', v='smart-geometry-2') }}" defer></script>
   <script src="{{ url_for('static', filename='js/youtube.js', v='yt-capture-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/onboarding.js', v='feature-tour-3') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/editor-chrome.js', v='fullbleed-1') }}" defer></script>
 
 
-  <script>
-    const menuBtn = document.getElementById("menuBtn");
-    const sideMenu = document.getElementById("sideMenu");
-    const menuOverlay = document.getElementById("menuOverlay");
-
-    function openMenu() {
-      document.body.classList.add("menu-open");
-      sideMenu.setAttribute("aria-hidden", "false");
-    }
-    function closeMenu() {
-      document.body.classList.remove("menu-open");
-      sideMenu.setAttribute("aria-hidden", "true");
-    }
-
-    if (menuBtn && sideMenu && menuOverlay) {
-      menuBtn.addEventListener("click", () => {
-        document.body.classList.contains("menu-open") ? closeMenu() : openMenu();
-      });
-      menuOverlay.addEventListener("click", closeMenu);
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closeMenu();
-      });
-    }
-  </script>
-
-
-  <script>
-    const root = document.documentElement;
-
-    const patternBtn = document.getElementById("patternBtn");
-    const patternPop = document.getElementById("patternPop");
-    const patternPreview = document.getElementById("patternPreview");
-    const patternOptions = document.querySelectorAll(".pattern-option");
-
-    const KEY = "inkyscib-pattern";
-
-    function setPreview(pattern) {
-      if (!patternPreview) return;
-
-      const isLight = root.getAttribute("data-theme") === "light";
-      const ink = isLight ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.20)";
-
-      if (pattern === "dot") {
-        patternPreview.style.backgroundImage = `radial-gradient(${ink} 1px, transparent 1px)`;
-        patternPreview.style.backgroundSize = "16px 16px";
-      } else if (pattern === "lines") {
-        patternPreview.style.backgroundImage = `linear-gradient(to bottom, ${ink} 1px, transparent 1px)`;
-        patternPreview.style.backgroundSize = "100% 14px";
-      } else {
-        patternPreview.style.backgroundImage =
-          `linear-gradient(${ink} 1px, transparent 1px),
-           linear-gradient(to right, ${ink} 1px, transparent 1px)`;
-        patternPreview.style.backgroundSize = "14px 14px";
-      }
-    }
-
-    function applyPattern(pattern) {
-      const patternCanvas = document.getElementById('patternCanvas');
-      if (patternCanvas) {
-        patternCanvas.style.transition = 'opacity 0.25s ease-out, transform 0.25s ease-out';
-        patternCanvas.style.opacity = '0';
-        patternCanvas.style.transform = 'scale(1.02)';
-
-        setTimeout(() => {
-          root.setAttribute("data-pattern", pattern);
-          localStorage.setItem(KEY, pattern);
-          setPreview(pattern);
-          if (window.__patternCache) {
-            window.__patternCache.clear();
-          }
-          if (typeof window.render === 'function') {
-            window.render();
-          }
-
-          patternCanvas.style.transition = 'none';
-          patternCanvas.style.transform = 'scale(0.98)';
-
-          void patternCanvas.offsetWidth; // Force reflow
-
-          patternCanvas.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
-          patternCanvas.style.opacity = '1';
-          patternCanvas.style.transform = 'scale(1)';
-
-          setTimeout(() => {
-            patternCanvas.style.transition = 'none';
-          }, 300);
-        }, 250);
-      } else {
-        root.setAttribute("data-pattern", pattern);
-        localStorage.setItem(KEY, pattern);
-        setPreview(pattern);
-        if (window.__patternCache) {
-          window.__patternCache.clear();
-        }
-        if (typeof window.render === 'function') {
-          window.render();
-        }
-      }
-    }
-
-    function openPop() {
-      if (!patternPop) return;
-      patternPop.classList.add("open");
-      patternPop.setAttribute("aria-hidden", "false");
-    }
-
-    function closePop() {
-      if (!patternPop) return;
-      patternPop.classList.remove("open");
-      patternPop.setAttribute("aria-hidden", "true");
-    }
-
-    if (patternBtn && patternPop) {
-      patternBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        patternPop.classList.contains("open") ? closePop() : openPop();
-      });
-
-      patternOptions.forEach(btn => {
-        btn.addEventListener("click", () => {
-          applyPattern(btn.dataset.pattern);
-          closePop();
-        });
-      });
-
-      document.addEventListener("click", (e) => {
-        if (!patternPop.contains(e.target) && e.target !== patternBtn) closePop();
-      });
-
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closePop();
-      });
-    }
-
-    applyPattern(localStorage.getItem(KEY) || "dot");
-    const obs = new MutationObserver(() => {
-      setPreview(root.getAttribute("data-pattern") || "dot");
-      if (window.__patternCache) {
-        window.__patternCache.clear();
-      }
-      if (typeof window.render === 'function') {
-        window.render();
-      }
-    });
-    obs.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
-  </script>
+  {# The canvas pattern script that lived here moved into static/js/canvas-theme.js,
+     with the pattern choice itself, when the theme button became the Canvas popover. #}
 
 
   <script>

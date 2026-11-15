@@ -1,0 +1,276 @@
+/* The editor chrome below the 1180px rail breakpoint: tablets and phones.
+ *
+ * Loaded last. Above 1180px editor-chrome.css builds the three islands and
+ * nothing here applies.
+ *
+ * Before v2 this width got a transparent toolbar whose 22 controls wrapped
+ * over two rows (three on a phone), with the File ribbon floating detached
+ * underneath: 200px of chrome on a 600px tablet, and nothing to say where one
+ * group ended and the next began. It is now two docked bars:
+ *
+ *   1. the document bar   File / Insert / Export / Tools, name and save state
+ *   2. the tool row       every tool on ONE line, scrolling sideways if the
+ *                         screen is too narrow to show them all
+ *
+ * 122px in total, and the same two objects at 960px and at 375px.
+ */
+
+@media (max-width: 1179px) {
+  :root {
+    --compact-gap: 8px;
+    --compact-doc-h: 52px;
+    --compact-tools-h: 56px;
+    --compact-tools-top: calc(var(--compact-gap) + var(--compact-doc-h) + 6px);
+    --compact-chrome-h: calc(var(--compact-tools-top) + var(--compact-tools-h));
+  }
+
+  /* ---- 1. the document bar ---- */
+  .file-ribbon,
+  body.toolbar-location-down .file-ribbon {
+    top: var(--compact-gap);
+    left: var(--compact-gap);
+    right: var(--compact-gap);
+    max-width: none;
+    min-height: var(--compact-doc-h);
+    box-sizing: border-box;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-md);
+    backdrop-filter: none;
+    box-shadow: 0 6px 18px var(--d-3);
+  }
+
+  /* The name and save state sit at the far end, where a title belongs. */
+  .file-ribbon .file-ribbon-sep { margin-left: auto; }
+
+  /* The sheet opens under BOTH bars, so the tool row stays visible and
+     reachable while a menu is open, and stops short of the footer links. */
+  .file-backstage {
+    --sheet-top: calc(var(--compact-chrome-h) + 6px);
+    left: var(--compact-gap);
+    max-height: calc(100vh - var(--sheet-top) - 44px);
+    max-height: calc(100dvh - var(--sheet-top) - 44px);
+  }
+
+  /* Toolbar at the bottom: the sheet has the whole middle of the screen. */
+  body.toolbar-location-down .file-backstage {
+    --sheet-top: calc(var(--compact-gap) + var(--compact-doc-h) + 6px);
+    max-height: calc(100vh - var(--sheet-top) - var(--compact-tools-h) - 52px);
+    max-height: calc(100dvh - var(--sheet-top) - var(--compact-tools-h) - 52px);
+  }
+
+  /* ---- 2. the tool row ---- */
+  .toolbar {
+    top: var(--compact-tools-top);
+    left: var(--compact-gap);
+    right: var(--compact-gap);
+    transform: none;
+    width: auto;
+    max-width: none;
+    height: var(--compact-tools-h);
+    /* Phones used to lay this out as a seven-column grid. */
+    display: flex;
+    grid-template-columns: none;
+    align-items: center;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 4px;
+    padding: 5px 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-md);
+    box-shadow: 0 6px 18px var(--d-3);
+  }
+
+  .toolbar::-webkit-scrollbar { display: none; }
+
+  [data-theme="light"] .toolbar { background: var(--surface); }
+
+  body.toolbar-location-down .toolbar {
+    top: auto;
+    bottom: max(34px, env(safe-area-inset-bottom));
+    gap: 4px;
+    padding: 5px 8px;
+    border-radius: var(--r-md);
+  }
+
+  /* Nothing in the row may shrink to fit: it scrolls instead, so every
+     control keeps the 44px a finger needs. */
+  .toolbar > *,
+  .toolbar .tool,
+  .toolbar .tool-help-btn,
+  .toolbar .zoom-level,
+  .toolbar .toolbar-divider {
+    flex: 0 0 auto;
+  }
+
+  .toolbar .tool,
+  body.toolbar-location-down .toolbar .tool {
+    width: var(--tap);
+    min-width: var(--tap);
+    height: var(--tap);
+  }
+
+  /* The row says it scrolls: its last visible control fades out. Only while
+     there is more to reach, which chrome-compact.js reports. */
+  .toolbar.can-scroll-end {
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent);
+  }
+
+  .toolbar.can-scroll-start {
+    -webkit-mask-image: linear-gradient(270deg, #000 calc(100% - 44px), transparent);
+    mask-image: linear-gradient(270deg, #000 calc(100% - 44px), transparent);
+  }
+
+  .toolbar.can-scroll-start.can-scroll-end {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 44px, #000 calc(100% - 44px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 44px, #000 calc(100% - 44px), transparent);
+  }
+}
+
+/* A 960px tablet is 49px short of showing every control at the phone
+   spacing. Tighter gaps fit them all, so nothing hides behind a scroll on
+   the device this is built for. */
+@media (min-width: 900px) and (max-width: 1179px) {
+  .toolbar,
+  body.toolbar-location-down .toolbar { gap: 1px; padding-inline: 6px; }
+}
+
+@media (max-width: 640px) {
+  .file-ribbon,
+  body.toolbar-location-down .file-ribbon {
+    left: var(--compact-gap);
+    max-width: none;
+  }
+
+  .file-backstage {
+    left: var(--compact-gap);
+    right: var(--compact-gap);
+    max-height: calc(100vh - var(--sheet-top) - 60px);
+    max-height: calc(100dvh - var(--sheet-top) - 60px);
+  }
+
+  /* Four tabs share the bar evenly; the name is in File. */
+  .file-ribbon .file-ribbon-tab { flex: 1 1 0; justify-content: center; min-width: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toolbar { scroll-behavior: auto; }
+}
+
+/* ---------- every width: v2 placement fixes ----------
+   From the v2 audit (docs/V2-REVIEW.md), which opened every panel and sheet
+   at 1440, 960 and 375px and measured what each one landed on. */
+
+/* The File sheet dropped over the tool rail. It opens beside it now. */
+@media (min-width: 1180px) {
+  .file-backstage { left: 80px; }
+}
+
+/* 30rem of width plus 44px of padding in a content box: 14px wider than a
+   375px phone, so the sheet ran off both edges. */
+.tool-help-sheet-panel {
+  box-sizing: border-box;
+  max-width: calc(100vw - 16px);
+}
+
+/* Two controls a finger could not reliably hit: 45x18 and 54x19. */
+.zoom-level { min-height: var(--tap); box-sizing: border-box; }
+
+.file-ribbon-name { min-height: var(--tap); }
+
+/* The lecture player took 480ms to arrive. Nothing else in the editor takes
+   more than --slow. */
+.yt-player.yt-opening,
+.yt-player.yt-closing { animation-duration: var(--slow); }
+
+/* The credit names the person who made this and links to them, so it has to
+   be readable: it used to rest at 40% opacity, which is under 3:1. */
+footer .left,
+footer.is-signing .left {
+  opacity: 1;
+  color: var(--ink-2);
+}
+
+footer .footer-credit-link {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 3px;
+}
+
+footer .footer-credit-link:hover,
+footer .footer-credit-link:focus-visible {
+  color: var(--accent);
+  text-decoration-color: var(--accent);
+}
+
+/* Notebook pages and imported decks put a page switcher bottom-right, on top
+   of the Privacy / Cookies / Terms links. It sits above the footer now. */
+.ppt-slide-nav,
+.notebook-page-nav {
+  bottom: 44px;
+  color: var(--ink);
+  background: var(--surface);
+  border-color: var(--rule);
+}
+
+[data-theme="light"] .ppt-slide-nav { color: var(--ink); background: var(--surface); }
+
+/* On a phone the footer is one short line: the credit left, legal right.
+   The copyright words are what gives way. */
+@media (max-width: 640px) {
+  .footer-copyright { display: none; }
+  footer { flex-wrap: nowrap; align-items: center; gap: 8px; }
+  footer .left, .editor-legal { white-space: nowrap; }
+  .ppt-slide-nav, .notebook-page-nav { bottom: 48px; }
+}
+
+.zoom-level { min-width: var(--tap); }
+
+/* ---------- My Notebooks: on the core tokens ----------
+   It carried its own lavender-to-cream gradient and an indigo button. */
+.library-modal { background: var(--d-5); }
+
+.library-panel,
+[data-theme="light"] .library-panel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  box-shadow: 0 24px 60px var(--d-5);
+}
+
+.library-panel::before { display: none; }
+
+.library-panel h3 { font-family: var(--display); }
+
+.library-action-primary,
+[data-theme="light"] .library-action-primary,
+.library-action-primary:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: none;
+}
+
+.library-card,
+[data-theme="light"] .library-card {
+  background: var(--raised);
+  border-color: var(--rule);
+  box-shadow: none;
+}
+
+/* Dialog titles speak in the display face, like the marketing headlines. */
+.file-backstage h2, .file-backstage h3,
+.pomo-title, .planner-overlay h2, .planner-overlay h3,
+.clear-confirm h2, .clear-confirm h3,
+.tool-help-sheet-panel h2, .feature-tour-card h2, .feature-tour-card h3,
+.tool-dock-title, .file-ribbon-tab {
+  font-family: var(--display);
+}

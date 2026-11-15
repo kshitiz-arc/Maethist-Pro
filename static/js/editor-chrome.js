@@ -19,7 +19,9 @@
   // markup. In rail mode they join the action bar as its leading zone, so the
   // top band is one object instead of two islands with 444px of empty bar
   // between them.
-  const DOC_NODES = ["#menuBtn", ".file-ribbon"];
+  // The hamburger is gone -- its drawer was redundant with the ribbon, so the
+  // ribbon is the only thing left to move into the bar in rail mode.
+  const DOC_NODES = [".file-ribbon"];
 
   const railQuery = window.matchMedia("(min-width: 1180px)");
   const anchors = new Map();
@@ -194,15 +196,11 @@
     }
 
     const bar = toolbar.getBoundingClientRect();
-    const menu = document.getElementById("menuBtn");
-    const menuRect = menu ? menu.getBoundingClientRect() : null;
 
-    // same formula core.js uses for the dock's top inset
-    const topInset = Math.max(0, Math.round(bar.bottom + 10));
-    const menuInset = menuRect && menuRect.top < window.innerHeight / 2
-      ? Math.round(menuRect.bottom + 12)
-      : 0;
-    const chromeTop = Math.max(topInset, menuInset);
+    // same formula core.js uses for the dock's top inset. The hamburger used
+    // to be a second candidate here, in case it hung lower than the bar; it
+    // no longer exists, so the bar is the only thing to clear.
+    const chromeTop = Math.max(0, Math.round(bar.bottom + 10));
 
     document.body.style.setProperty("--chrome-top", chromeTop + "px");
 
@@ -263,10 +261,26 @@
         window.requestAnimationFrame(() => syncInsets(railQuery.matches));
       });
     });
+
+    // The chrome is now the real chrome: the rail exists, the tools are in it,
+    // the ribbon has been built and the insets are measured. write.html holds
+    // all of it at opacity:0 until this class lands, so the half-built version
+    // -- every tool in one centred bar, no rail, no ribbon -- is never painted.
+    // This runs last of the three chrome scripts (file-ribbon, tool-dock, then
+    // this one), so by here they have all had their DOMContentLoaded turn.
+    document.body.classList.add("chrome-ready");
   }
 
   window.Inkyscib = window.Inkyscib || {};
   window.Inkyscib.EditorChrome = { sync };
 
-  document.addEventListener("DOMContentLoaded", initEditorChrome);
+  // With `defer` the DOM is already parsed when this runs, so waiting for
+  // DOMContentLoaded only waited for the other 40-odd scripts to download.
+  // Build the chrome as soon as this file executes; the readyState guard
+  // keeps it correct if the script is ever loaded without defer.
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initEditorChrome, { once: true });
+  } else {
+    initEditorChrome();
+  }
 })();

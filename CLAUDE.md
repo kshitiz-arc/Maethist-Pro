@@ -4,8 +4,31 @@ A browser workspace for studying from your own material: import a PDF or a deck,
 it by hand, construct real geometry, export clean vector PDF. Free, offline-capable, no
 account. Flask + vanilla JS, no build step.
 
-**Not a git repository.** There is no branch, no diff, and no history to read. Verify
-changes by running the tests and by looking at the app.
+**Git exists now, but it is one commit.** `origin` is
+github.com/kshitiz-arc/Inkyscib_Beta, `master` holds a single "Initial commit", and
+almost every file is modified against it. So `git diff` shows months of work as one
+blob and is close to useless for review -- verify changes by running the tests and by
+looking at the app, the same as before.
+
+## Privacy: there is no analytics
+
+Version 2 removed Google Analytics, the consent banner and `/api/consent`. A
+first visit talks to this origin and nobody else, and the privacy policy says
+so in as many words. `tests/test_analytics_csp.py` fails if a tag, a
+measurement id or an analytics origin comes back anywhere. Adding any tracker
+is an owner decision, not a change: it makes the policy false until the policy
+changes too. `templates/legal/*` describes the code as it runs; start at
+`docs/legal/README.md`, which lists exactly what forces a re-read.
+
+## Releasing
+
+`VERSION` and `APP_VERSION` in `app.py` must agree. `render.yaml` deploys to
+Render with `gunicorn wsgi:app --config gunicorn.conf.py`; production refuses
+to start without `SECRET_KEY`. Full-resolution YouTube frames are off unless
+`YOUTUBE_FULL_FRAMES=true`, and should stay off on a public host. The offline
+shell is `/sw.js` (`templates/sw.js`): it precaches every file under `static/`
+that the pages load, so a new asset type needs adding to `_OFFLINE_SUFFIXES`.
+`docs/V2-REVIEW.md` is the launch review, with the measurements.
 
 ## Design System
 
@@ -35,16 +58,79 @@ python -c "import os; os.environ.setdefault('SECRET_KEY','dev'); from app import
 python -m pytest tests/ -q
 ```
 
-**Baseline is 140 passed / 16 failed.** All 16 failures are pre-existing and unrelated to
-current work: 14 in `test_planner.py`, 1 in `test_smart_geometry.py`, and 1 in
-`test_planner_deeplink.py` (a date-format locale mismatch). Two of the planner failures are
-**flaky** — they click `#menuBtn` without dismissing the first-run feature tour, so the
-tour intercepts the pointer event when it wins the race. The failure *count* holds at 16
-while the *membership* shifts between runs. Do not read a membership change as a regression
-without re-running that specific test.
+**Baseline is 497 passed / 1 failed, 906 subtests, about 10 minutes**
+(2026-09-21), after the tool-panel and shape-assist work (TODOS item 19) added
+`test_tool_panel_layout.py` and nine tests to `test_write_assist.py`. Before
+that, 474 / 1 / 814 the same day after the production-readiness pass (item 18). It was 447 / 0 / 723 on 2026-09-20 and 319 / 244 on
+2026-09-19.
 
-Browser tests need `bypass_csp=True` (the editor forbids `unsafe-eval`) and must dismiss
-the tour via `localStorage['inkyscib-feature-tour-v1']` or it swallows every click.
+**The one failure is `test_ink_smoothing.py::test_lift_smoothing_is_cheap`, and it
+is the budget, not a regression** -- see TODOS items 17 and 18. Measured on
+2026-09-21: five isolated runs of the current tree gave 3.10 / 2.30 / 2.70 / 2.60 /
+2.50 ms against a 2.0 ms ceiling, and five runs of the *pre-change* tree on the same
+machine minutes later gave 2.50 / 2.30 / 3.00 / 2.30 / 2.20 ms. Overlapping
+distributions, both failing: the machine was slower that day, not the code. Raising
+the ceiling is the owner's call, so it was left red rather than quietly widened.
+
+Otherwise treat *any* failure as yours until proven otherwise -- and note that
+"proven" above meant re-measuring the old code on the same box in the same minute,
+not recognising the test name.
+
+**Do not run two full suites at once.** A contended run failed three timing tests
+(`test_lift_smoothing_is_cheap`, a render-latency same-frame assertion and an 8s
+`page.goto` on /write); all three pass alone. `test_lift_smoothing_is_cheap`
+measures 1.5-2.4ms against a 2.0ms ceiling, so it straddles it either way -- see
+TODOS.md for the measurements and two ways to make it honest.
+
+It was 17 failed / 156 passed in ~21 minutes until 2026-09-11, and the long-held
+belief that those were "pre-existing and unrelated" was wrong — nobody had read
+the tracebacks. All 16 planner failures were one dead selector, and each of the
+rest was a single file breaking a convention the other files follow. See
+`TODOS.md` item 6 for the full diagnosis. The lesson worth keeping: **a stable
+failure count is not evidence the failures are understood.**
+
+### Writing a browser test
+
+Four conventions, all of which have caused a false failure here. None is
+enforced anywhere, so they have to be applied by hand:
+
+- **Dismiss the first-run tour** via
+  `localStorage['inkyscib-feature-tour-v1']`, set in an `add_init_script`. It
+  opens over the canvas and takes the pointer, so clicks land on the overlay
+  and the canvas never even receives `mouseenter`.
+- **(Historical) the consent banner.** It no longer exists, so nothing needs
+  answering. Older tests still seed the key below; it is harmless and ignored:
+  `localStorage.setItem('inkyscib-consent-v1', JSON.stringify({version: 1, analytics: false}))`.
+  Same failure as the tour, one layer up: the banner is `position: fixed` at
+  the bottom of every page until someone answers it, so it eats clicks meant
+  for anything down there. The `version` must match `VERSION` in
+  `static/js/consent.js` or the record is ignored and the banner opens anyway.
+  The consent, accessibility and SEO-browser modules deliberately do **not**
+  pre-answer it.
+- **Pin `locale="en-US"`** on the context if the test asserts any date text.
+  The app formats through `Intl.DateTimeFormat(undefined, ...)`, so it follows
+  the machine and an en-GB box renders "Sunday, 9 August 2026".
+- **Pass `wait_for_function` an arrow function, not a bare expression.**
+  Playwright evaluates a bare expression with `eval()`, which the editor's CSP
+  forbids. `bypass_csp=True` also works but switches off the real CSP.
+- **Opacity composites; it does not inherit.** A test that reads an element's
+  own `getComputedStyle(...).opacity` sees `1` while an ancestor at `0.4` halves
+  what actually reaches the screen. The first draft of
+  `test_accessibility.py::TabletFooterTests` passed against the very bug it was
+  written for because of this. Multiply up the ancestor chain, and re-run any new
+  guard against a deliberately reverted file to watch it go red.
+- **Below 1180px the tool row scrolls sideways.** A tool at the far end may be
+  out of view: scroll `.toolbar` or call the element's `click()` rather than
+  asserting it is under the pointer. An automated browser also skips the
+  offline worker unless the page sets `window.__inkyscibOfflineShell = true`.
+- **Tool panels float from `#toolPanelLayer` below 1180px, closed on load.**
+  Open one the way a person does (select the tool, or tap the tool in hand)
+  rather than assuming the pen panel is showing, and wait out the ~200ms
+  transitions before measuring a panel's position.
+- **Do not wait for chrome to be *visible*.** `#plannerBtn` and its siblings
+  live in `#chromeTriggers`, which write.html keeps permanently `hidden` so the
+  import handlers stay bound. Use `state="attached"`, and reach features
+  through their module API or the File ribbon.
 
 ## Deferred work
 

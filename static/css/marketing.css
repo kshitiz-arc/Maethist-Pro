@@ -147,7 +147,12 @@ header {
   gap: clamp(var(--s5), 5vw, var(--s8));
   align-items: center;
   padding: var(--s8) 0;
-  min-height: calc(100vh - 190px);
+  /* 190px of chrome, plus the 52px legal strip that now sits under the
+     hero. Measured, not estimated. This only binds on a tall viewport:
+     below about 900px the hero's own content (756px with its padding)
+     is taller than the reservation and the page scrolls regardless,
+     which was true before the strip existed too. */
+  min-height: calc(100vh - 242px);
 }
 
 .hero-copy { display: grid; gap: var(--s4); align-content: center; max-width: 34rem; }
@@ -337,7 +342,7 @@ header {
   align-items: center;
   gap: var(--s1);
   font-size: var(--t-1);
-  color: var(--ink-3);
+  color: var(--ink-2);
 }
 
 .zoom button {
@@ -365,7 +370,7 @@ header {
   border-bottom: 1px solid var(--rule);
 }
 
-.page-head h2 {
+.page-head h1 {
   font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 700;
   line-height: 1.05;
@@ -393,7 +398,7 @@ header {
   color: var(--accent);
 }
 
-.section-title h3 {
+.section-title h2 {
   font-size: var(--t-6);
   font-weight: 700;
   letter-spacing: -0.018em;
@@ -421,15 +426,19 @@ header {
 
 .card { padding: var(--s5); display: grid; gap: var(--s2); align-content: start; }
 
+/* WCAG 2.1 AA, verified with axe-core on 2026-09-20: --ink-3 is 3.51:1 and
+   DESIGN.md marks it "AA-large, non-load-bearing only". Each rule below prints
+   informational text at 12-13px, which needs 4.5:1, so it takes --ink-2 (7:1).
+   --ink-3 stays for hairlines, hovers and the canvas grid, which carry no text. */
 .card-index {
   font-size: var(--t-1);
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink-3);
+  color: var(--ink-2);
 }
 
-.card h4 {
+.card h3 {
   font-size: var(--t-4);
   font-weight: 600;
   letter-spacing: -0.008em;
@@ -506,13 +515,13 @@ header {
   color: var(--accent);
 }
 
-.track-what h4 { margin: 0 0 var(--s1); font-size: var(--t-4); font-weight: 600; }
+.track-what h3 { margin: 0 0 var(--s1); font-size: var(--t-4); font-weight: 600; }
 .track-what p { margin: 0; color: var(--ink-2); }
 
 .track-stack {
   font-family: var(--mono);
   font-size: var(--t-1);
-  color: var(--ink-3);
+  color: var(--ink-2);
   margin-top: var(--s2);
 }
 
@@ -536,7 +545,7 @@ header {
 .profile-tier, .profile-tags {
   font-family: var(--mono);
   font-size: var(--t-1);
-  color: var(--ink-3);
+  color: var(--ink-2);
   letter-spacing: 0.06em;
 }
 .profile-bio { margin: 0; color: var(--ink-2); max-width: 58ch; }
@@ -550,7 +559,7 @@ header {
 .profile-stats { display: flex; flex-wrap: wrap; gap: var(--s5); }
 .profile-stat { display: grid; gap: 2px; }
 .profile-stat b { font-family: var(--mono); font-size: var(--t-5); font-weight: 700; }
-.profile-stat span { font-size: var(--t-1); color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; }
+.profile-stat span { font-size: var(--t-1); color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.08em; }
 
 .maker-links { display: flex; flex-wrap: wrap; gap: var(--s4); }
 .maker-links a { color: var(--accent); text-decoration: none; font-size: var(--t-2); font-weight: 500; }
@@ -566,12 +575,44 @@ header {
   padding: var(--s6) 0;
   margin-top: var(--s8);
   border-top: 1px solid var(--rule);
-  color: var(--ink-3);
+  color: var(--ink-2);
   font-size: var(--t-2);
 }
 
 .site-foot a { color: var(--ink-2); text-decoration: none; }
 .site-foot a:hover { color: var(--ink); }
+
+/* The legal row is the footer's second line: flex-basis pushes it onto its own
+   row under the blurb and the site links, where it reads as an appendix rather
+   than competing with them. It is quieter by position and size, not by
+   contrast — these are compliance links people have to be able to find, so the
+   separators take the link colour (--ink-2, 7:1) rather than --ink-3, which
+   DESIGN.md marks non-load-bearing. */
+/* The compliance row. It lives outside the footer block so a page cannot
+   drop it by overriding that block - the homepage does exactly that, and
+   CPRA wants the sale opt-out on the homepage. Quiet by size and position,
+   not by contrast: --ink-3 is marked non-load-bearing in DESIGN.md and these
+   are legal links. */
+.legal-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+  align-items: center;
+  padding: var(--s3) 0;
+  border-top: 1px solid var(--rule-2);
+  font-size: var(--t-1);
+  color: var(--ink-2);
+}
+
+.legal-strip a {
+  color: inherit;
+  text-decoration: none;
+  padding-block: var(--s1);
+  text-underline-offset: 3px;
+}
+
+.legal-strip a:hover,
+.legal-strip a:focus-visible { text-decoration: underline; }
 
 /* ---------- retired ---------- */
 /* The starfield, nebulas, orbit and system bar were the sci-fi frame. The
@@ -598,7 +639,25 @@ header {
     padding: var(--s4) 0;
   }
   .nav { order: 3; width: 100%; border-top: 1px solid var(--rule); padding-top: var(--s2); }
-  .nav a { padding: var(--s2); }
+
+  /* DESIGN.md: 44px is the touch floor, via var(--tap). These are the three
+     controls a phone visitor actually aims at. */
+  .nav a {
+    padding: var(--s2);
+    min-block-size: var(--tap);
+    display: inline-flex;
+    align-items: center;
+  }
+
+  header .write-btn,
+  header .icon-btn {
+    min-block-size: var(--tap);
+    min-inline-size: var(--tap);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .track-row { grid-template-columns: 1fr; gap: var(--s1); }
   .page-cta { padding: var(--s5); }
   .profile { padding: var(--s5); }
@@ -608,3 +667,82 @@ header {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   .geometry svg { transition: none; }
 }
+
+/* ---------- below-fold containment ---------- */
+
+/* The features page is four long sections; only the first is ever above the
+   fold. contain-intrinsic-size reserves the height so skipping layout costs
+   nothing in CLS, and the containment is dropped for print. */
+@media screen {
+  .section {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 640px;
+  }
+}
+
+/* ---------- v2 identity: Blueprint ----------
+   A drafting sheet: deep blue ground, one cyan accent, a technical grotesk
+   for anything that is a title or a label on a control. Colour comes from
+   tokens.css; this block is type and the sheet's own ruled grid. */
+
+body {
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--rule-2) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule-2) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: center top;
+}
+
+h1, h2, h3,
+.logo, .write-btn, .primary, .secondary,
+.profile-name, .principle strong {
+  font-family: var(--display);
+}
+
+.hero h1 {
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+.tagline { font-weight: 500; }
+
+.logo { letter-spacing: -0.02em; }
+
+.logo-icon { border-radius: 0; }
+
+/* Corner ticks on the preview sheet, the way a title block frames a drawing. */
+.canvas {
+  background-color: var(--surface);
+  box-shadow: 0 0 0 1px var(--rule-2), 0 24px 60px var(--d-4);
+}
+
+.canvas-grid {
+  background-image:
+    linear-gradient(var(--rule-2) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule-2) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.primary, .write-btn {
+  transition: transform var(--fast) ease-out, opacity var(--fast) ease-out;
+}
+
+.primary:hover, .write-btn:hover { opacity: 1; transform: translateY(-1px); }
+
+/* The nav controls sat at 36-38px; a finger needs 44. */
+.nav a, .icon-btn, .write-btn {
+  min-height: var(--tap);
+  display: inline-flex;
+  align-items: center;
+}
+
+.icon-btn { min-width: var(--tap); justify-content: center; }
+
+.panel, .card { background-color: var(--surface); }
+.icon-btn { width: var(--tap); height: var(--tap); }
+
+/* Touch targets the v2 audit found under 44px. */
+.logo { min-height: var(--tap); }
+.feature { min-height: var(--tap); align-items: center; }
+.canvas .toolbar .tool { min-width: var(--tap); min-height: var(--tap); }

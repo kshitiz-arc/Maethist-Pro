@@ -17,7 +17,6 @@
   let panel = null;
   let inspector = null;
   let toolButton = null;
-  let clickTimer = null;
   let fieldEdit = null;
   let inspectorSignature = "";
   let variableSignature = "";
@@ -253,27 +252,14 @@
     if (!panel || !toolButton) return;
 
     toolButton.onclick = () => {
-      if (window.Inkyscib?.ToolDock?.isDockMode?.()) {
-        if (typeof window.closeAllToolboxes === "function") window.closeAllToolboxes();
-        if (typeof window.setTool === "function") window.setTool("manipulative");
-        return;
-      }
-
-      const s = state();
-      if (s?.currentTool === "manipulative" && !s.panMode) {
-        if (clickTimer) {
-          clearTimeout(clickTimer);
-          clickTimer = null;
-          if (typeof window.toggleToolbox === "function") window.toggleToolbox("manipulativeOptions");
-        } else {
-          clickTimer = setTimeout(() => { clickTimer = null; }, 300);
-        }
-        return;
-      }
-
+      // Opening and closing this tool's panel is tool-dock.js's job at every
+      // width: it sees the tap in the capture phase and toggles on a second
+      // tap. This handler only selects the tool. A second owner here -- a
+      // double-tap timer below 1180px, writing style.display directly -- is
+      // what left the panels out of step with the dock and, for Algebra tiles,
+      // hid the panel the moment the tool was picked.
       if (typeof window.closeAllToolboxes === "function") window.closeAllToolboxes();
       if (typeof window.setTool === "function") window.setTool("manipulative");
-      if (typeof window.toggleToolbox === "function") window.toggleToolbox("manipulativeOptions");
     };
 
     panel.querySelectorAll("[data-tile-preset]").forEach((chip) => {

@@ -1,0 +1,47 @@
+{% extends "_marketing.html" %}
+
+{#
+  The shell every legal document shares.
+
+  The page's only <h1> lives here, so each document's own ladder starts at h2
+  and never skips a rank. The draft notice lives here too: all three documents
+  carry it, and one copy means it cannot go stale on two pages and not the
+  third.
+
+  legal.css is linked from the body rather than the head. That is valid HTML5,
+  it keeps these rules off every other page on the site, and it keeps this
+  task out of templates and stylesheets another change owns.
+#}
+
+{% block body_class %}page-content{% endblock %}
+
+{% block content %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/legal.css', v='legal-1') }}">
+
+    <div class="page-head">
+      <div class="system-label">Legal</div>
+      <h1>{% block legal_title %}{% endblock %}</h1>
+      <p>Last updated {{ legal_updated }}</p>
+    </div>
+
+    <div class="legal-prose">
+
+      <p class="legal-draft">
+        <strong>Draft, pending review by a qualified lawyer.</strong>
+        Everything below describes how Inkyscib actually behaves today, and each
+        claim was checked against the code before it was written. It has not yet
+        been read by anyone qualified in Indian, EU or UK law, so read it as a
+        description of the software rather than as advice or a finished legal
+        instrument.
+      </p>
+
+      {% block legal_body %}{% endblock %}
+
+      <p class="legal-foot">
+        <a href="{{ url_for('privacy') }}">Privacy</a> ·
+        <a href="{{ url_for('cookies') }}">Cookies</a> ·
+        <a href="{{ url_for('terms') }}">Terms</a>
+      </p>
+
+    </div>
+{% endblock %}

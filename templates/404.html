@@ -4,7 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>404 - Inkyscib</title>
+  {# An error page is not a document a crawler should index, and a soft 404 in
+     the index costs more than the page is worth. #}
+  <meta name="robots" content="noindex" />
+  {# tokens.css first, like every other page. This one used to load only its
+     own stylesheet, so every --r-*, --s4, --ink-2 and --accent it referenced
+     resolved to nothing and the primary button rendered as an off-brand blue
+     with square corners. fonts.css is here for the same reason: the page was
+     set in Segoe UI while the rest of the product is Archivo. #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/not-found.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/vengeance.css', v='veng-1') }}" />
   <link rel="icon" href="{{ url_for('static', filename='logo.ico') }}" type="image/x-icon">
 </head>
 <body>
@@ -30,6 +41,13 @@
         </span>
         <span>Back to Inkyscib</span>
       </a>
+
+      {# A 404 is a real entry point from a stale link, so it needs more than
+         one way onward: one to read about the product, one straight into it. #}
+      <p class="lost-links">
+        Or see <a href="{{ url_for('features') }}">what Inkyscib does</a>, or go
+        straight to <a href="{{ url_for('write') }}">the canvas</a>.
+      </p>
     </section>
 
     <section class="lost-art" aria-hidden="true">

@@ -12,12 +12,12 @@ import unittest
 from pathlib import Path
 
 from app import app
+from browser_server import make_browser_server
 
 sys.path.insert(0, str(Path(__file__).parent))
 
 try:
     from playwright.sync_api import sync_playwright
-    from werkzeug.serving import make_server
 
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
@@ -120,7 +120,7 @@ async ([index, yStart, yEnd, target, tolerance]) => {
 class DocumentImportTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.server = make_server("127.0.0.1", 0, app, threaded=True)
+        cls.server = make_browser_server(app)
         cls.server_thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.server_thread.start()
         cls.base_url = f"http://127.0.0.1:{cls.server.server_port}"
@@ -141,6 +141,15 @@ class DocumentImportTests(unittest.TestCase):
             device_scale_factor=device_scale_factor,
         )
         self.addCleanup(context.close)
+        # The first-run tour opens over the canvas a moment after boot and
+        # takes the pointer with it, so a mouse move lands on the overlay and
+        # the canvas never sees `mouseenter`. Whether it wins that race is
+        # timing, which made test_size_preview_ring_tracks_the_pointer_at_high_dpr
+        # fail about two runs in three - measured, not guessed. Every other
+        # browser test file in this suite already dismisses it this way.
+        context.add_init_script(
+            "localStorage.setItem('inkyscib-consent-v1', JSON.stringify({version: 1, analytics: false})); localStorage.setItem('inkyscib-feature-tour-v1', JSON.stringify({seen: true}))"
+        )
         page = context.new_page()
         self.errors = []
         page.on("pageerror", lambda error: self.errors.append(str(error)))

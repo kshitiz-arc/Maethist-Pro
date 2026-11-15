@@ -1,0 +1,117 @@
+{% extends "legal/_legal.html" %}
+
+{% block title %}Inkyscib cookie and tracking policy, itemised{% endblock %}
+{% block description %}Every cookie and browser store Inkyscib uses, listed by name, purpose, category and expiry — and why almost none of them is a cookie at all.{% endblock %}
+{% block legal_title %}Cookie and tracking policy{% endblock %}
+
+{% block legal_body %}
+
+      <p>
+        This site sets one cookie of its own: none. Everything Inkyscib stores,
+        it stores in your browser's own storage, and the only cookies you can end
+        up with come from YouTube, and only if you open a lecture. The table below lists all of it, because a
+        policy that says "we use cookies to improve your experience" tells you
+        nothing you can check.
+      </p>
+
+      <h2>Cookies, and the things that are not cookies</h2>
+
+      <p>
+        A cookie is sent to a server with every request. <code>localStorage</code>
+        and IndexedDB are not: they sit in your browser and nothing reads them
+        except the page itself. Inkyscib uses the second kind for everything,
+        which is why your notebooks can be large and still never leave your
+        device. The law that governs storage on your device — the ePrivacy Directive, and
+        the equivalents elsewhere — covers both, so both are listed.
+      </p>
+
+      <h2>Everything this site stores</h2>
+
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable table">
+        <table>
+          <caption>
+            Every named store, what it is for, and how long it lasts. "Until
+            cleared" means until you clear it, or until you press the erase
+            button in the <a href="{{ url_for('privacy') }}">privacy policy</a>.
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Purpose</th>
+              <th scope="col">Category</th>
+              <th scope="col">Set by</th>
+              <th scope="col">Expiry</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>theme</code>, other <code>inkyscib-*</code> preferences</td>
+              <td>Your interface theme, pen settings, tool choices and tour state</td>
+              <td>Essential (localStorage, not a cookie)</td>
+              <td>Inkyscib</td>
+              <td>Until cleared</td>
+            </tr>
+            <tr>
+              <td>
+                <code>inkyscib_cache</code> (object stores
+                <code>records</code> and <code>documents</code>)
+              </td>
+              <td>Your work: notebooks, pages, drawings, imported pages and saved video moments</td>
+              <td>Essential (IndexedDB, not a cookie)</td>
+              <td>Inkyscib</td>
+              <td>Until cleared</td>
+            </tr>
+            <tr>
+              <td><code>inkyscib-shell-*</code> (Cache Storage)</td>
+              <td>A copy of the app's own pages, scripts and fonts, so the canvas opens without a connection</td>
+              <td>Essential (Cache Storage, not a cookie)</td>
+              <td>Inkyscib</td>
+              <td>Until cleared, or replaced by the next version</td>
+            </tr>
+            <tr>
+              <td>YouTube player cookies</td>
+              <td>Playback and Google's own measurement, only if you open a lecture</td>
+              <td>Analytics and functional, on interaction</td>
+              <td>Google</td>
+              <td>Varies, set by Google</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        There is no analytics row because there is no analytics. The
+        embedded player is loaded from <code>youtube-nocookie.com</code> and only
+        when you open a lecture, so nothing in the last row exists until you ask
+        for a video.
+      </p>
+
+      <h2>Nothing here is for advertising</h2>
+
+      <p>
+        No marketing or advertising cookies are used on this site, and none ever
+        will be while it is free and ad-free. There is no advertising network, no
+        conversion pixel, no remarketing tag, no social login button and no data
+        broker. The list above is not an excerpt; it is the whole of it.
+      </p>
+
+
+
+      <p>
+        Every browser can delete site data for one site, and every browser has a
+        setting that blocks third-party cookies. Both work here, and neither
+        breaks anything except your saved work, which is stored in the same place.
+        The erase button in the
+        <a href="{{ url_for('privacy') }}">privacy policy</a> does the same job in
+        one click, and lets you export a backup first.
+      </p>
+
+      <h2>Where to read more</h2>
+
+      <p>
+        The <a href="{{ url_for('privacy') }}">privacy policy</a> covers what each
+        of these stores contains, who receives anything, and how long it is kept.
+        The <a href="{{ url_for('terms') }}">terms</a> cover the rest.
+      </p>
+
+{% endblock %}

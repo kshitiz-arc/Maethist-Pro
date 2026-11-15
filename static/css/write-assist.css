@@ -1,0 +1,101 @@
+/* Write assist: the notice that a stroke was corrected, and the way back.
+ *
+ * Built entirely on the core token vocabulary in tokens.css. DESIGN.md is
+ * explicit that a private --writeassist-* palette is how a panel ends up with
+ * no background on the target tablet, so there is not one here. */
+
+.write-assist-chip {
+  position: fixed;
+  /* Above the canvas and the tool rail, clear of the bottom edge on a tablet
+   * where the browser chrome eats the last few dozen pixels. */
+  left: 50%;
+  bottom: var(--s6);
+  transform: translateX(-50%);
+  z-index: 60;
+
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2) var(--s2) var(--s2) var(--s4);
+
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-pill);
+  box-shadow: 0 2px 10px var(--d-2);
+
+  font-family: var(--sans);
+  font-size: var(--t-2);
+  /* The label is short by design; wrapping it would make the chip jump. */
+  white-space: nowrap;
+  max-width: calc(100vw - var(--s5) * 2);
+}
+
+/* A class selector beats the user-agent's [hidden] { display: none }, so
+ * setting .hidden on this element would otherwise do nothing at all and the
+ * chip would sit there for ever. */
+.write-assist-chip[hidden] {
+  display: none;
+}
+
+.write-assist-chip-label {
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.write-assist-chip-undo {
+  /* A correction the writer did not ask for has to be cheap to reject, so the
+   * way back is a full 44px target rather than a text link. */
+  min-height: var(--tap);
+  min-width: var(--tap);
+  padding: 0 var(--s4);
+
+  background: var(--accent-wash);
+  color: var(--accent);
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.write-assist-chip-undo:hover {
+  border-color: var(--accent);
+}
+
+.write-assist-chip-undo:focus-visible,
+.write-assist-chip-edit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Edit is the quieter of the two: the snap already happened, so looking at
+ * the shape's settings is optional, while keeping the ink is the decision. */
+.write-assist-chip-edit {
+  min-height: var(--tap);
+  min-width: var(--tap);
+  padding: 0 var(--s4);
+
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-pill);
+
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.write-assist-chip-edit:hover {
+  background: var(--raised);
+}
+
+.write-assist-chip button[hidden] {
+  display: none;
+}
+
+/* The on/off switch that lived here was replaced on 2026-09-21 by the three-step
+   Shape assist slider, which is the shared .assist-spectrum control in
+   editor-chrome.css. */

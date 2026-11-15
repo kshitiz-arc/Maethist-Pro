@@ -1,13 +1,20 @@
 import base64
+import collections
+import contextlib
+import datetime
 import gzip
+import http.client
 import io
 import json
 import logging
 import math
+import hashlib
 import os
 import posixpath
 import re
+import ssl
 import tempfile
+import threading
 import time
 import urllib.parse
 import urllib.request
@@ -16,8 +23,20 @@ import zlib
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
-from flask import Flask, jsonify, render_template, request, send_file
+from flask import (
+    Flask,
+    Response,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    url_for,
+)
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.utils import secure_filename
+
+import logging_filters
 
 try:
     # Hardened parser that rejects entity expansion / external entity tricks
@@ -48,6 +67,95 @@ app.config["MAX_CONTENT_LENGTH"] = 120 * 1024 * 1024
 # the default is 12 hours, which makes returning visitors re-download the whole
 # editor - roughly 1.5 MB of JavaScript and CSS - twice a day for nothing.
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 31536000  # one year
+
+# The public origin, used for canonical URLs, the sitemap, social cards and
+# llms.txt. Set SITE_ORIGIN in production (e.g. https://inkyscib.com). Left
+# unset, the app falls back to the origin the request arrived on, which is
+# right for a local run and harmless on a single-domain deployment. Nothing
+# else in the codebase may hardcode a domain.
+SITE_ORIGIN = os.environ.get("SITE_ORIGIN", "").strip().rstrip("/")
+
+
+def site_url(path="/"):
+    """Absolute URL for a site-relative path, on the configured public origin."""
+    if not path.startswith("/"):
+        path = "/" + path
+    # rstrip again rather than trusting the module-level value: a test or a
+    # caller may have patched SITE_ORIGIN, and a doubled slash in a canonical
+    # is a different URL to a crawler.
+    origin = (SITE_ORIGIN or request.url_root).rstrip("/")
+    return origin + path
+
+
+# Behind a reverse proxy (Render, Fly, nginx) the socket this process sees is
+# plain HTTP; the real scheme and host survive only in X-Forwarded-*. Without
+# ProxyFix, request.is_secure is always False, so the HSTS header set in
+# set_security_headers never actually ships. Only enable it where a proxy is
+# genuinely in front, or a client can forge the scheme.
+if os.environ.get("TRUST_PROXY_HEADERS", "").strip().lower() in {"1", "true", "yes"}:
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
+FORCE_HTTPS = os.environ.get("FORCE_HTTPS", "").strip().lower() in {"1", "true", "yes"}
+
+# Everything served on a second hostname - www. as well as the apex, or the
+# hosting platform's default *.onrender.com alongside the custom domain - is
+# duplicate content. The canonical tag hints; this redirect settles it.
+CANONICAL_HOST = urllib.parse.urlsplit(SITE_ORIGIN).netloc if SITE_ORIGIN else ""
+
+# Search Console's HTML-tag verification. Empty in development, so no stray
+# meta ships locally; set SEARCH_CONSOLE_TOKEN in the deploy environment.
+SEARCH_CONSOLE_TOKEN = os.environ.get("SEARCH_CONSOLE_TOKEN", "").strip()
+
+
+# PII never reaches a handler: the filter rewrites the record itself, so
+# nothing identifying is written to disk or forwarded to a log service.
+_PII_FILTER = logging_filters.RedactPII()
+for _log in (logger, logging.getLogger("werkzeug"), logging.getLogger()):
+    _log.addFilter(_PII_FILTER)
+
+
+@app.context_processor
+def inject_canonical():
+    # request.path drops the query string, which is what a canonical wants:
+    # /write?planner=1 and /write are the same document to a crawler.
+    return {
+        "canonical_url": site_url(request.path),
+        "site_url": site_url,
+        "app_version": APP_VERSION,
+        "search_console_token": SEARCH_CONSOLE_TOKEN,
+    }
+
+
+@app.before_request
+def redirect_to_canonical_origin():
+    """One origin, over TLS. Off by default, so a local run is untouched."""
+    host = request.host.split(":")[0]
+    if host in ("127.0.0.1", "localhost", "[::1]"):
+        return None
+
+    wrong_scheme = FORCE_HTTPS and not request.is_secure
+    wrong_host = bool(CANONICAL_HOST) and request.host != CANONICAL_HOST
+
+    if not (wrong_scheme or wrong_host):
+        return None
+
+    scheme = "https" if (FORCE_HTTPS or request.is_secure) else request.scheme
+    netloc = CANONICAL_HOST or request.host
+    target = urllib.parse.urlunsplit(
+        (scheme, netloc, request.path, request.query_string.decode(), "")
+    )
+    # 301 is what search engines consolidate on; 308 keeps the method and body
+    # for anything that is not a plain read.
+    code = 301 if request.method in ("GET", "HEAD") else 308
+    return redirect(target, code=code)
+
+
+@app.context_processor
+def inject_current_year():
+    """The editor prints a copyright line. Hard-coding the year means it is
+    wrong every January and nobody notices until someone reads the footer, so
+    it is rendered rather than typed."""
+    return {"current_year": datetime.date.today().year}
 
 
 # A one-year cache is only safe if the URL changes whenever the file does.
@@ -84,9 +192,33 @@ def add_static_version(endpoint, values):
     if token:
         values["v"] = token
 
-app.config["SECRET_KEY"] = os.environ.get(
-    "SECRET_KEY",
-    os.urandom(32).hex()
+APP_VERSION = "2.0.0"
+
+# Render sets RENDER=true on every service; INKYSCIB_ENV=production is the
+# switch for any other host. A random fallback is fine on a laptop, but under
+# Gunicorn each worker would draw its own key, so anything that ever signs a
+# cookie would break at random. Refuse to start instead.
+IS_PRODUCTION = (
+    os.environ.get("INKYSCIB_ENV", "").strip().lower() == "production"
+    or os.environ.get("RENDER", "").strip().lower() == "true"
+)
+_secret_key = os.environ.get("SECRET_KEY", "").strip()
+if not _secret_key:
+    if IS_PRODUCTION:
+        raise RuntimeError(
+            "SECRET_KEY is not set. Set it in the host's environment before "
+            "starting Inkyscib in production."
+        )
+    _secret_key = os.urandom(32).hex()
+app.config["SECRET_KEY"] = _secret_key
+
+# Cutting a full-resolution frame means the server downloads part of a YouTube
+# stream with yt-dlp. On a public host that is the most expensive thing an
+# anonymous visitor can trigger, and it sits badly with YouTube's terms, so it
+# is off unless someone turns it on for their own machine. Off, a saved moment
+# uses YouTube's own storyboard preview.
+YOUTUBE_FULL_FRAMES = os.environ.get("YOUTUBE_FULL_FRAMES", "").strip().lower() in (
+    "1", "true", "yes", "on"
 )
 
 # Abuse limits: requests are already capped by MAX_CONTENT_LENGTH, but a small
@@ -1043,7 +1175,7 @@ def clean_download_name(name, suffix):
 
 
 # Every external origin the app legitimately talks to. Tighten here if a
-# feature (analytics, AR hand tracking, YouTube player) is ever removed.
+# feature (AR hand tracking, YouTube player) is ever removed.
 CONTENT_SECURITY_POLICY = "; ".join([
     "default-src 'self'",
     "base-uri 'self'",
@@ -1052,19 +1184,19 @@ CONTENT_SECURITY_POLICY = "; ".join([
     # 'unsafe-inline' is required by the inline scripts in the templates;
     # 'wasm-unsafe-eval' is required by MediaPipe Hands (AR) and PDF.js.
     "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' "
-    "https://*.googletagmanager.com https://cdn.jsdelivr.net https://www.youtube.com",
-    # The homepage sets its type in Inter, served from Google Fonts; the font
-    # files themselves come from the gstatic origin allowed in font-src.
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "https://cdn.jsdelivr.net https://www.youtube.com",
+    # Both type families are self-hosted (static/fonts/, static/css/fonts.css),
+    # so no font origin is allowed here and font-src below falls back to 'self'.
+    # Re-adding either origin re-opens the IP flow to Google that
+    # tools/vendor_fonts.py exists to close.
+    "style-src 'self' 'unsafe-inline'",
     # data: covers imported slide images; the rest are YouTube thumbnails,
-    # the icons8 brand mark, and analytics pixels.
+    # and the icons8 brand mark. There is no analytics origin: v2 removed
+    # analytics outright, and tests/test_analytics_csp.py keeps it out.
     "img-src 'self' data: blob: https://img.icons8.com https://*.ytimg.com "
-    "https://img.youtube.com https://*.google-analytics.com https://*.googletagmanager.com",
-    # GA4 can post collection events to the bare analytics.google.com origin.
-    # A CSP subdomain wildcard does not cover the bare origin itself.
-    "connect-src 'self' https://*.google-analytics.com https://analytics.google.com "
-    "https://*.analytics.google.com https://*.googletagmanager.com https://cdn.jsdelivr.net",
-    "font-src 'self' https://fonts.gstatic.com",
+    "https://img.youtube.com",
+    "connect-src 'self' https://cdn.jsdelivr.net",
+    "font-src 'self'",
     "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
     # data: covers the pomodoro alarm chime.
     "media-src 'self' data: blob:",
@@ -1187,6 +1319,16 @@ def set_security_headers(response):
 
     response.headers["Content-Security-Policy"] = CONTENT_SECURITY_POLICY
 
+    # InkLab (/lab/ink) needs cross-origin isolation for SharedArrayBuffer.
+    # It is scoped to the lab and its own scripts: COEP on /write would block
+    # the cross-origin YouTube player, and the lab's worker is refused
+    # outright unless its own script response carries these headers too
+    # (probed 2026-09-13). See
+    # docs/superpowers/specs/2026-09-13-inklab-webgpu-design.md.
+    if request.path.startswith(("/lab/", "/static/js/inklab/")):
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+
     if request.is_secure:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
@@ -1211,6 +1353,186 @@ def about():
 @app.route("/write")
 def write():
     return render_template("write.html")
+
+
+# InkLab: an isolated WebGPU ink lab, separate from the editor. These are
+# the scripts its render worker loads with importScripts, in order.
+INKLAB_WORKER_SCRIPTS = (
+    "ring-buffer.js",
+    "stroke-width.js",
+    "predictor.js",
+    "shaders.js",
+    "canvas2d-renderer.js",
+    "gpu-renderer.js",
+)
+
+
+@app.route("/lab/ink")
+def lab_ink():
+    config = {
+        "worker": url_for("static", filename="js/inklab/render-worker.js"),
+        "scripts": [
+            url_for("static", filename=f"js/inklab/{name}")
+            for name in INKLAB_WORKER_SCRIPTS
+        ],
+    }
+    return render_template("lab_ink.html", config=config)
+
+
+LEGAL_UPDATED = "2026-11-15"
+
+
+@app.route("/legal/privacy")
+def privacy():
+    return render_template(
+        "legal/privacy.html", nav_active="", legal_updated=LEGAL_UPDATED
+    )
+
+
+@app.route("/legal/cookies")
+def cookies():
+    return render_template(
+        "legal/cookies.html", nav_active="", legal_updated=LEGAL_UPDATED
+    )
+
+
+@app.route("/legal/terms")
+def terms():
+    return render_template(
+        "legal/terms.html", nav_active="", legal_updated=LEGAL_UPDATED
+    )
+
+
+@app.route("/healthz")
+def healthz():
+    """What the host pings to decide the service is up."""
+    response = jsonify({"status": "ok", "version": APP_VERSION})
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+# Everything the editor and the marketing pages need to open with no network.
+# InkLab is a separate prototype with its own isolation headers and is left
+# out; so is the planner's notification worker, which registers itself.
+OFFLINE_PAGES = ("/", "/write", "/features", "/about")
+_OFFLINE_SKIP_PREFIXES = ("js/inklab/", "js/planner-sw.js", "img/")
+_OFFLINE_SUFFIXES = (
+    ".css", ".js", ".woff2", ".png", ".ico", ".svg", ".webmanifest", ".webp",
+)
+
+
+def offline_asset_urls():
+    urls = []
+    static_root = Path(app.static_folder)
+    for file_path in sorted(static_root.rglob("*")):
+        if not file_path.is_file():
+            continue
+        relative = file_path.relative_to(static_root).as_posix()
+        if relative.startswith(_OFFLINE_SKIP_PREFIXES):
+            continue
+        if not relative.endswith(_OFFLINE_SUFFIXES):
+            continue
+        urls.append(url_for("static", filename=relative))
+    return urls
+
+
+@app.route("/sw.js")
+def service_worker():
+    """The offline shell worker, served from the root so its scope is the site.
+
+    The asset list is rendered into the script, and every static URL carries a
+    token derived from the file, so the script's bytes change whenever any
+    asset does. That byte change is what makes a browser install the update.
+    """
+    assets = offline_asset_urls()
+    digest = hashlib.sha256("\n".join(assets).encode()).hexdigest()[:12]
+    body = render_template(
+        "sw.js",
+        cache_name=f"inkyscib-shell-{APP_VERSION}-{digest}",
+        pages=list(OFFLINE_PAGES),
+        assets=assets,
+    )
+    response = Response(body, mimetype="text/javascript")
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["Service-Worker-Allowed"] = "/"
+    return response
+
+
+@app.route("/robots.txt")
+def robots_txt():
+    """Crawl policy. The API returns JSON or binaries and the lab is an
+    unfinished prototype, so neither is worth a crawl budget."""
+    body = "\n".join([
+        "User-agent: *",
+        "Allow: /",
+        "Disallow: /api/",
+        "Disallow: /lab/",
+        "",
+        f"Sitemap: {site_url('/sitemap.xml')}",
+        "",
+    ])
+    return Response(body, mimetype="text/plain")
+
+
+# (path, changefreq, priority). The template a path renders gives its
+# <lastmod>: a stamp of "today" on every request is a claim no crawler
+# believes, and a template's mtime is the closest honest answer available
+# without a git history to read.
+SITEMAP_ROUTES = (
+    ("/", "weekly", "1.0"),
+    ("/write", "weekly", "0.9"),
+    ("/features", "monthly", "0.8"),
+    ("/about", "monthly", "0.5"),
+    ("/legal/privacy", "yearly", "0.3"),
+    ("/legal/cookies", "yearly", "0.3"),
+    ("/legal/terms", "yearly", "0.3"),
+)
+
+SITEMAP_TEMPLATES = {
+    "/": "home.html",
+    "/write": "write.html",
+    "/features": "features.html",
+    "/about": "about.html",
+    "/legal/privacy": "legal/privacy.html",
+    "/legal/cookies": "legal/cookies.html",
+    "/legal/terms": "legal/terms.html",
+}
+
+
+def _template_lastmod(path):
+    template = Path(app.root_path) / "templates" / SITEMAP_TEMPLATES[path]
+    stamp = datetime.datetime.fromtimestamp(
+        template.stat().st_mtime, datetime.timezone.utc
+    )
+    return stamp.date().isoformat()
+
+
+@app.route("/sitemap.xml")
+def sitemap_xml():
+    entries = "".join(
+        "<url>"
+        f"<loc>{site_url(path)}</loc>"
+        f"<lastmod>{_template_lastmod(path)}</lastmod>"
+        f"<changefreq>{changefreq}</changefreq>"
+        f"<priority>{priority}</priority>"
+        "</url>"
+        for path, changefreq, priority in SITEMAP_ROUTES
+    )
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        f"{entries}"
+        "</urlset>"
+    )
+    return Response(body, mimetype="application/xml")
+
+
+@app.route("/llms.txt")
+def llms_txt():
+    """llmstxt.org: a short Markdown brief for LLM crawlers, so a model that
+    summarises Inkyscib gets the price, the storage model and the licence
+    right rather than inferring them from marketing copy."""
+    return Response(render_template("llms.txt"), mimetype="text/markdown")
 
 
 @app.errorhandler(404)
@@ -1348,16 +1670,9 @@ def _search_youtube_result(query):
     if cached and time.monotonic() - cached[0] < YOUTUBE_SEARCH_CACHE_TTL_SECONDS:
         return cached[1], True
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Cookie": "CONSENT=YES+cb.20210328-17-p0.en+FX+410",
-    }
     url = f"https://www.youtube.com/results?search_query={urllib.parse.quote_plus(query)}&hl=en"
-    req = urllib.request.Request(url, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=5) as response:
-            html = response.read().decode("utf-8", errors="replace")
+        html = _fetch_youtube_bytes(url, timeout=5).decode("utf-8", errors="replace")
     except Exception:
         logger.warning("Error fetching YouTube search results", exc_info=True)
         return (cached[1], True) if cached else ([], False)
@@ -1385,113 +1700,200 @@ def youtube_search():
     return response
 
 
-def _fetch_storyboard_spec(video_id):
-    """Fetch and parse storyboard metadata from a YouTube video page.
+YOUTUBE_FETCH_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Cookie": "CONSENT=YES+cb.20210328-17-p0.en+FX+410",
+}
+YOUTUBE_STORYBOARD_HOST = "i.ytimg.com"
+# The sprite URLs carry a signature, so a cached spec cannot be kept for ever.
+YOUTUBE_STORYBOARD_TTL_SECONDS = 30 * 60
+YOUTUBE_STORYBOARD_CACHE = {}
+YOUTUBE_SPRITE_CACHE = {}
+MAX_YOUTUBE_CACHED_STORYBOARDS = 64
+MAX_YOUTUBE_CACHED_SPRITES = 24
+MAX_YOUTUBE_WATCH_PAGE_BYTES = 8 * 1024 * 1024
+MAX_YOUTUBE_SPRITE_BYTES = 4 * 1024 * 1024
+MAX_YOUTUBE_FRAME_SECONDS = 7 * 24 * 60 * 60
+_OUTBOUND_SSL_CONTEXT = None
 
-    Returns a list of storyboard layers, each containing the URL template,
-    frame dimensions, grid layout, count, and interval. The highest-resolution
-    layer (last) is the most useful for frame capture.
+
+def _outbound_ssl_context():
+    """TLS for the server's own requests to YouTube.
+
+    Python 3.13+ verifies with ``VERIFY_X509_STRICT``, which rejects a CA whose
+    Basic Constraints extension is not marked critical. Antivirus HTTPS scanning
+    installs exactly such a root and re-signs every site with it (Avast's "Web/
+    Mail Shield Root" on the machine this was found on), so there every fetch
+    failed: the storyboard lookup returned 502, search called itself
+    unavailable, and "save frame" quietly fell back to the thumbnail.
+
+    Only that profile check is relaxed. The chain is still verified against the
+    system's trusted roots and the hostname is still checked.
     """
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/120.0.0.0 Safari/537.36"
-        )
-    }
-    url = f"https://www.youtube.com/watch?v={urllib.parse.quote(video_id)}"
-    req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=8) as response:
-        html = response.read().decode("utf-8", errors="replace")
+    global _OUTBOUND_SSL_CONTEXT
+    if _OUTBOUND_SSL_CONTEXT is None:
+        context = ssl.create_default_context()
+        context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+        _OUTBOUND_SSL_CONTEXT = context
+    return _OUTBOUND_SSL_CONTEXT
 
-    # Extract ytInitialPlayerResponse which contains storyboard data.
-    # We use brace-matching instead of regex because the JSON payload is large
-    # and deeply nested, making non-greedy regex unreliable.
-    player_response = None
-    for needle in ["ytInitialPlayerResponse", 'window["ytInitialPlayerResponse"]']:
-        idx = html.find(needle)
-        if idx == -1:
-            continue
-        start = html.find("{", idx)
-        if start == -1:
-            continue
-        depth, end = 0, -1
-        for i in range(start, min(start + 500_000, len(html))):
-            if html[i] == "{":
-                depth += 1
-            elif html[i] == "}":
-                depth -= 1
-                if depth == 0:
-                    end = i + 1
-                    break
-        if end == -1:
-            continue
-        try:
-            player_response = json.loads(html[start:end])
-            break
-        except Exception:
-            continue
 
-    if not player_response:
-        return None
-    # The storyboard spec lives under storyboards.playerStoryboardSpecRenderer.spec
-    # or under storyboards.playerLiveStoryboardSpecRenderer.spec (for live streams).
-    storyboards = player_response.get("storyboards", {})
-    spec_renderer = storyboards.get("playerStoryboardSpecRenderer", {})
-    spec_string = spec_renderer.get("spec", "")
-    if not spec_string:
-        # Try live storyboard as fallback.
-        live_renderer = storyboards.get("playerLiveStoryboardSpecRenderer", {})
-        spec_string = live_renderer.get("spec", "")
-    if not spec_string:
-        return None
+def _fetch_youtube_bytes(url, headers=None, timeout=8, max_bytes=None):
+    """The one place the server fetches from YouTube.
 
-    # Parse the pipe-delimited spec string.
-    # Format: baseUrl|thumbWidth#thumbHeight#count#cols#rows#interval_ms#name#sigh#quality
-    # The first segment is the base URL, subsequent segments are layer configs.
-    parts = spec_string.split("|")
-    if len(parts) < 2:
+    Keeping it single means TLS is configured once, and tests can stand in for
+    the network by patching one name.
+    """
+    outbound = urllib.request.Request(url, headers=headers or YOUTUBE_FETCH_HEADERS)
+    with urllib.request.urlopen(outbound, timeout=timeout, context=_outbound_ssl_context()) as response:
+        if max_bytes is None:
+            return response.read()
+        body = response.read(max_bytes + 1)
+    if len(body) > max_bytes:
+        raise ValueError(f"YouTube response for {url} exceeded {max_bytes} bytes")
+    return body
+
+
+def _is_storyboard_url(url):
+    try:
+        parts = urllib.parse.urlsplit(url)
+    except ValueError:
+        return False
+    return (
+        parts.scheme == "https"
+        and parts.hostname == YOUTUBE_STORYBOARD_HOST
+        and parts.path.startswith("/sb/")
+    )
+
+
+def _parse_storyboard_spec(html):
+    """Storyboard layers from a watch page, or None when it publishes none.
+
+    The spec is ``baseUrl|w#h#count#cols#rows#intervalMs#name#sigh|...``, one
+    layer per ``|``, lowest resolution first. ``$L`` in the base URL is the
+    layer's index, ``$N`` its name (``M$M`` for the sheets, where ``$M`` is the
+    sheet number). A base URL anywhere but YouTube's storyboard host is treated
+    as no storyboard: the server only ever fetches from there.
+    """
+    player = _json_object_after_markers(
+        html,
+        (
+            "var ytInitialPlayerResponse",
+            'window["ytInitialPlayerResponse"]',
+            "ytInitialPlayerResponse",
+        ),
+    )
+    if not isinstance(player, dict):
         return None
 
-    base_url = parts[0]
+    storyboards = player.get("storyboards") or {}
+    spec = (
+        (storyboards.get("playerStoryboardSpecRenderer") or {}).get("spec")
+        or (storyboards.get("playerLiveStoryboardSpecRenderer") or {}).get("spec")
+        or ""
+    )
+    parts = spec.split("|") if isinstance(spec, str) else []
+    if len(parts) < 2 or not _is_storyboard_url(parts[0]):
+        return None
+
     layers = []
-    for level_index, layer_spec in enumerate(parts[1:]):
+    for level, layer_spec in enumerate(parts[1:]):
         segments = layer_spec.split("#")
         if len(segments) < 8:
             continue
         try:
-            thumb_w = int(segments[0])
-            thumb_h = int(segments[1])
-            count = int(segments[2])
-            cols = int(segments[3])
-            rows = int(segments[4])
-            interval_ms = int(segments[5])
-            name = segments[6]
-            sigh = segments[7]
-        except (ValueError, IndexError):
+            width, height, count, cols, rows, interval = (int(value) for value in segments[:6])
+        except ValueError:
             continue
-
-        if thumb_w <= 0 or thumb_h <= 0 or count <= 0 or cols <= 0 or rows <= 0:
+        if min(width, height, count, cols, rows) <= 0 or interval < 0:
             continue
-
-        # Build the full URL template for this layer.
-        # Replace $L with the level index, $N with the sprite sheet index (M0, M1, …).
-        layer_url = base_url.replace("$L", str(level_index)).replace("$N", "M$M")
-        # Append the sigh parameter.
-        separator = "&" if "?" in layer_url else "?"
-        layer_url += f"{separator}sigh={sigh}"
-
+        url = parts[0].replace("$L", str(level)).replace("$N", segments[6])
+        separator = "&" if "?" in url else "?"
         layers.append({
-            "url": layer_url,
-            "width": thumb_w,
-            "height": thumb_h,
+            "level": level,
+            "url": f"{url}{separator}sigh={segments[7]}",
+            "width": width,
+            "height": height,
             "count": count,
             "cols": cols,
             "rows": rows,
-            "interval": interval_ms,
+            "interval": interval,
         })
+    return layers or None
 
-    return layers if layers else None
+
+def _fetch_storyboard_spec(video_id):
+    """Storyboard layers for a video, or None when YouTube publishes none.
+
+    Network and TLS failures raise, so callers can tell "this video has no
+    preview frames" apart from "YouTube could not be reached".
+    """
+    cached = YOUTUBE_STORYBOARD_CACHE.get(video_id)
+    if cached and time.monotonic() - cached[0] < YOUTUBE_STORYBOARD_TTL_SECONDS:
+        return cached[1]
+
+    html = _fetch_youtube_bytes(
+        f"https://www.youtube.com/watch?v={urllib.parse.quote(video_id)}",
+        timeout=8,
+        max_bytes=MAX_YOUTUBE_WATCH_PAGE_BYTES,
+    ).decode("utf-8", errors="replace")
+    layers = _parse_storyboard_spec(html)
+
+    YOUTUBE_STORYBOARD_CACHE[video_id] = (time.monotonic(), layers)
+    while len(YOUTUBE_STORYBOARD_CACHE) > MAX_YOUTUBE_CACHED_STORYBOARDS:
+        YOUTUBE_STORYBOARD_CACHE.pop(next(iter(YOUTUBE_STORYBOARD_CACHE)))
+    return layers
+
+
+def _storyboard_sprite(url):
+    sprite = YOUTUBE_SPRITE_CACHE.pop(url, None)
+    if sprite is None:
+        sprite = _fetch_youtube_bytes(url, timeout=8, max_bytes=MAX_YOUTUBE_SPRITE_BYTES)
+    # Re-inserted so the dict's order is least recently used first.
+    YOUTUBE_SPRITE_CACHE[url] = sprite
+    while len(YOUTUBE_SPRITE_CACHE) > MAX_YOUTUBE_CACHED_SPRITES:
+        YOUTUBE_SPRITE_CACHE.pop(next(iter(YOUTUBE_SPRITE_CACHE)))
+    return sprite
+
+
+def _storyboard_frame(video_id, seconds):
+    """The storyboard frame nearest ``seconds``, as a JPEG data URL.
+
+    Cut out here rather than in the browser because YouTube serves the sprite
+    sheets without ``Access-Control-Allow-Origin``: a page can display them but
+    never read their pixels.
+    """
+    usable = [layer for layer in (_fetch_storyboard_spec(video_id) or []) if layer["interval"] > 0]
+    if not usable:
+        return None
+    layer = max(usable, key=lambda item: item["width"] * item["height"])
+
+    interval = layer["interval"] / 1000
+    index = min(layer["count"] - 1, max(0, math.floor(seconds / interval + 0.5)))
+    sheet, cell = divmod(index, layer["cols"] * layer["rows"])
+    column, row = cell % layer["cols"], cell // layer["cols"]
+    url = layer["url"].replace("$M", str(sheet))
+    if not _is_storyboard_url(url):
+        return None
+    if Image is None:
+        raise RuntimeError("Pillow is required to cut storyboard frames")
+
+    left, top = column * layer["width"], row * layer["height"]
+    box = (left, top, left + layer["width"], top + layer["height"])
+    with Image.open(io.BytesIO(_storyboard_sprite(url))) as sprite:
+        if box[2] > sprite.width or box[3] > sprite.height:
+            raise ValueError(f"Storyboard sheet {url} is smaller than its spec")
+        frame = sprite.crop(box).convert("RGB")
+
+    buffer = io.BytesIO()
+    frame.save(buffer, "JPEG", quality=92)
+    return {
+        "image": "data:image/jpeg;base64," + base64.b64encode(buffer.getvalue()).decode("ascii"),
+        "width": frame.width,
+        "height": frame.height,
+        "frameTime": index * interval,
+    }
 
 
 @app.route("/api/youtube/storyboard")
@@ -1507,6 +1909,508 @@ def youtube_storyboard():
     if not layers:
         return jsonify({"error": "Storyboard data not available for this video"}), 404
     return jsonify({"videoId": video_id, "layers": layers})
+
+
+# ---------------------------------------------------------------------------
+# Full-resolution frames, cut from the video itself
+#
+# The browser cannot read pixels out of the YouTube iframe -- it is cross-origin
+# -- which is why "save frame" used to ask for a screen share and then crop the
+# player's box out of the tab. That capped every frame at whatever the player
+# happened to be showing: a ~420px-wide player is served roughly 360p, and a
+# crop cannot put back detail that was never painted.
+#
+# So the server cuts the frame instead. yt-dlp resolves the stream (the URL is
+# behind a signature cipher, which is not a thing to hand-roll), PyAV seeks to
+# the exact timestamp and decodes one frame. Measured on a 1080p source: 2.5s
+# to resolve, 2.1s to seek and decode, 1920x1080, ~360 KB of JPEG. The resolve
+# is cached per video, so a second frame from the same video skips it.
+#
+# Nothing is downloaded to disk and no audio is touched: PyAV reads byte ranges
+# over HTTP and stops as soon as it has the frame.
+# ---------------------------------------------------------------------------
+
+YOUTUBE_STREAM_CACHE = collections.OrderedDict()
+YOUTUBE_STREAM_CACHE_TTL = 4 * 3600  # signed stream URLs outlive this comfortably
+# Every key here is an 11-character id chosen by the caller, so the table is
+# attacker-sized unless something caps it. Each entry also owns a kept-alive
+# socket, which makes an uncapped table a file-descriptor leak as well as a
+# memory one. 256 is far more than one server's worth of concurrently-watched
+# lectures, and eviction closes the connection rather than dropping it.
+YOUTUBE_STREAM_CACHE_MAX_ENTRIES = 256
+MAX_FRAME_WIDTH = 1920
+_YTDLP_SSL_PATCHED = False
+
+# One lock per video. A capture and the /prepare call a video load fires can
+# arrive together; the lock makes the capture wait for the resolve already in
+# flight rather than start a second one, and serialises use of the kept-alive
+# connection stored on the cache entry.
+#
+# Bounded for the same reason as the cache above, and it matters more here:
+# the lock is taken *before* the resolve, so an unknown id that never reaches
+# the cache still leaves an entry behind. A flood of random ids against
+# /api/youtube/frame grew this table forever.
+_YOUTUBE_VIDEO_LOCKS = collections.OrderedDict()
+_YOUTUBE_VIDEO_LOCKS_MAX = 256
+_YOUTUBE_VIDEO_LOCKS_GUARD = threading.Lock()
+
+# Cutting a frame is the most expensive thing this server does: a ~3s yt-dlp
+# resolve for a video it has not seen, then a seek and decode. Nothing
+# authenticates the caller, so without a ceiling a handful of requests can
+# occupy every worker and a flood of unknown ids turns the server into a bot
+# hammering YouTube from its own address.
+#
+# The ceiling is global rather than per-IP on purpose. A per-IP budget means
+# keeping a table of who asked for what, which is a new processing activity
+# undertaken to protect the server.
+# A global semaphore costs one integer and protects the machine just as well:
+# the work is CPU-bound, so more than a few at once is slower for everyone.
+YOUTUBE_FRAME_CONCURRENCY = 3
+YOUTUBE_FRAME_WAIT_SECONDS = 20
+_YOUTUBE_FRAME_SLOTS = threading.BoundedSemaphore(YOUTUBE_FRAME_CONCURRENCY)
+
+
+@contextlib.contextmanager
+def _youtube_frame_slot():
+    """Hold one of the decode slots, or raise _Busy if they are all taken."""
+    if not _YOUTUBE_FRAME_SLOTS.acquire(timeout=YOUTUBE_FRAME_WAIT_SECONDS):
+        raise _Busy()
+    try:
+        yield
+    finally:
+        _YOUTUBE_FRAME_SLOTS.release()
+
+
+class _Busy(Exception):
+    """Every decode slot is occupied. Answered with 503 and a Retry-After."""
+
+# Byte-range chunks of the stream, shared across captures. The file's header
+# and index live in the first chunk, so after one capture (or a /prepare) every
+# later one skips them, and a second frame near the first is often served with
+# no request at all. Capped so a long session does not grow without bound.
+_STREAM_CHUNK_SIZE = 1024 * 1024
+_STREAM_CHUNK_BUDGET = 48 * 1024 * 1024
+_STREAM_CHUNKS = collections.OrderedDict()
+_STREAM_CHUNKS_LOCK = threading.Lock()
+_STREAM_CHUNK_BYTES = 0
+
+
+def _video_lock(video_id):
+    with _YOUTUBE_VIDEO_LOCKS_GUARD:
+        lock = _YOUTUBE_VIDEO_LOCKS.get(video_id)
+        if lock is None:
+            lock = threading.Lock()
+            _YOUTUBE_VIDEO_LOCKS[video_id] = lock
+        else:
+            _YOUTUBE_VIDEO_LOCKS.move_to_end(video_id)
+
+        # Evict from the cold end, but never a lock that is currently held --
+        # dropping that one hands the next caller for the same video a
+        # different lock, and the two then resolve and seek concurrently over
+        # one kept-alive connection. Held locks are skipped, not removed, so
+        # the table can briefly exceed the cap while captures are in flight.
+        while len(_YOUTUBE_VIDEO_LOCKS) > _YOUTUBE_VIDEO_LOCKS_MAX:
+            for key, candidate in _YOUTUBE_VIDEO_LOCKS.items():
+                if key != video_id and not candidate.locked():
+                    del _YOUTUBE_VIDEO_LOCKS[key]
+                    break
+            else:
+                break
+
+        return lock
+
+
+def _evict_stream_cache(video_id=None):
+    """Drop expired entries, then the coldest, closing each one's socket.
+
+    Called with the new entry already stored, so ``video_id`` is protected
+    from eviction by the caller that just resolved it.
+    """
+    now = time.time()
+    stale = [
+        key for key, entry in YOUTUBE_STREAM_CACHE.items()
+        if key != video_id and entry.get("expires", 0) <= now
+    ]
+    for key in stale:
+        _close_stream_entry(YOUTUBE_STREAM_CACHE.pop(key, None))
+
+    while len(YOUTUBE_STREAM_CACHE) > YOUTUBE_STREAM_CACHE_MAX_ENTRIES:
+        key, entry = YOUTUBE_STREAM_CACHE.popitem(last=False)
+        if key == video_id:  # the freshest entry; put it back and stop
+            YOUTUBE_STREAM_CACHE[key] = entry
+            break
+        _close_stream_entry(entry)
+
+
+def _close_stream_entry(entry):
+    if entry and entry.get("conn") is not None:
+        with contextlib.suppress(Exception):
+            entry["conn"].close()
+
+
+def _patch_ytdlp_ssl():
+    """Give yt-dlp the same TLS bargain the rest of the server makes.
+
+    Two independent problems on a machine whose antivirus scans HTTPS:
+
+    1. yt-dlp verifies against certifi's bundle, which cannot contain a root
+       that only exists in the local Windows store. ``no-certifi`` switches it
+       to the system store, where the scanner's root actually is.
+    2. Python 3.13+ then rejects that root under ``VERIFY_X509_STRICT``,
+       because its Basic Constraints are not marked critical -- the same
+       failure ``_outbound_ssl_context`` exists to work around.
+
+    The chain is still verified and the hostname is still checked. Only the
+    strict profile is relaxed, and only for this client.
+    """
+    global _YTDLP_SSL_PATCHED
+    if _YTDLP_SSL_PATCHED:
+        return
+    from yt_dlp.networking.common import RequestHandler
+
+    original = RequestHandler._make_sslcontext
+
+    def relaxed(self, *args, **kwargs):
+        context = original(self, *args, **kwargs)
+        context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+        return context
+
+    RequestHandler._make_sslcontext = relaxed
+    _YTDLP_SSL_PATCHED = True
+
+
+def _youtube_stream(video_id):
+    """The best H.264 stream for this video, cached until its URL expires.
+
+    H.264 on purpose: it is what every build of FFmpeg can decode and what
+    seeks most reliably. Height is capped so a 4K source does not produce a
+    frame too large for the document's media budget.
+
+    Call with the video's lock held.
+    """
+    cached = YOUTUBE_STREAM_CACHE.get(video_id)
+    if cached and cached["expires"] > time.time():
+        return cached
+
+    import yt_dlp
+
+    _patch_ytdlp_ssl()
+    options = {
+        "quiet": True,
+        "no_warnings": True,
+        "skip_download": True,
+        "noplaylist": True,
+        # Not a flag but a compat option: it is what drives prefer_system_certs.
+        "compat_opts": {"no-certifi"},
+        "format": (
+            f"bestvideo[ext=mp4][vcodec^=avc1][height<={MAX_FRAME_WIDTH // 16 * 9}]"
+            "/bestvideo[ext=mp4][vcodec^=avc1]"
+            "/best[ext=mp4]/best"
+        ),
+    }
+    with yt_dlp.YoutubeDL(options) as ydl:
+        info = ydl.extract_info(
+            f"https://www.youtube.com/watch?v={video_id}", download=False
+        )
+    chosen = info if info.get("url") else (info.get("requested_formats") or [None])[0]
+    if not chosen or not chosen.get("url"):
+        raise ValueError("no playable stream")
+
+    _close_stream_entry(cached)
+    entry = {
+        "url": chosen["url"],
+        "format": str(chosen.get("format_id") or "0"),
+        "width": chosen.get("width"),
+        "height": chosen.get("height"),
+        "duration": info.get("duration"),
+        "size": None,
+        "conn": None,
+        "expires": time.time() + YOUTUBE_STREAM_CACHE_TTL,
+    }
+    YOUTUBE_STREAM_CACHE[video_id] = entry
+    YOUTUBE_STREAM_CACHE.move_to_end(video_id)
+    _evict_stream_cache(video_id)
+    return entry
+
+
+class _StreamFile(io.RawIOBase):
+    """The stream as a seekable file, for PyAV, over one kept-alive connection.
+
+    Handing FFmpeg the URL directly was the slow part, and by a wide margin:
+    its HTTP reader opened fresh connections as the MP4 demuxer hopped between
+    the index and the data, and read far past what the frame needed. Measured
+    on a 1080p video at the same 3.7 MB/s line: 6.3s and 7.1s for frames at
+    2:05 and 5:00, against 0.84s and 0.88s through this -- three requests and
+    2.1 MB per frame, and the same pixels.
+
+    Reads are served from 1 MB chunks, fetched with ranged GETs on a single
+    HTTPS connection that is kept on the stream's cache entry between
+    captures, and shared through _STREAM_CHUNKS.
+    """
+
+    def __init__(self, video_id, entry):
+        super().__init__()
+        self.video_id = video_id
+        self.entry = entry
+        self.pos = 0
+        if entry["size"] is None:
+            response, _ = self._fetch(0, 0)
+            entry["size"] = int(response.getheader("Content-Range").rsplit("/", 1)[-1])
+        self.size = entry["size"]
+
+    # -- network ---------------------------------------------------------
+    def _connect(self):
+        parts = urllib.parse.urlsplit(self.entry["url"])
+        # The only host this should ever talk to. A URL that points anywhere
+        # else did not come from YouTube's player response.
+        if parts.scheme != "https" or not (parts.hostname or "").endswith(".googlevideo.com"):
+            raise ValueError("unexpected stream host")
+        conn = http.client.HTTPSConnection(
+            parts.hostname, parts.port or 443, context=_outbound_ssl_context(), timeout=20
+        )
+        self.entry["conn"] = conn
+        self.entry["path"] = parts.path + ("?" + parts.query if parts.query else "")
+        return conn
+
+    def _fetch(self, start, end):
+        last_error = None
+        for _ in range(3):
+            conn = self.entry.get("conn") or self._connect()
+            try:
+                conn.request(
+                    "GET",
+                    self.entry["path"],
+                    headers={"Range": f"bytes={start}-{end}", "User-Agent": "Mozilla/5.0"},
+                )
+                response = conn.getresponse()
+                if response.status in (301, 302, 303, 307, 308):
+                    response.read()
+                    self.entry["url"] = response.getheader("Location") or self.entry["url"]
+                    conn.close()
+                    self.entry["conn"] = None
+                    continue
+                body = response.read()
+                if response.status != 206:
+                    raise IOError(f"stream answered {response.status}")
+                return response, body
+            except (http.client.HTTPException, OSError) as error:
+                # A kept-alive connection the server has since closed fails
+                # here on first use; reconnect and try again.
+                last_error = error
+                with contextlib.suppress(Exception):
+                    conn.close()
+                self.entry["conn"] = None
+        raise IOError(f"could not read the stream: {last_error}")
+
+    def _chunk(self, index):
+        global _STREAM_CHUNK_BYTES
+        key = (self.video_id, self.entry["format"], index)
+        with _STREAM_CHUNKS_LOCK:
+            data = _STREAM_CHUNKS.get(key)
+            if data is not None:
+                _STREAM_CHUNKS.move_to_end(key)
+                return data
+        start = index * _STREAM_CHUNK_SIZE
+        end = min(self.size, start + _STREAM_CHUNK_SIZE) - 1
+        _, data = self._fetch(start, end)
+        with _STREAM_CHUNKS_LOCK:
+            if key not in _STREAM_CHUNKS:
+                _STREAM_CHUNKS[key] = data
+                _STREAM_CHUNK_BYTES += len(data)
+                while _STREAM_CHUNK_BYTES > _STREAM_CHUNK_BUDGET and len(_STREAM_CHUNKS) > 1:
+                    _, dropped = _STREAM_CHUNKS.popitem(last=False)
+                    _STREAM_CHUNK_BYTES -= len(dropped)
+        return data
+
+    # -- file protocol ---------------------------------------------------
+    def readable(self):
+        return True
+
+    def seekable(self):
+        return True
+
+    def tell(self):
+        return self.pos
+
+    def seek(self, offset, whence=io.SEEK_SET):
+        if whence == io.SEEK_SET:
+            self.pos = offset
+        elif whence == io.SEEK_CUR:
+            self.pos += offset
+        else:
+            self.pos = self.size + offset
+        return self.pos
+
+    def readinto(self, buffer):
+        if self.pos >= self.size:
+            return 0
+        wanted = min(len(buffer), self.size - self.pos)
+        got = 0
+        while got < wanted:
+            index, offset = divmod(self.pos + got, _STREAM_CHUNK_SIZE)
+            data = self._chunk(index)
+            count = min(len(data) - offset, wanted - got)
+            if count <= 0:
+                break
+            buffer[got:got + count] = data[offset:offset + count]
+            got += count
+        self.pos += got
+        return got
+
+
+def _prepare_video(video_id):
+    """Resolve the stream and pull its header, so the first capture is warm.
+
+    Called when a video loads in the player. The resolve is ~3s of yt-dlp and
+    the header is the first chunk; with both done, pressing "save frame" pays
+    only for the frame itself.
+    """
+    with _video_lock(video_id):
+        entry = _youtube_stream(video_id)
+        _StreamFile(video_id, entry)._chunk(0)
+        return entry
+
+
+def _video_frame(video_id, seconds):
+    """Decode the frame at ``seconds``, or None if the video cannot be read."""
+    with _video_lock(video_id):
+        try:
+            stream_info = _youtube_stream(video_id)
+        except Exception:
+            logger.info("Could not resolve a stream for %s", video_id, exc_info=True)
+            return None
+
+        import av
+
+        duration = stream_info.get("duration")
+        if duration:
+            # Past the end lands on the last frame rather than failing.
+            seconds = min(seconds, max(0.0, duration - 0.1))
+
+        container = None
+        try:
+            container = av.open(_StreamFile(video_id, stream_info), mode="r")
+            stream = container.streams.video[0]
+            stream.thread_type = "AUTO"
+            codec = stream.codec_context
+            time_base = float(stream.time_base)
+            # YouTube puts keyframes ~10s apart, so the seek lands up to 10s
+            # early and every frame from there is decoded to reach the target.
+            # B-frames are never used as references, so they can be skipped
+            # until the target is close: half the frames, twice as fast, and
+            # the pixels of the frame returned are byte-identical (checked at
+            # three timestamps against a full decode).
+            codec.skip_frame = "NONREF"
+            skipping = True
+            container.seek(int(seconds / time_base), stream=stream, backward=True)
+
+            picked = None
+            for frame in container.decode(stream):
+                if frame.pts is None:
+                    continue
+                picked = frame
+                at = frame.pts * time_base
+                if skipping and at >= seconds - 0.6:
+                    codec.skip_frame = "DEFAULT"
+                    skipping = False
+                if at >= seconds - 0.001:
+                    break
+            if picked is None:
+                return None
+
+            image = picked.to_image()
+            if image.width > MAX_FRAME_WIDTH:
+                height = round(image.height * MAX_FRAME_WIDTH / image.width)
+                image = image.resize((MAX_FRAME_WIDTH, height), Image.LANCZOS)
+
+            buffer = io.BytesIO()
+            # No optimize=True: it bought ~5% on file size for 2-4x the encode
+            # time, and this is on the path someone is waiting on.
+            image.save(buffer, "JPEG", quality=92)
+            return {
+                "image": "data:image/jpeg;base64,"
+                + base64.b64encode(buffer.getvalue()).decode("ascii"),
+                "width": image.width,
+                "height": image.height,
+                "frameTime": round(picked.pts * time_base, 3),
+            }
+        except Exception:
+            logger.info("Could not cut a frame from %s", video_id, exc_info=True)
+            # A broken connection or an expired URL: start clean next time.
+            YOUTUBE_STREAM_CACHE.pop(video_id, None)
+            return None
+        finally:
+            if container is not None:
+                with contextlib.suppress(Exception):
+                    container.close()
+
+
+@app.route("/api/youtube/prepare")
+def youtube_prepare():
+    """Warm the frame cut for a video that has just been loaded.
+
+    Fire-and-forget from the player. A failure here costs nothing: the capture
+    will try again, and fall back to the storyboard if it must.
+    """
+    video_id = request.args.get("v", "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id):
+        return jsonify({"error": "Invalid video ID"}), 400
+    if not YOUTUBE_FULL_FRAMES:
+        return jsonify({"ready": False}), 200
+    try:
+        with _youtube_frame_slot():
+            entry = _prepare_video(video_id)
+    except _Busy:
+        # Warming is optional by design, so a busy server declines it rather
+        # than queueing: the capture that follows will resolve for itself.
+        return jsonify({"ready": False}), 200
+    except Exception:
+        logger.info("Could not prepare %s", video_id, exc_info=True)
+        return jsonify({"ready": False}), 200
+    return jsonify({"ready": True, "width": entry.get("width"), "height": entry.get("height")})
+
+
+@app.route("/api/youtube/frame")
+def youtube_frame():
+    video_id = request.args.get("v", "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id):
+        return jsonify({"error": "Invalid video ID"}), 400
+    try:
+        seconds = float(request.args.get("t", ""))
+    except ValueError:
+        seconds = math.nan
+    if not math.isfinite(seconds) or not 0 <= seconds <= MAX_YOUTUBE_FRAME_SECONDS:
+        return jsonify({"error": "Invalid time"}), 400
+
+    # The video itself first, at full resolution and the exact timestamp.
+    # Storyboards are the fallback: they are ~320x180 and quantised to the
+    # sheet's interval, so they are a poor frame but better than none.
+    source = "video"
+    frame = None
+    if YOUTUBE_FULL_FRAMES and request.args.get("quality") != "preview":
+        try:
+            with _youtube_frame_slot():
+                frame = _video_frame(video_id, seconds)
+        except _Busy:
+            # The storyboard path below is cheap -- a small sprite sheet and a
+            # crop -- so a busy server still answers with a usable frame
+            # instead of an error. Falling through is the whole point of the
+            # fallback existing.
+            logger.info("All decode slots busy; falling back to the storyboard")
+
+    if not frame:
+        source = "storyboard"
+        try:
+            frame = _storyboard_frame(video_id, seconds)
+        except Exception:
+            logger.warning("Error cutting a storyboard frame for %s", video_id, exc_info=True)
+            return jsonify({"error": "Could not reach YouTube for this frame"}), 502
+        if not frame:
+            return jsonify({"error": "YouTube has no preview frames for this video"}), 404
+
+    response = jsonify({"videoId": video_id, "source": source, **frame})
+    response.headers["Cache-Control"] = "private, max-age=3600"
+    return response
 
 
 @app.post("/api/ppt/import")

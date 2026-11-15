@@ -15,10 +15,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from app import app
+from browser_server import make_browser_server
 
 try:
     from playwright.sync_api import sync_playwright
-    from werkzeug.serving import make_server
 
     BROWSER_AVAILABLE = True
 except ImportError:  # pragma: no cover - optional dependency
@@ -51,7 +51,7 @@ class EditorFixture:
     @classmethod
     def setUpClass(cls):
         app.config["TESTING"] = True
-        cls.server = make_server("127.0.0.1", 0, app, threaded=True)
+        cls.server = make_browser_server(app)
         cls.port = cls.server.server_port
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
@@ -76,7 +76,7 @@ class EditorFixture:
         page.goto(url)
         # The first-run tour swallows every key and every click until dismissed.
         page.evaluate(
-            "localStorage.setItem('inkyscib-feature-tour-v1', JSON.stringify({seen: true}))"
+            "localStorage.setItem('inkyscib-consent-v1', JSON.stringify({version: 1, analytics: false})); localStorage.setItem('inkyscib-feature-tour-v1', JSON.stringify({seen: true}))"
         )
         page.goto(url)
         page.wait_for_function(

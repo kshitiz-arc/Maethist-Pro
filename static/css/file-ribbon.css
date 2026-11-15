@@ -13,29 +13,20 @@
  */
 
 :root {
-  --ribbon-glass: rgba(18, 18, 18, 0.55);
-  --ribbon-glass-strong: rgba(14, 17, 24, 0.94);
-  --ribbon-line: rgba(255, 255, 255, 0.12);
-  --ribbon-line-soft: rgba(255, 255, 255, 0.07);
-  --ribbon-ink: #f1f5f9;
-  --ribbon-ink-dim: rgba(226, 232, 240, 0.62);
-  --ribbon-accent: #6ee7dd;
-  --ribbon-accent-ink: #0b3b3a;
-  --ribbon-hover: rgba(255, 255, 255, 0.08);
-  --ribbon-shadow: 0 18px 48px -18px rgba(0, 0, 0, 0.8);
-}
-
-[data-theme="light"] {
-  --ribbon-glass: rgba(255, 255, 255, 0.78);
-  --ribbon-glass-strong: rgba(248, 250, 253, 0.97);
-  --ribbon-line: rgba(15, 23, 42, 0.12);
-  --ribbon-line-soft: rgba(15, 23, 42, 0.07);
-  --ribbon-ink: #0f172a;
-  --ribbon-ink-dim: rgba(30, 41, 59, 0.62);
-  --ribbon-accent: #0d7d78;
-  --ribbon-accent-ink: #ffffff;
-  --ribbon-hover: rgba(15, 23, 42, 0.06);
-  --ribbon-shadow: 0 18px 44px -20px rgba(15, 23, 42, 0.4);
+  /* v2: aliases onto the core tokens (tokens.css), which already flip with
+     the theme. This used to be a private teal-on-slate palette, so the File
+     sheet was a different colour from the rest of the editor. The names stay
+     only because 700 lines below read them; add nothing new here. */
+  --ribbon-glass: var(--surface);
+  --ribbon-glass-strong: var(--surface);
+  --ribbon-line: var(--rule);
+  --ribbon-line-soft: var(--rule-2);
+  --ribbon-ink: var(--ink);
+  --ribbon-ink-dim: var(--ink-2);
+  --ribbon-accent: var(--accent);
+  --ribbon-accent-ink: var(--on-accent);
+  --ribbon-hover: var(--raised);
+  --ribbon-shadow: 0 18px 48px -18px var(--d-5);
 }
 
 /* ---------- the bar ---------- */
@@ -108,6 +99,78 @@
   flex: none;
 }
 
+/* Work in progress, named, beside the commands. Hidden means gone: the ribbon
+   closes back up around it so nothing shifts while idle. */
+.file-ribbon-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  margin-left: 4px;
+  padding: 0 10px;
+  min-height: 30px;
+  border-radius: var(--r-pill);
+  background: var(--ribbon-hover);
+  color: var(--ribbon-ink-dim);
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+/* Needed, not belt and braces: the display above is a class selector, and a
+   class beats the browser's own [hidden] { display: none }, so without this the
+   chip sat next to Tools spinning on every page load with nothing running. */
+.file-ribbon-progress[hidden] { display: none; }
+
+.file-ribbon-progress[data-tone="done"] { color: var(--ok); }
+.file-ribbon-progress[data-tone="error"] { color: var(--error); }
+
+.file-ribbon-progress-spinner {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  border-radius: var(--r-circle);
+  border: 2px solid var(--ribbon-line);
+  border-top-color: var(--ribbon-accent);
+  animation: fileRibbonSpin 620ms linear infinite;
+}
+
+/* Done and failed are states, not activity: the spinner stops and becomes a
+   ring so it stops pulling the eye. */
+.file-ribbon-progress[data-tone="done"] .file-ribbon-progress-spinner,
+.file-ribbon-progress[data-tone="error"] .file-ribbon-progress-spinner {
+  animation: none;
+  border-color: currentColor;
+}
+
+@keyframes fileRibbonSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Instruments do not spin at people who asked for stillness. */
+@media (prefers-reduced-motion: reduce) {
+  .file-ribbon-progress-spinner {
+    animation: none;
+    border-top-color: var(--ribbon-accent);
+  }
+}
+
+/* On a narrow ribbon the label goes and the spinner stays, so the row never
+   wraps and the notebook name keeps its place. */
+@media (max-width: 720px) {
+  .file-ribbon-progress-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .file-ribbon-progress {
+    padding: 0 7px;
+  }
+}
+
 /* Document identity: name plus whether it is saved. */
 .file-ribbon-doc {
   display: flex;
@@ -117,7 +180,15 @@
   min-width: 0;
 }
 
+/* A button now, because the name is the rename control. Stripped back to how
+   the span read, with the affordance only on hover so the bar stays quiet. */
 .file-ribbon-name {
+  appearance: none;
+  border: 0;
+  padding: 2px 4px;
+  margin: 0 -4px;
+  background: none;
+  font: inherit;
   font-size: 0.82rem;
   font-weight: 500;
   color: var(--ribbon-ink);
@@ -125,6 +196,30 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 15ch;
+  cursor: text;
+  border-radius: var(--r-sm);
+  transition: background 0.14s ease;
+}
+
+.file-ribbon-name:hover,
+.file-ribbon-name:focus-visible {
+  background: var(--ribbon-line);
+}
+
+/* The file you have open, kept distinct from what the notebook is called. */
+.file-ribbon-source {
+  font-size: 0.72rem;
+  color: var(--ribbon-muted, var(--ink-2));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 14ch;
+}
+
+.file-ribbon-source::before {
+  content: "2";
+  margin-right: 5px;
+  opacity: 0.55;
 }
 
 .file-ribbon-state {
@@ -185,11 +280,21 @@
 
 .file-backstage {
   position: fixed;
-  top: calc(1.2rem + 52px);
+  /* The sheet's top lives in one variable so its height can be derived from
+     it. Below 1180px the top moved down under the drawing toolbar (146px +
+     52px) while max-height kept the old top's arithmetic, so on a 960x600
+     tablet the sheet ended at 709px and "Clear canvas" sat at 664px -- below
+     the window, with nothing that scrolled to it. */
+  --sheet-top: calc(1.2rem + 52px);
+  top: var(--sheet-top);
   left: 1.2rem;
   z-index: 9995;
   width: min(660px, calc(100vw - 2.4rem));
-  max-height: min(560px, calc(100vh - 1.2rem - 52px - 1.2rem));
+  max-height: min(560px, calc(100vh - var(--sheet-top) - 1.2rem));
+  /* A grid with only a max-height grows its row to fit the content and then
+     clips it, so the pane never needed to scroll. minmax(0, 1fr) bounds the
+     row, and the pane's min-height: 0 lets it shrink into it and scroll. */
+  grid-template-rows: minmax(0, 1fr);
   border-radius: var(--r-lg);
   background: var(--ribbon-glass-strong);
   border: 1px solid var(--ribbon-line);
@@ -211,6 +316,17 @@
   opacity: 1;
   transform: none;
   pointer-events: auto;
+}
+
+/* Opened from Insert, Export or Tools the pane stands alone: those are ribbon
+   tabs, and the rail lists only File's own sections. `.file-backstage-rail`
+   sets display, which outranks the browser's [hidden] rule. */
+.file-backstage.is-rail-hidden {
+  grid-template-columns: 1fr;
+}
+
+.file-backstage-rail[hidden] {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -291,7 +407,9 @@
 
 .file-backstage-pane {
   padding: 18px 20px 20px;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -429,24 +547,98 @@
 
 .file-recent { display: flex; flex-direction: column; gap: 4px; }
 
+/* The row is a container now, not a button: rename and delete cannot be
+   nested inside one. The open button fills it so the row's centre still opens
+   the notebook, and the two actions sit at the trailing edge where a
+   mis-click cannot reach them. */
 .file-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--r-md);
+  transition: background 0.14s ease;
+}
+
+.file-recent-item:hover { background: var(--ribbon-hover); }
+
+.file-recent-open {
   appearance: none;
   border: 0;
   background: transparent;
   color: inherit;
   font: inherit;
   text-align: left;
-  padding: 9px 10px;
+  /* var(--tap): the row was 38px against DESIGN.md's 44px floor. */
+  min-height: var(--tap);
+  padding: 4px 10px;
   border-radius: var(--r-md);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  transition: background 0.14s ease;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-.file-recent-item:hover { background: var(--ribbon-hover); }
+.file-recent-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  /* Present but quiet until the row is pointed at, so a list of notebooks
+     reads as names rather than as a column of controls. They stay reachable
+     by keyboard, and on touch, where there is no hover, they are always on. */
+  opacity: 0;
+  transition: opacity 0.14s ease;
+}
+
+.file-recent-item:hover .file-recent-actions,
+.file-recent-item:focus-within .file-recent-actions { opacity: 1; }
+
+@media (hover: none) {
+  .file-recent-actions { opacity: 1; }
+}
+
+.file-recent-action {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ribbon-ink-dim);
+  width: var(--tap);
+  height: var(--tap);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: color 0.14s ease, background 0.14s ease;
+}
+
+.file-recent-action:hover {
+  color: var(--ribbon-ink);
+  background: var(--ribbon-hover);
+}
+
+/* Recessive until pointed at, then it takes the destructive colour -- the
+   same bargain DESIGN.md struck for Clear canvas sitting beside Undo. */
+.file-recent-action.is-destructive:hover { color: var(--accent); }
+
+.file-recent-action svg { width: 17px; height: 17px; }
+
+.file-recent-rename-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.86rem;
+  color: var(--ribbon-ink);
+  background: var(--ribbon-glass-strong);
+  border: 1px solid var(--ribbon-accent);
+  border-radius: var(--r-sm);
+  padding: 4px 7px;
+}
+
+.file-recent-rename-input:focus { outline: none; }
 
 .file-recent-name {
   font-size: 0.86rem;
@@ -489,7 +681,9 @@
 .file-ribbon-tab:focus-visible,
 .file-rail-btn:focus-visible,
 .file-command:focus-visible,
-.file-recent-item:focus-visible {
+/* The row itself is a div now and cannot take focus; these can. */
+.file-recent-open:focus-visible,
+.file-recent-action:focus-visible {
   outline: 2px solid var(--ribbon-accent);
   outline-offset: 2px;
 }
@@ -499,7 +693,14 @@
 @media (max-width: 900px) {
   .file-backstage {
     grid-template-columns: 1fr;
-    max-height: calc(100vh - 1.2rem - 52px - 1.2rem);
+    /* The rail becomes a row above the pane here, so the pane is the second
+       row; with the rail hidden it is the only one. */
+    grid-template-rows: auto minmax(0, 1fr);
+    max-height: calc(100vh - var(--sheet-top) - 1.2rem);
+  }
+
+  .file-backstage.is-rail-hidden {
+    grid-template-rows: minmax(0, 1fr);
   }
 
   .file-backstage-rail {
@@ -526,8 +727,8 @@
   /* Toolbar moved to the bottom: the top is free again. */
   body.toolbar-location-down .file-ribbon { top: 1.2rem; }
 
-  .file-backstage { top: calc(146px + 52px); }
-  body.toolbar-location-down .file-backstage { top: calc(1.2rem + 52px); }
+  .file-backstage { --sheet-top: calc(146px + 52px); }
+  body.toolbar-location-down .file-backstage { --sheet-top: calc(1.2rem + 52px); }
 }
 
 @media (max-width: 640px) {

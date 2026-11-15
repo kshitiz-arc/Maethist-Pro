@@ -1,21 +1,15 @@
 :root {
-  --tour-accent: #7777ff;
+  /* v2: the tour reads the core tokens. These names are aliases kept so the
+     1,500 lines below did not all have to change; add nothing new here. */
+  --tour-accent: var(--accent);
   --tour-accent-strong: var(--accent);
-  --tour-cyan: #67e8f9;
-  --tour-warm: #ffd36a;
-  --tour-panel: rgba(11, 14, 23, 0.96);
-  --tour-panel-soft: rgba(255, 255, 255, 0.065);
-  --tour-line: rgba(255, 255, 255, 0.12);
-  --tour-text: #f8fafc;
-  --tour-muted: #aeb8cc;
-}
-
-[data-theme="light"] {
-  --tour-panel: rgba(255, 255, 255, 0.97);
-  --tour-panel-soft: rgba(15, 23, 42, 0.055);
-  --tour-line: rgba(15, 23, 42, 0.11);
-  --tour-text: #101525;
-  --tour-muted: #586276;
+  --tour-cyan: var(--accent);
+  --tour-warm: var(--draw-point);
+  --tour-panel: var(--surface);
+  --tour-panel-soft: var(--raised);
+  --tour-line: var(--rule);
+  --tour-text: var(--ink);
+  --tour-muted: var(--ink-2);
 }
 
 .feature-guide-menu-section {
@@ -30,14 +24,14 @@
 }
 
 .feature-guide-menu-btn {
-  border-color: rgba(119, 119, 255, 0.34);
+  border-color: rgba(95, 212, 240, 0.34);
   background:
     linear-gradient(135deg, var(--accent-wash), rgba(103, 232, 249, 0.08)),
     rgba(255, 255, 255, 0.035);
 }
 
 .feature-guide-menu-btn:hover {
-  border-color: rgba(119, 119, 255, 0.58);
+  border-color: rgba(95, 212, 240, 0.58);
   background:
     linear-gradient(135deg, var(--accent-wash), rgba(103, 232, 249, 0.13)),
     rgba(255, 255, 255, 0.055);
@@ -48,7 +42,7 @@
   height: 21px;
   display: inline-grid;
   place-items: center;
-  color: #a7a7ff;
+  color: var(--accent);
 }
 
 .feature-guide-menu-icon svg {
@@ -198,16 +192,16 @@
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  border: 1px solid rgba(119, 119, 255, 0.42);
+  border: 1px solid rgba(95, 212, 240, 0.42);
   border-radius: var(--r-md);
-  color: #d9d9ff;
+  color: var(--ink);
   background: var(--accent-wash);
   font-size: 0.77rem;
   letter-spacing: 0;
 }
 
 [data-theme="light"] .feature-tour-brand-mark {
-  color: #4040c9;
+  color: var(--accent-ink);
 }
 
 .feature-tour-close {
@@ -230,7 +224,7 @@
 
 .feature-tour-close:hover {
   color: var(--tour-text);
-  background: rgba(119, 119, 255, 0.17);
+  background: rgba(95, 212, 240, 0.17);
   transform: rotate(4deg);
 }
 
@@ -255,7 +249,7 @@
   align-items: center;
   gap: 8px;
   margin: 3px 0 6px;
-  color: #a7a7ff;
+  color: var(--accent);
   font-size: 0.72rem;
   font-weight: 850;
   letter-spacing: 0.11em;
@@ -334,7 +328,7 @@
   width: 17px;
   height: 17px;
   flex: 0 0 auto;
-  color: #a7a7ff;
+  color: var(--accent);
   stroke: currentColor;
   fill: none;
   stroke-width: 1.8;
@@ -350,7 +344,7 @@
   padding: 9px 10px;
   border-radius: var(--r-lg);
   color: var(--tour-muted);
-  background: rgba(119, 119, 255, 0.09);
+  background: rgba(95, 212, 240, 0.09);
   font-size: 0.75rem;
   line-height: 1.38;
 }
@@ -363,14 +357,14 @@
   place-items: center;
   flex: 0 0 auto;
   border-radius: 50%;
-  color: #e5e7ff;
-  background: rgba(119, 119, 255, 0.36);
+  color: var(--ink);
+  background: rgba(95, 212, 240, 0.36);
   font-size: 0.68rem;
   font-weight: 900;
 }
 
 [data-theme="light"] .feature-tour-hint::before {
-  color: #3434a7;
+  color: var(--accent-ink);
 }
 
 .feature-tour-footer {
@@ -406,7 +400,7 @@
 }
 
 .feature-tour-progress-btn.is-seen::before {
-  background: rgba(119, 119, 255, 0.47);
+  background: rgba(95, 212, 240, 0.47);
 }
 
 .feature-tour-progress-btn.is-active::before {
@@ -446,8 +440,8 @@
 
 .feature-tour-btn:hover {
   transform: translateY(-1px);
-  border-color: rgba(119, 119, 255, 0.4);
-  background: rgba(119, 119, 255, 0.14);
+  border-color: rgba(95, 212, 240, 0.4);
+  background: rgba(95, 212, 240, 0.14);
 }
 
 .feature-tour-btn[hidden] {
@@ -456,15 +450,15 @@
 
 .feature-tour-next {
   min-width: 92px;
-  border-color: rgba(119, 119, 255, 0.56);
-  color: white;
-  background: linear-gradient(135deg, #6565f5, #4c4cd5);
-  box-shadow: 0 9px 24px rgba(76, 76, 213, 0.26);
+  border-color: rgba(95, 212, 240, 0.56);
+  color: var(--on-accent);
+  background: var(--accent);
+  box-shadow: none;
 }
 
 .feature-tour-next:hover {
-  border-color: rgba(167, 167, 255, 0.8);
-  background: linear-gradient(135deg, #7373ff, #5555e8);
+  border-color: var(--accent);
+  background: var(--accent);
 }
 
 .feature-tour-next-arrow {
@@ -609,7 +603,7 @@ body.feature-tour-open .menu-overlay {
 
 .tour-canvas-sheet path {
   fill: none;
-  stroke: #9fa8ff;
+  stroke: var(--accent);
   stroke-width: 5;
   stroke-linecap: round;
 }
@@ -676,14 +670,14 @@ body.feature-tour-open .menu-overlay {
 }
 
 .tour-tool-chip.is-active {
-  color: #f7f7ff;
-  border-color: rgba(119, 119, 255, 0.74);
+  color: var(--ink);
+  border-color: rgba(95, 212, 240, 0.74);
   background: var(--accent-wash);
   box-shadow: 0 0 0 2px var(--accent-wash);
 }
 
 [data-theme="light"] .tour-tool-chip.is-active {
-  color: #3434a7;
+  color: var(--accent-ink);
 }
 
 .tour-tool-chip svg {
@@ -731,14 +725,14 @@ body.feature-tour-open .menu-overlay {
 .tour-control-swatches span:last-child {
   width: 29px;
   border-radius: var(--r-md);
-  background: conic-gradient(#ff5f6d, #ffd36a, #56e39f, #67e8f9, #7777ff, #ff5f6d);
+  background: conic-gradient(#ff5f6d, #ffd36a, #56e39f, #67e8f9, var(--accent), #ff5f6d);
 }
 
 .tour-control-slider {
   position: relative;
   height: 5px;
   border-radius: var(--r-pill);
-  background: linear-gradient(90deg, #7777ff 0 62%, rgba(148, 163, 184, 0.22) 62%);
+  background: linear-gradient(90deg, var(--accent) 0 62%, rgba(148, 163, 184, 0.22) 62%);
 }
 
 .tour-control-slider::after {
@@ -751,7 +745,7 @@ body.feature-tour-open .menu-overlay {
   border: 3px solid var(--tour-panel);
   border-radius: 50%;
   background: white;
-  box-shadow: 0 0 0 1px rgba(119, 119, 255, 0.65);
+  box-shadow: 0 0 0 1px rgba(95, 212, 240, 0.65);
   transform: translate(-50%, -50%);
 }
 
@@ -798,12 +792,12 @@ body.feature-tour-open .menu-overlay {
   inset: 0;
   border: 1px solid var(--tour-line);
   border-radius: var(--r-lg);
-  background: linear-gradient(135deg, rgba(119, 119, 255, 0.28), rgba(16, 23, 38, 0.94));
+  background: linear-gradient(135deg, rgba(95, 212, 240, 0.28), rgba(16, 23, 38, 0.94));
   box-shadow: 0 13px 23px rgba(0, 0, 0, 0.23);
 }
 
 [data-theme="light"] .tour-notebook {
-  background: linear-gradient(135deg, rgba(119, 119, 255, 0.2), rgba(255, 255, 255, 0.96));
+  background: linear-gradient(135deg, rgba(95, 212, 240, 0.2), rgba(255, 255, 255, 0.96));
 }
 
 .tour-notebook:nth-child(1) { transform: translate(14px, -8px) rotate(7deg); opacity: 0.54; }
@@ -856,7 +850,7 @@ body.feature-tour-open .menu-overlay {
   width: 31px;
   height: 24px;
   border-radius: var(--r-md);
-  background: var(--book, #7777ff);
+  background: var(--book, var(--accent));
   opacity: 0.78;
 }
 
@@ -902,7 +896,7 @@ body.feature-tour-open .menu-overlay {
 }
 
 .tour-file-card.import { color: #ff9a9e; }
-.tour-file-card.markup { color: #a7a7ff; }
+.tour-file-card.markup { color: var(--accent); }
 .tour-file-card.export { color: #56e39f; }
 
 .tour-file-arrow {
@@ -975,7 +969,7 @@ body.feature-tour-open .menu-overlay {
   width: 62%;
   height: 4px;
   border-radius: var(--r-pill);
-  background: #9fa8ff;
+  background: var(--accent);
   transform: rotate(-5deg);
 }
 
@@ -990,8 +984,8 @@ body.feature-tour-open .menu-overlay {
   height: 58px;
   display: grid;
   place-items: center;
-  border: 4px solid rgba(119, 119, 255, 0.24);
-  border-top-color: #7777ff;
+  border: 4px solid rgba(95, 212, 240, 0.24);
+  border-top-color: var(--accent);
   border-radius: 50%;
   color: var(--tour-text);
   font-size: 0.65rem;
@@ -1047,7 +1041,7 @@ body.feature-tour-open .menu-overlay {
 }
 
 .tour-planner-calendar-head strong {
-  color: #a7a7ff;
+  color: var(--accent);
   font-size: 0.69rem;
 }
 
@@ -1082,8 +1076,8 @@ body.feature-tour-open .menu-overlay {
 }
 
 .tour-planner-days i.is-selected {
-  background: linear-gradient(145deg, #7777ff, #555bdc);
-  box-shadow: 0 5px 12px rgba(85, 91, 220, 0.3);
+  background: var(--accent);
+  box-shadow: 0 5px 12px rgba(95, 212, 240, 0.3);
 }
 
 .tour-planner-tasks {
@@ -1106,14 +1100,14 @@ body.feature-tour-open .menu-overlay {
   height: 100%;
   display: block;
   border-radius: inherit;
-  background: linear-gradient(90deg, #7777ff, #56e39f);
+  background: linear-gradient(90deg, var(--accent), #56e39f);
 }
 
 .tour-planner-progress em {
   position: absolute;
   left: calc(100% + 6px);
   top: -4px;
-  color: #a7a7ff;
+  color: var(--accent);
   font-size: 0.54rem;
   font-style: normal;
   font-weight: 900;
@@ -1174,7 +1168,7 @@ body.feature-tour-open .menu-overlay {
   border: 1px solid var(--tour-line);
   border-radius: var(--r-lg);
   background:
-    radial-gradient(circle at 50% 112%, rgba(119, 119, 255, 0.35), transparent 52%),
+    radial-gradient(circle at 50% 112%, rgba(95, 212, 240, 0.35), transparent 52%),
     linear-gradient(145deg, #232a3c, #0c111c);
 }
 
@@ -1210,7 +1204,7 @@ body.feature-tour-open .menu-overlay {
   right: 18px;
   top: 25px;
   height: 37px;
-  border-top: 4px solid #a7a7ff;
+  border-top: 4px solid var(--accent);
   border-radius: 50%;
   transform: rotate(-6deg);
   opacity: 0.8;
@@ -1237,12 +1231,12 @@ body.feature-tour-open .menu-overlay {
 }
 
 .tour-location-switch div:first-child {
-  color: #dedeff;
-  border-color: rgba(119, 119, 255, 0.5);
-  background: rgba(119, 119, 255, 0.18);
+  color: var(--ink);
+  border-color: rgba(95, 212, 240, 0.5);
+  background: rgba(95, 212, 240, 0.18);
 }
 
-[data-theme="light"] .tour-location-switch div:first-child { color: #4040b8; }
+[data-theme="light"] .tour-location-switch div:first-child { color: var(--accent-ink); }
 
 /* Finish visual */
 .tour-ready-visual {
@@ -1255,7 +1249,7 @@ body.feature-tour-open .menu-overlay {
   position: relative;
   width: 120px;
   height: 120px;
-  border: 1px dashed rgba(119, 119, 255, 0.38);
+  border: 1px dashed rgba(95, 212, 240, 0.38);
   border-radius: 50%;
   animation: tourOrbit 16s linear infinite;
 }
@@ -1265,10 +1259,10 @@ body.feature-tour-open .menu-overlay {
   inset: 30px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(119, 119, 255, 0.5);
+  border: 1px solid rgba(95, 212, 240, 0.5);
   border-radius: var(--r-lg);
-  color: white;
-  background: linear-gradient(145deg, #7777ff, #4a4ac9);
+  color: var(--on-accent);
+  background: var(--accent);
   box-shadow: 0 0 30px var(--accent-wash);
   font-size: 1.35rem;
   font-weight: 900;

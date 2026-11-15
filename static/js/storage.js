@@ -23,13 +23,28 @@ const INKYSCIB_GEOMETRY_CONSTRUCTIONS = new Set([
     'cyclic-quadrilateral',
     'tangent'
 ]);
-const INKYSCIB_SMART_POLYGON_KINDS = new Set([
-    'triangle',
-    'rectangle',
-    'parallelogram',
-    'rhombus',
-    'kite'
-]);
+// Smart polygon kinds and their corner counts. Mirrors POLYGON_VERTEX_COUNT in
+// static/js/geometry.js, which also knows the triangle separately.
+const INKYSCIB_SMART_POLYGON_VERTICES = {
+    triangle: 3,
+    rectangle: 4,
+    parallelogram: 4,
+    rhombus: 4,
+    kite: 4,
+    square: 4,
+    trapezium: 4,
+    pentagon: 5,
+    hexagon: 6,
+    octagon: 8
+};
+const INKYSCIB_SMART_POLYGON_KINDS = new Set(Object.keys(INKYSCIB_SMART_POLYGON_VERTICES));
+// Smart kinds stored as a fixed number of points that are not corners: the
+// circle's bounding box and the ellipse's four axis ends. They keep geometry
+// precision but get no vertex labels.
+const INKYSCIB_SMART_POINT_KINDS = { circle: 2, ellipse: 4 };
+// A shape's fill and outline. Only a value other than the default is saved.
+const INKYSCIB_SHAPE_FILLS = new Set(['none', 'tint', 'solid']);
+const INKYSCIB_SHAPE_DASHES = new Set(['solid', 'dashed', 'dotted']);
 
 let inkyscibDbPromise = null;
 let drawingSaveTimer = null;
@@ -132,11 +147,8 @@ function smartGeometryVertexCount(path) {
     const version = Number(path?.geometryVersion);
     if (!path || path.tool !== 'shape' || version !== 1) return 0;
     if (path.geometryKind !== path.shapeType) return 0;
-    const count = path.geometryKind === 'circle'
-        ? 2
-        : path.geometryKind === 'triangle'
-            ? 3
-            : INKYSCIB_SMART_POLYGON_KINDS.has(path.geometryKind) ? 4 : 0;
+    const count = INKYSCIB_SMART_POINT_KINDS[path.geometryKind] ||
+        INKYSCIB_SMART_POLYGON_VERTICES[path.geometryKind] || 0;
     return count > 0 && Array.isArray(path.points) && path.points.length >= count ? count : 0;
 }
 
@@ -253,6 +265,11 @@ function compactPath(path) {
         if (typeof path[key] === 'boolean') compact[key] = path[key];
     });
 
+    if (path.tool === 'shape') {
+        if (INKYSCIB_SHAPE_FILLS.has(path.fill) && path.fill !== 'none') compact.fill = path.fill;
+        if (INKYSCIB_SHAPE_DASHES.has(path.dash) && path.dash !== 'solid') compact.dash = path.dash;
+    }
+
     if (Number(path.geometryVersion) === 1 && path.geometryKind === 'circle') {
         compact.constructions = Array.isArray(path.constructions)
             ? path.constructions.map(compactGeometryConstruction).filter(Boolean)
@@ -260,7 +277,7 @@ function compactPath(path) {
     }
 
     const geometryVertexCount = smartGeometryVertexCount(path);
-    if (geometryVertexCount >= 3) {
+    if (geometryVertexCount >= 3 && INKYSCIB_SMART_POLYGON_KINDS.has(path.geometryKind)) {
         compact.vertexLabels = compactVertexLabels(path.vertexLabels, geometryVertexCount);
         if (path.geometryKind === 'triangle') {
             compact.angleMarks = compactAngleMarks(path.angleMarks);
@@ -341,6 +358,11 @@ function normalizeLoadedPath(path) {
         normalized.triangleType = 'isosceles';
     }
 
+    if (normalized.tool === 'shape') {
+        normalized.fill = INKYSCIB_SHAPE_FILLS.has(normalized.fill) ? normalized.fill : 'none';
+        normalized.dash = INKYSCIB_SHAPE_DASHES.has(normalized.dash) ? normalized.dash : 'solid';
+    }
+
     if (normalized.tool === 'manipulative') {
         normalized.widthLabel = typeof normalized.widthLabel === 'string' ? normalized.widthLabel.slice(0, 64) : '';
         normalized.heightLabel = typeof normalized.heightLabel === 'string' ? normalized.heightLabel.slice(0, 64) : '';
@@ -362,7 +384,7 @@ function normalizeLoadedPath(path) {
                 ? normalized.constructions.map(compactGeometryConstruction).filter(Boolean)
                 : [];
             normalized.radiusLocked = !!normalized.radiusLocked;
-        } else {
+        } else if (INKYSCIB_SMART_POLYGON_KINDS.has(normalized.geometryKind)) {
             normalized.vertexLabels = compactVertexLabels(normalized.vertexLabels, geometryVertexCount);
             if (normalized.geometryKind === 'triangle') {
                 normalized.angleMarks = compactAngleMarks(normalized.angleMarks);
@@ -533,6 +555,7 @@ function buildPreferences(state) {
         },
         toolbarLocation: normalizeStoredToolbarLocation(state.toolbarLocation),
         theme: document.documentElement.dataset.theme || 'dark',
+        canvasTheme: window.Inkyscib?.CanvasTheme?.get?.().id || null,
         // What every tool calls its measurements; see static/js/units.js.
         unitName: window.Inkyscib?.Units?.get?.() || 'u'
     };
@@ -611,20 +634,20 @@ function applyPreferences(preferences, state) {
 
     if (parsed.shape) {
         if (!state.toolSettings.shape) {
-            state.toolSettings.shape = { size: 3, color: '#ffffff', shapeType: 'circle', triangleType: 'isosceles' };
+            state.toolSettings.shape = { size: 3, color: '#ffffff', shapeType: 'circle', triangleType: 'isosceles', fill: 'none', dash: 'solid' };
         }
         Object.assign(state.toolSettings.shape, parsed.shape);
     }
 
     if (preferences.shapeSettings) {
         if (!state.toolSettings.shape) {
-            state.toolSettings.shape = { size: 3, color: '#ffffff', shapeType: 'circle', triangleType: 'isosceles' };
+            state.toolSettings.shape = { size: 3, color: '#ffffff', shapeType: 'circle', triangleType: 'isosceles', fill: 'none', dash: 'solid' };
         }
         Object.assign(state.toolSettings.shape, preferences.shapeSettings);
     }
 
     if (!state.toolSettings.shape) {
-        state.toolSettings.shape = { size: 3, color: '#ffffff', shapeType: 'circle', triangleType: 'isosceles' };
+        state.toolSettings.shape = { size: 3, color: '#ffffff', shapeType: 'circle', triangleType: 'isosceles', fill: 'none', dash: 'solid' };
     }
 
     if (!state.toolSettings.shape.color || state.toolSettings.shape.color === 'black') {
@@ -645,8 +668,15 @@ function applyPreferences(preferences, state) {
         state.transform.offsetY = transform.offsetY;
     }
 
-    if (preferences.theme) {
+    // The canvas preset carries its chrome theme. A record saved before presets
+    // existed knows only light or dark; adoptChrome keeps the current preset
+    // when it already pairs with that.
+    const canvasTheme = window.Inkyscib?.CanvasTheme;
+    const presetApplied = !!(canvasTheme && preferences.canvasTheme &&
+        canvasTheme.set(preferences.canvasTheme, { persist: false, render: false }));
+    if (!presetApplied && preferences.theme) {
         document.documentElement.dataset.theme = preferences.theme;
+        canvasTheme?.adoptChrome?.(preferences.theme);
     }
 
     if (preferences.toolbarLocation) {
@@ -708,6 +738,12 @@ function readLocalPreferences() {
         hasValue = true;
     }
 
+    const savedCanvasTheme = safeGetItem('inkyscib-canvas-theme');
+    if (savedCanvasTheme) {
+        preferences.canvasTheme = savedCanvasTheme;
+        hasValue = true;
+    }
+
     const savedToolbarLocation = safeGetItem('inkyscib_toolbar_location');
     if (savedToolbarLocation) {
         preferences.toolbarLocation = normalizeStoredToolbarLocation(savedToolbarLocation);
@@ -722,7 +758,12 @@ function readLocalPreferences() {
     };
 }
 
-function savePreferences() {
+// The immediate write. Not named savePreferences: in a classic script a
+// top-level function declaration and window.savePreferences are one binding,
+// so exporting the debounced scheduler under that name below replaced this
+// function, and the scheduler's timer called itself forever. No preference
+// reached storage.
+function writePreferences() {
     const state = window.appState;
     if (!state) return false;
 
@@ -738,6 +779,11 @@ function savePreferences() {
     ok = safeSetItem('inkyscib_transform', JSON.stringify(preferences.transform)) && ok;
     ok = safeSetItem('inkyscib_toolbar_location', preferences.toolbarLocation) && ok;
     ok = safeSetItem('theme', preferences.theme) && ok;
+    // The pre-paint script in write.html reads this key to stamp the canvas
+    // before first paint.
+    if (preferences.canvasTheme) {
+        ok = safeSetItem('inkyscib-canvas-theme', preferences.canvasTheme) && ok;
+    }
     ok = safeSetItem('inkyscib_preferences_saved_at', String(savedAt)) && ok;
 
     if (preferences.toolSettings.shape) {
@@ -962,7 +1008,7 @@ async function persistDrawing(options) {
         window.syncPptCurrentSlidePaths();
     }
 
-    const preferencesSaved = savePreferences();
+    const preferencesSaved = writePreferences();
 
     try {
         const pptDeck = compactPptDeck(state);
@@ -1230,6 +1276,12 @@ async function loadDrawing() {
         if (typeof window.Inkyscib?.Compass?.syncSettings === 'function') {
             window.Inkyscib.Compass.syncSettings();
         }
+        if (typeof window.Inkyscib?.Eraser?.syncSettings === 'function') {
+            window.Inkyscib.Eraser.syncSettings();
+        }
+        if (typeof window.Inkyscib?.WriteAssist?.sync === 'function') {
+            window.Inkyscib.WriteAssist.sync();
+        }
 
         console.log('Drawing loaded successfully. Paths:', state.paths.length);
     } catch (e) {
@@ -1239,7 +1291,7 @@ async function loadDrawing() {
     }
 }
 
-// savePreferences() writes eight localStorage keys synchronously and then
+// writePreferences() writes eight localStorage keys synchronously and then
 // queues an IndexedDB record. Wheel scrolling and panning called it once per
 // input event, which put a disk-backed synchronous write in the middle of
 // every scroll frame. Nothing needs the value on disk that instant - the
@@ -1256,7 +1308,7 @@ function flushPreferencesSave() {
     }
     if (!preferencesSaveRequested) return false;
     preferencesSaveRequested = false;
-    return savePreferences();
+    return writePreferences();
 }
 
 function schedulePreferencesSave() {
@@ -1265,7 +1317,7 @@ function schedulePreferencesSave() {
     preferencesSaveTimer = window.setTimeout(() => {
         preferencesSaveTimer = null;
         preferencesSaveRequested = false;
-        savePreferences();
+        writePreferences();
     }, PREFERENCES_SAVE_DEBOUNCE_MS);
 }
 
@@ -1280,7 +1332,7 @@ window.flushDrawingSave = flushDrawingSave;
 window.savePreferences = schedulePreferencesSave;
 window.schedulePreferencesSave = schedulePreferencesSave;
 window.flushPreferencesSave = flushPreferencesSave;
-window.savePreferencesNow = savePreferences;
+window.savePreferencesNow = writePreferences;
 window.loadDrawing = loadDrawing;
 
 window.addEventListener('beforeunload', () => {

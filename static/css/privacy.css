@@ -1,0 +1,75 @@
+/* The data-rights controls and the editor's legal row.
+ *
+ * Core tokens only. This file was consent.css until v2 removed analytics
+ * and, with it, the consent banner; what is left is the part that never
+ * depended on a banner.
+ */
+
+/* The data-rights controls, which live in the privacy policy where someone
+   looking for them will actually go. */
+.privacy-controls {
+  display: grid;
+  gap: var(--s4);
+  margin: var(--s5) 0;
+  padding: var(--s5);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: var(--raised);
+}
+
+.privacy-control {
+  display: grid;
+  gap: var(--s2);
+  justify-items: start;
+}
+
+.privacy-control p {
+  margin: 0;
+  font-size: var(--t-3);
+  color: var(--ink-2);
+}
+
+.privacy-control button {
+  min-block-size: var(--tap);
+  padding-inline: var(--s4);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+  font: 600 var(--t-3) / 1 var(--sans);
+  cursor: pointer;
+}
+
+.privacy-control button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Erasure is irreversible; it should not look like the other two. */
+.privacy-control button.destructive { border-color: var(--error); color: var(--error); }
+
+/* The editor's own legal row, beside the © credit. Quieter than the credit
+   and allowed to wrap: at 960px the whole footer is one line of small type. */
+.editor-legal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+  align-items: center;
+  font-size: var(--t-1);
+  color: var(--ink-2);
+}
+
+.editor-legal a {
+  color: inherit;
+  text-decoration: none;
+  padding-block: var(--s1);
+  text-underline-offset: 3px;
+}
+
+.editor-legal a:hover,
+.editor-legal a:focus-visible { text-decoration: underline; }
+
+@media (max-width: 44rem) {
+  .privacy-control button { inline-size: 100%; }
+  .editor-legal { font-size: var(--t-1); }
+}

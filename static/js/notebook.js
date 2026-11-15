@@ -268,6 +268,20 @@
   }
 
   function themeColors() {
+    // Pages follow the canvas preset, so a cream canvas has cream pages.
+    const canvasTheme = window.Inkyscib?.CanvasTheme;
+    if (canvasTheme) {
+      const preset = canvasTheme.get();
+      return {
+        light: preset.chrome === "light",
+        page: preset.page.page,
+        border: preset.page.border,
+        shadow: preset.page.shadow,
+        minor: preset.grid.minor,
+        major: preset.grid.major,
+        dot: preset.grid.dot
+      };
+    }
     const light = (document.documentElement.dataset.theme || "dark") === "light";
     return {
       light,
@@ -658,5 +672,13 @@
   };
 
   document.addEventListener("DOMContentLoaded", initNotebookUi);
-  document.addEventListener("canvasRendered", updateNotebookUi);
+  // Skipped while ink is in flight: this runs writtenPageCount three
+  // times over, each walking every path through an uncached pathBounds,
+  // and writes status textContent unconditionally (which also wakes
+  // icons.js's MutationObserver). None of it can change between two
+  // samples of one stroke, and the frame after the lift runs it.
+  document.addEventListener("canvasRendered", (event) => {
+    if (event?.detail?.liveInk) return;
+    updateNotebookUi();
+  });
 })();

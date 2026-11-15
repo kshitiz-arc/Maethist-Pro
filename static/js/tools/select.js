@@ -26,6 +26,16 @@
         });
     }
 
+    function announceSelection() {
+        try {
+            document.dispatchEvent(new CustomEvent("selectionChanged", {
+                detail: { indices: selectedIndices().slice() }
+            }));
+        } catch (error) {
+            /* Older WebViews still redraw through the existing path. */
+        }
+    }
+
     function safeSave() {
         if (typeof window.saveDrawing === "function") window.saveDrawing();
     }
@@ -72,8 +82,9 @@
         if (!path || path.tool !== "shape" || version !== 1) return false;
         if (path.geometryKind !== path.shapeType) return false;
         if (path.geometryKind === "circle") return Array.isArray(path.points) && path.points.length >= 2;
+        if (path.geometryKind === "ellipse") return Array.isArray(path.points) && path.points.length >= 4;
         if (path.geometryKind === "triangle") return Array.isArray(path.points) && path.points.length >= 3;
-        return ["rectangle", "parallelogram", "rhombus", "kite"].includes(path.geometryKind) &&
+        return ["rectangle", "parallelogram", "rhombus", "kite", "square", "trapezium", "pentagon", "hexagon", "octagon"].includes(path.geometryKind) &&
             Array.isArray(path.points) &&
             path.points.length >= 4;
     }
@@ -104,7 +115,7 @@
             const points = geometry.circleDisplayPoints(path);
             return Array.isArray(points) ? points.filter(finitePoint) : [];
         }
-        const vertexCount = path?.geometryKind === "triangle" ? 3 : 4;
+        const vertexCount = { triangle: 3, pentagon: 5, hexagon: 6, octagon: 8 }[path?.geometryKind] || 4;
         return (path?.points || []).filter(finitePoint).slice(0, vertexCount);
     }
 
@@ -463,6 +474,47 @@
         return null;
     }
 
+    // How every shape is painted, so a circle, a polygon and an ellipse cannot
+    // drift apart: `trace` adds the outline to a fresh path, and this fills it,
+    // then strokes it. The fill is the shape's own colour, faint for a tint;
+    // dashes scale with the width so a thick outline does not read as dotted.
+    // pdf-vector.js mirrors these numbers for export.
+    const SHAPE_TINT_ALPHA = 0.22;
+
+    function shapeDashPattern(path) {
+        const width = Math.max(0.5, path?.size || 2);
+        if (path?.dash === "dashed") return [width * 3 + 6, width * 2 + 6];
+        // A near-zero dash with round caps is a dot.
+        if (path?.dash === "dotted") return [0.01, width * 2 + 4];
+        return [];
+    }
+
+    function paintShape(ctx, path, trace) {
+        ctx.save();
+        const baseAlpha = ctx.globalAlpha;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        trace(ctx);
+        if (path.fill === "tint" || path.fill === "solid") {
+            ctx.fillStyle = path.color || "#ffffff";
+            ctx.globalAlpha = baseAlpha * (path.fill === "tint" ? SHAPE_TINT_ALPHA : 1);
+            ctx.fill();
+            ctx.globalAlpha = baseAlpha;
+        }
+        ctx.strokeStyle = path.color || "#ffffff";
+        ctx.lineWidth = Math.max(0.5, path.size || 2);
+        ctx.setLineDash(shapeDashPattern(path));
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function traceClosed(context, points) {
+        context.moveTo(points[0].x, points[0].y);
+        points.slice(1).forEach((point) => context.lineTo(point.x, point.y));
+        if (points.length >= 3) context.closePath();
+    }
+
     function drawShapeOutline(ctx, path) {
         const isCustomTrianglePreview = path?.shapeType === "triangle" &&
             path?.triangleType === "custom" &&
@@ -471,65 +523,37 @@
 
         if (!path || !path.points || (path.points.length < 2 && !isCustomTrianglePreview)) return;
 
-        ctx.save();
-        ctx.strokeStyle = path.color || "#ffffff";
-        ctx.lineWidth = Math.max(0.5, path.size || 2);
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.setLineDash([]);
-
         if (path.shapeType === "circle") {
             const box = shapeBox(path);
-            if (!box) {
-                ctx.restore();
-                return;
-            }
+            if (!box) return;
             const radius = Math.max(box.width, box.height) / 2;
-            ctx.beginPath();
-            ctx.arc(box.center.x, box.center.y, radius, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.restore();
+            paintShape(ctx, path, (context) => context.arc(box.center.x, box.center.y, radius, 0, Math.PI * 2));
             return;
         }
 
         if (path.shapeType === "square") {
-            const box = shapeBox(path);
-            const points = rectVertices(box, path.rotation || 0);
-            if (points.length < 2) {
-                ctx.restore();
-                return;
-            }
-            ctx.beginPath();
-            ctx.moveTo(points[0].x, points[0].y);
-            points.slice(1).forEach((point) => ctx.lineTo(point.x, point.y));
-            ctx.closePath();
-            ctx.stroke();
-            ctx.restore();
+            const points = rectVertices(shapeBox(path), path.rotation || 0);
+            if (points.length < 2) return;
+            paintShape(ctx, path, (context) => traceClosed(context, points));
             return;
         }
 
         if (path.shapeType === "triangle") {
-            const box = shapeBox(path);
-            const points = triangleVertices(path, box);
-            if (!points.length) {
-                ctx.restore();
-                return;
-            }
+            const points = triangleVertices(path, shapeBox(path));
+            if (!points.length) return;
             if (path.triangleType === "custom" && path.previewPoint && path.points.length < 3) {
+                ctx.save();
+                ctx.strokeStyle = path.color || "#ffffff";
+                ctx.lineWidth = Math.max(0.5, path.size || 2);
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
+                ctx.setLineDash([]);
                 drawCustomTrianglePreview(ctx, path);
                 ctx.restore();
                 return;
             }
-            ctx.beginPath();
-            ctx.moveTo(points[0].x, points[0].y);
-            points.slice(1).forEach((point) => ctx.lineTo(point.x, point.y));
-            if (points.length >= 3) {
-                ctx.closePath();
-            }
-            ctx.stroke();
+            paintShape(ctx, path, (context) => traceClosed(context, points));
         }
-
-        ctx.restore();
     }
 
     function animatedPreviewDash() {
@@ -900,6 +924,7 @@
         selection.selectedIndices = unique;
         selection.selectedIndex = unique.length ? unique[0] : -1;
         selection.hoverHandle = null;
+        announceSelection();
     }
 
     function setSelectedIndex(index) {
@@ -1485,7 +1510,52 @@
         selection.hoverHandle = null;
         selection.action = null;
         updateCursor(s.currentTool === "select" ? "default" : "");
+        announceSelection();
         if (options.render !== false) requestRedraw();
+    }
+
+    // Free-form object selection, shared with the eraser's hold gesture. An
+    // object counts when the lasso contains one of its representative points,
+    // its centre, or when the lasso itself crosses the visible object.
+    function indicesWithinPolygon(polygon) {
+        const s = state();
+        const points = (polygon || []).filter(finitePoint);
+        if (!s || points.length < 3) return [];
+
+        const lassoBounds = boundsFromPoints(points);
+        const selected = [];
+        s.paths.forEach((path, index) => {
+            if (!isEditable(path)) return;
+            const bounds = pathBounds(path);
+            if (!boundsIntersect(lassoBounds, bounds)) return;
+
+            const samples = pathSamplePoints(path);
+            const contained = samples.some((point) => pointInPolygon(point, points)) ||
+                (bounds?.center && pointInPolygon(bounds.center, points));
+            const crossed = points.some((point) => hitPath(point, path, index));
+            if (contained || crossed) selected.push(index);
+        });
+        return selected;
+    }
+
+    function indicesTouchedByStroke(stroke) {
+        const s = state();
+        const points = (stroke?.points || []).filter(finitePoint);
+        if (!s || !points.length) return [];
+        const radius = Math.max(worldSize(5), Number(stroke?.size || 20) / 2);
+        const touched = [];
+
+        s.paths.forEach((path, index) => {
+            if (!isEditable(path)) return;
+            const bounds = expandBounds(pathBounds(path), radius);
+            if (!points.some((point) => boundsContainsPoint(bounds, point))) return;
+
+            const samples = pathSamplePoints(path);
+            const closeToStroke = samples.some((point) => strokeDistance(point, stroke) <= radius + pathPadding(path));
+            const strokeHitsObject = points.some((point) => hitPath(point, path, index));
+            if (closeToStroke || strokeHitsObject) touched.push(index);
+        });
+        return touched;
     }
 
     function deleteSelected() {
@@ -1603,6 +1673,8 @@
         shapeDisplayPoints,
         pathBounds,
         drawShapeOutline,
+        paintShape,
+        shapeDashPattern,
         pointLineDistance,
         pointInPolygon,
         polygonEdgeDistance
@@ -1620,8 +1692,13 @@
         selectedPath,
         selectedBounds,
         selectIndex: setSelectedIndex,
+        // The marquee's own setter, exported so the eraser's hold-to-lasso can
+        // hand over a set of objects when its action is 'select'.
+        selectIndices: setSelectedIndices,
         hitEditablePath,
-        updateHoverCursor
+        updateHoverCursor,
+        indicesWithinPolygon,
+        indicesTouchedByStroke
     };
 
     document.addEventListener("DOMContentLoaded", initSelectTool);

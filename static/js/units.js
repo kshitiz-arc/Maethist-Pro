@@ -176,7 +176,12 @@
     // Tool panels are built and moved around after load (tool-dock.js relocates
     // them), so re-bind whenever the dock changes hands.
     document.addEventListener("toolChanged", bindAll);
-    document.addEventListener("canvasRendered", syncInputs);
+    // syncInputs runs a document-wide querySelectorAll, so it is skipped
+    // while ink is in flight; unit names cannot change mid-stroke.
+    document.addEventListener("canvasRendered", (event) => {
+      if (event?.detail?.liveInk) return;
+      syncInputs();
+    });
   }
 
   window.Inkyscib = window.Inkyscib || {};

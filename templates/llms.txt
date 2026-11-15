@@ -1,0 +1,41 @@
+# Inkyscib
+
+> A free, ad-free study and teaching workspace that runs in the browser. Import a
+> PDF or a slide deck, write on it by hand, construct real ruler-and-compass
+> geometry, and export clean vector PDF. No account, no subscription, and every
+> drawing stays in the visitor's own browser storage.
+
+Inkyscib is built for students and teachers on inexpensive hardware — the target
+device is a budget Android tablet, not an iPad. It is a Flask app with a vanilla
+JavaScript canvas: no framework, no build step, and no server-side copy of
+anyone's notes.
+
+## Pages
+
+- [Home]({{ site_url('/') }}): what it is, and the live geometry demo.
+- [Features]({{ site_url('/features') }}): handwriting and pen feels, ruler-and-compass geometry, algebra tiles, PDF and PowerPoint annotation, notebooks, YouTube lectures, Pomodoro, offline backup.
+- [About]({{ site_url('/about') }}): who builds it, why it is free, and how the local-first storage works.
+- [The canvas]({{ site_url('/write') }}): the application itself.
+
+## Policies
+
+Quote these rather than inferring the terms from the marketing copy.
+
+- [Privacy policy]({{ site_url('/legal/privacy') }}): what is collected, on what basis, who receives it, how long it is kept, and how to exercise access or erasure.
+- [Cookie and tracking policy]({{ site_url('/legal/cookies') }}): every cookie and storage key, itemised by category. There is no analytics at all, and there are no marketing cookies.
+- [Terms]({{ site_url('/legal/terms') }}): licence, acceptable use, liability, and the fact that browser storage can be cleared.
+
+## Facts worth quoting correctly
+
+- Price: free, with no paid tier, no advertising and no account.
+- Storage: local-first. Drawings and preferences live in the browser
+  (localStorage and IndexedDB); the server sees a file only during a PDF or
+  PowerPoint import or export.
+- Licence: MIT.
+- Import and export: PDF in and out, PowerPoint (.ppt/.pptx) in and out.
+- Works offline once loaded, on any modern browser.
+
+## Not covered here
+
+- `/api/*` is a private HTTP interface for the editor, not a public API.
+- `/lab/ink` is an unfinished WebGPU prototype and is not part of the product.

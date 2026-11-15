@@ -282,6 +282,14 @@
     const newArc = document.getElementById("compassNewArc");
     if (newArc) newArc.hidden = !compassState.lastArcGid;
 
+    const showAngleToggle = document.getElementById("compassShowAngle");
+    const selectedArcs = selectedArcPaths();
+    if (showAngleToggle) {
+      showAngleToggle.checked = selectedArcs.length
+        ? selectedArcs.every((path) => path.showAngle === true)
+        : compassState.showAngle;
+    }
+
     document.querySelectorAll("[data-compass-mode]").forEach((button) => {
       const active = button.dataset.compassMode === compassState.mode;
       button.classList.toggle("active", active);
@@ -560,14 +568,9 @@
    * centre is still one tap on step 1.
    */
   function startAnotherArc() {
-    compassState.lastArcGid = null;
-    if (compassState.centerPointId && compassState.radius) {
-      armDraw();
-      setStatus("Sweep to draw another arc, or tap Centre to move the compass.");
-    } else {
-      armCenter();
-    }
-    syncPanel();
+    compassState.mode = "arc";
+    reset();
+    setStatus("Tap a point to place the centre of the new arc.");
     render();
   }
 
@@ -691,9 +694,28 @@
     render();
   }
 
-  // Whether arcs drawn from now on carry their swept angle. Stored per arc at
-  // creation, so turning it off later leaves the ones already drawn alone.
+  function selectedArcPaths() {
+    const s = state();
+    const indices = window.Inkyscib?.Selection?.selectedIndices?.() || [];
+    return indices.map((index) => s?.paths?.[index]).filter((path) => (
+      path?.tool === "construction" && (path.geomType === "arc" || path.geomType === "circle")
+    ));
+  }
+
+  // With an arc selected this edits that arc's legend. Otherwise it remains a
+  // default for arcs drawn from now on.
   function setShowAngle(enabled, options = {}) {
+    const selected = options.defaultsOnly ? [] : selectedArcPaths();
+    if (selected.length) {
+      commitHistory();
+      selected.forEach((path) => { path.showAngle = !!enabled; });
+      const toggle = document.getElementById("compassShowAngle");
+      if (toggle) toggle.checked = !!enabled;
+      save();
+      render();
+      return;
+    }
+
     compassState.showAngle = !!enabled;
 
     const settings = state()?.toolSettings;
@@ -713,7 +735,7 @@
   function adoptSavedShowAngle() {
     const saved = !!state()?.toolSettings?.compass?.showAngle;
     if (saved === compassState.showAngle) return;
-    setShowAngle(saved, { save: false });
+    setShowAngle(saved, { save: false, defaultsOnly: true });
   }
 
   function setMode(mode) {
@@ -1125,10 +1147,8 @@
   // options popover.
   function bindToolButton() {
     const button = document.getElementById("compassTool");
-    const panel = document.getElementById("compassOptions");
     if (!button) return;
 
-    let tapTimer = null;
 
     function selectCompass() {
       if (typeof window.closeAllToolboxes === "function") window.closeAllToolboxes();
@@ -1145,34 +1165,20 @@
 
     function onPress(event) {
       event.stopPropagation();
-
-      if (window.Inkyscib?.ToolDock?.isDockMode?.()) {
-        selectCompass();
-        return;
-      }
-
-      const s = state();
-      if (s && s.currentTool === "compass" && !s.panMode) {
-        if (tapTimer) {
-          window.clearTimeout(tapTimer);
-          tapTimer = null;
-          if (panel) {
-            panel.style.display = panel.style.display === "flex" ? "none" : "flex";
-          }
-        } else {
-          tapTimer = window.setTimeout(() => { tapTimer = null; }, 300);
-        }
-        return;
-      }
-
+      // Opening and closing this tool's panel is tool-dock.js's job at every
+      // width: it sees the tap in the capture phase and toggles on a second
+      // tap. This handler only selects the tool. A second owner here -- a
+      // double-tap timer below 1180px, writing style.display directly -- is
+      // what left the panels out of step with the dock and, for Algebra tiles,
+      // hid the panel the moment the tool was picked.
       selectCompass();
     }
 
+    // click only. A touchstart listener here called preventDefault, which
+    // cancels the click a tap synthesises -- so on a touch screen the second
+    // tap never reached tool-dock.js and the compass panel could not be put
+    // away. click fires for touch, pen and mouse alike.
     button.addEventListener("click", onPress);
-    button.addEventListener("touchstart", (event) => {
-      event.preventDefault();
-      onPress(event);
-    }, { passive: false });
   }
 
   function bindLabelInput() {
@@ -1262,6 +1268,7 @@
       if (event.detail?.tool === "compass") activate();
       else deactivate();
     });
+    document.addEventListener("selectionChanged", syncPanel);
 
     // Clearing the canvas deletes every point the compass refers to.
     const originalClear = window.clearCanvas;
