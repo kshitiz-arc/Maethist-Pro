@@ -36,7 +36,9 @@ def main():
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(
-            viewport={"width": 1200, "height": 630}, device_scale_factor=1
+            viewport={"width": 1200, "height": 630}, device_scale_factor=1,
+            # Blueprint is dark first, and a headless browser prefers light.
+            color_scheme="dark"
         )
         # The first-run tour would otherwise cover the hero.
         page.add_init_script(

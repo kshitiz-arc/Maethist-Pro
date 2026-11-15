@@ -58,7 +58,8 @@ python -c "import os; os.environ.setdefault('SECRET_KEY','dev'); from app import
 python -m pytest tests/ -q
 ```
 
-**Baseline is 497 passed / 1 failed, 906 subtests, about 10 minutes**
+**Baseline is 484 passed / 0 failed, 1,457 subtests, about 10 minutes
+(2026-11-15, version 2).** Before that it was 497 passed / 1 failed, 906 subtests, about 10 minutes
 (2026-09-21), after the tool-panel and shape-assist work (TODOS item 19) added
 `test_tool_panel_layout.py` and nine tests to `test_write_assist.py`. Before
 that, 474 / 1 / 814 the same day after the production-readiness pass (item 18). It was 447 / 0 / 723 on 2026-09-20 and 319 / 244 on

@@ -118,19 +118,23 @@ the device. Splitting the optional features out is `TODOS.md` item 1.
 
 ## Tests
 
-Full suite, run once after all changes: **482 passed, 5 failed** (1,454 subtests passed, 10 min 34 s).
-All five failures came from this work, not from old flakiness:
+**484 passed, 0 failed** (1,457 subtests, 9 min 34 s), full suite, run after the last change.
 
-- Three were tests still asserting the old design (the ochre-only palette rule, the "credit must
-  stay faint" rule, and two new routes missing a sitemap decision). Those tests are updated.
-  **They have not been re-run since the update.**
-- One is open: the accessibility scanner reports a violation on the 404 page under the new
-  colours. **Not yet investigated or fixed.** Most likely a contrast pair in `not-found.css`.
-- The fifth is the same palette rule counted for a second layout.
+The run before it had five failures, all caused by this work and none by old flakiness:
 
-The previously marginal timing test (`test_lift_smoothing_is_cheap`) passed in this run.
-The share image (`static/img/og-cover.png`) still shows the old orange look; regenerate it with
-`python tools/make_og_image.py`.
+- Three tests still asserted the old design: a palette rule that forbade cyan (the new accent),
+  a rule that the footer credit must stay faint, and two new routes (`/healthz`, `/sw.js`) with
+  no sitemap decision. The tests were updated to the v2 design.
+- The accessibility scanner failed the 404 page: its logo link had a spoken name that did not
+  match its visible text. Fixed in `templates/404.html`.
+- A regression the suite caught and I fixed before that run: at 640px the lecture-player test
+  could not reach the pen, because the new tool row had scrolled it out of view.
+
+The timing test that used to fail one run in two (`test_lift_smoothing_is_cheap`) passed in
+both runs. New in v2: `tests/test_v2_release.py` (19 tests: offline reload with the network
+cut, the two docked bars at three widths, sheet and page-switcher placement, the health check,
+the secret-key guard, pinned requirements) and a rewritten `tests/test_analytics_csp.py`, which
+fails if any tracker, measurement id or analytics origin returns.
 
 ## What is still open
 
@@ -144,12 +148,13 @@ The share image (`static/img/og-cover.png`) still shows the old orange look; reg
    and reload.
 4. **`SITE_ORIGIN`.** Set it on Render to your public address, or canonical
    links and the sitemap will point nowhere useful.
-5. **Nothing is committed.** The repository is still one commit with everything
-   modified on top of it. Committing and pushing are yours to approve.
+5. **Published privately.** The code is at `github.com/kshitiz-arc/Inkyscib-v2` (private,
+   branch `main`). Locally it is the branch `v2-release`; the old `master` and the old
+   `Inkyscib_Beta` remote are untouched.
 6. **Editor weight** (above), and the items in `TODOS.md` 20.
 
 ## Before you go live
 
 1. Set the privacy contact address and get the legal pages read.
-2. Commit, push, create the Render blueprint, set `SITE_ORIGIN`.
+2. Create the Render blueprint from `Inkyscib-v2` and set `SITE_ORIGIN`.
 3. Open the deployed site on the tablet: draw, open every menu, go offline, reload.
