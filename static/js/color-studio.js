@@ -264,10 +264,7 @@
         <span class="studio-preview" aria-hidden="true"></span>
         <span class="studio-title">Colour</span>
         <button type="button" class="studio-copy" aria-label="Copy hex code" title="Copy hex code">
-          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
-            stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" />
-          </svg>
+          ${window.Inkyscib?.Icon?.svg?.("lucide:copy", { size: 17 }) || ""}
         </button>
         <button type="button" class="studio-close" aria-label="Close colour picker">&times;</button>
       </div>

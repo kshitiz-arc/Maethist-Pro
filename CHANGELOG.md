@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.0.2 — 2026-11-17
+
+### Changed
+
+- **Every UI icon now comes from an open icon library**, vendored from GitHub
+  at a pinned release by `tools/vendor_icons.py`, one family per surface so
+  two styles never share a row:
+  - **Lucide** 1.66.0 (ISC) for the editor: toolbar, tool rail, File sheet,
+    tool panels, the lecture player and toasts.
+  - **Phosphor** 2.0.8 (MIT) for the Planner, Pomodoro and the feature tour.
+  - **Remix Icon** 4.9.1 (Remix Icon License) for the marketing and legal pages.
+- Templates inline icons on the server (`icon()` in `app.py`), so they are in
+  the HTML on first paint; scripts use the same set from `static/js/icon-set.js`.
+
+### Removed
+
+- The 55 hand-drawn icons in `static/js/icons.js`, the File sheet's own icon
+  paths, the planner's, tour's, dock's and colour studio's inline icons, and
+  the Unicode stand-ins on the homepage (the arrows, the theme-toggle half
+  circles and the preview toolbar's tool glyphs).
+
+### Kept on purpose
+
+- Drawings of content, which no icon library has: the 15 shape glyphs and the
+  toolbar's current-shape mirror, pen-nib samples, line, arrow, fill and dash
+  styles, the assist curves, canvas swatches, the Pomodoro ring, resize grips
+  and the tour and planner illustrations. The wordmark's diamond is the logo.
+
+
 ## 2.0.1 — 2026-11-15
 
 ### Changed

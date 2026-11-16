@@ -2,6 +2,11 @@
 // Local-only calendar, recurring tasks, progress, and best-effort reminders.
 (function () {
   'use strict';
+  // Phosphor icons from the vendored registry (static/js/icon-set.js).
+  function phIcon(ref) {
+    return window.Inkyscib?.Icon?.svg?.(ref) || '';
+  }
+
 
   const STORAGE_KEY = 'inkyscib-planner-v1';
   const STORE_VERSION = 1;
@@ -96,18 +101,14 @@
     root = document.createElement('div');
     root.id = 'plannerModal';
     root.className = 'planner-overlay';
+    root.dataset.iconSet = 'phosphor';
     root.hidden = true;
     root.setAttribute('aria-hidden', 'true');
     root.innerHTML = `
       <section class="planner-shell" role="dialog" aria-modal="true" aria-labelledby="plannerTitle" tabindex="-1">
         <header class="planner-header">
           <div class="planner-brand">
-            <span class="planner-brand-mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none">
-                <rect x="3.5" y="5.5" width="17" height="15" rx="3"></rect>
-                <path d="M7.5 3.5v4M16.5 3.5v4M3.5 9.5h17"></path>
-                <path d="m8 15 2.2 2.1L16 12"></path>
-              </svg>
+            <span class="planner-brand-mark" aria-hidden="true">${phIcon('phosphor:calendar-check')}
             </span>
             <span class="planner-brand-copy">
               <span class="planner-kicker">Local planner</span>
@@ -120,10 +121,7 @@
               <span class="planner-notify-dot" aria-hidden="true"></span>
               <span id="plannerNotifyText">Enable reminders</span>
             </button>
-            <button id="plannerCloseBtn" class="planner-icon-btn planner-close-btn" type="button" aria-label="Close planner">
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M6 6l12 12M18 6 6 18"></path>
-              </svg>
+            <button id="plannerCloseBtn" class="planner-icon-btn planner-close-btn" type="button" aria-label="Close planner">${phIcon('phosphor:x')}
             </button>
           </div>
         </header>
@@ -138,10 +136,10 @@
               <div class="planner-month-actions">
                 <button id="plannerTodayBtn" class="planner-today-btn" type="button">Today</button>
                 <button id="plannerPrevMonth" class="planner-icon-btn" type="button" aria-label="Previous month">
-                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m15 6-6 6 6 6"></path></svg>
+                  ${phIcon('phosphor:caret-left')}
                 </button>
                 <button id="plannerNextMonth" class="planner-icon-btn" type="button" aria-label="Next month">
-                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m9 6 6 6-6 6"></path></svg>
+                  ${phIcon('phosphor:caret-right')}
                 </button>
               </div>
             </div>
@@ -165,7 +163,7 @@
                 <h3 id="plannerSelectedDate"></h3>
               </div>
               <button id="plannerAddTaskBtn" class="planner-add-task-btn" type="button">
-                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+                ${phIcon('phosphor:plus')}
                 <span>Add task</span>
               </button>
             </div>
@@ -188,7 +186,7 @@
                   <strong id="plannerComposerDate"></strong>
                 </div>
                 <button id="plannerCancelComposerTop" class="planner-icon-btn" type="button" aria-label="Cancel adding task">
-                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+                  ${phIcon('phosphor:x')}
                 </button>
               </div>
 
@@ -199,11 +197,7 @@
 
               <div class="planner-reminder-card">
                 <div class="planner-reminder-copy">
-                  <span class="planner-reminder-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
-                      <path d="M10 20h4"></path>
-                    </svg>
+                  <span class="planner-reminder-icon" aria-hidden="true">${phIcon('phosphor:bell')}
                   </span>
                   <span>
                     <strong>Remind me</strong>
@@ -255,7 +249,7 @@
                 <button id="plannerCancelComposer" class="planner-secondary-btn" type="button">Cancel</button>
                 <button class="planner-save-task-btn" type="submit">
                   <span>Add to my day</span>
-                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+                  ${phIcon('phosphor:caret-right')}
                 </button>
               </div>
             </form>
@@ -763,7 +757,7 @@
       (completed ? 'Mark task incomplete: ' : 'Mark task complete: ') + task.title
     );
     toggle.setAttribute('aria-pressed', completed ? 'true' : 'false');
-    toggle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 12 4 4 8-9"></path></svg>';
+    toggle.innerHTML = phIcon('phosphor:check');
 
     const content = document.createElement('div');
     content.className = 'planner-task-content';
@@ -799,10 +793,7 @@
         '. Works when Inkyscib is closed; later task changes will not sync.'
       );
       deviceAlert.innerHTML = [
-        '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">',
-        '<rect x="3.5" y="5.5" width="17" height="15" rx="3"></rect>',
-        '<path d="M7.5 3.5v4M16.5 3.5v4M3.5 9.5h17M12 12.5v5M9.5 15h5"></path>',
-        '</svg>',
+        phIcon('phosphor:calendar-check'),
         '<span>Device alert</span>'
       ].join('');
       meta.appendChild(deviceAlert);
@@ -819,7 +810,7 @@
       'aria-label',
       (task.recurrence === 'none' ? 'Delete task: ' : 'Delete recurring task: ') + task.title
     );
-    remove.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3M8 7l1 12h6l1-12M11 11v5M14 11v5"></path></svg>';
+    remove.innerHTML = phIcon('phosphor:trash');
 
     card.append(toggle, content, remove);
     return card;
@@ -2319,7 +2310,7 @@
     const icon = document.createElement('span');
     icon.className = 'planner-toast-icon';
     icon.setAttribute('aria-hidden', 'true');
-    icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 20h4"></path></svg>';
+    icon.innerHTML = phIcon('phosphor:bell');
 
     const copy = document.createElement('span');
     copy.className = 'planner-toast-copy';
@@ -2347,7 +2338,7 @@
     close.type = 'button';
     close.className = 'planner-toast-close';
     close.setAttribute('aria-label', 'Dismiss notification');
-    close.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"></path></svg>';
+    close.innerHTML = phIcon('phosphor:x');
     close.addEventListener('click', () => dismissToast(toast), { once: true });
     toast.appendChild(close);
 

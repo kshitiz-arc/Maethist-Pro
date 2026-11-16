@@ -221,24 +221,26 @@ class PomodoroTests(unittest.TestCase):
     # ---------- the panel ----------
 
     def test_the_settings_button_is_a_gear(self):
-        """The old icon was a circle with eight loose rays: a sun."""
+        """The old icon was a circle with eight loose rays: a sun. Since 2.0.2
+        the timer is a Phosphor surface and the button wears Phosphor's gear,
+        drawn as one filled silhouette."""
         page = self.open_page()
         self.open_timer(page)
         icon = page.evaluate(
             """() => {
               const svg = document.querySelector('#pomodoroModal .pomo-settings-toggle svg');
               if (!svg) return null;
-              const paths = [...svg.querySelectorAll('path')];
-              return { paths: paths.length, circles: svg.querySelectorAll('circle').length,
-                       evenodd: paths.some(p => p.getAttribute('fill-rule') === 'evenodd'),
-                       arcs: (paths[0]?.getAttribute('d')?.match(/A/g) || []).length };
+              return { cls: svg.getAttribute('class'), paths: svg.querySelectorAll('path').length,
+                       circles: svg.querySelectorAll('circle').length,
+                       stroke: getComputedStyle(svg.querySelector('path')).stroke };
             }"""
         )
         self.assertIsNotNone(icon, "the settings button should carry an icon")
+        self.assertIn("icon-phosphor", icon["cls"])
+        self.assertIn("icon-gear", icon["cls"])
         self.assertEqual(icon["paths"], 1, "one silhouette, not separate rays")
         self.assertEqual(icon["circles"], 0)
-        self.assertTrue(icon["evenodd"], "the axle is cut out of the wheel")
-        self.assertGreaterEqual(icon["arcs"], 9, "eight tooth gaps plus the axle")
+        self.assertEqual(icon["stroke"], "none", "a filled glyph, not an outline")
         self.assertEqual(self.errors, [])
 
     def visible(self, page, selector):

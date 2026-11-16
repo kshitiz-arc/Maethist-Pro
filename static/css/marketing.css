@@ -746,3 +746,13 @@ h1, h2, h3,
 .logo { min-height: var(--tap); }
 .feature { min-height: var(--tap); align-items: center; }
 .canvas .toolbar .tool { min-width: var(--tap); min-height: var(--tap); }
+
+
+/* ---------- Remix icons (marketing and legal pages) ---------- */
+.icon-remix { width: 1.15em; height: 1.15em; vertical-align: -0.2em; }
+.icon-btn .icon-remix { width: 18px; height: 18px; }
+.canvas .toolbar .tool .icon-remix { width: 18px; height: 18px; }
+.zoom button .icon-remix { width: 14px; height: 14px; }
+.feature .feature-arrow { width: 14px; height: 14px; color: var(--accent); flex: none; align-self: center; }
+.link-out { width: 0.95em; height: 0.95em; vertical-align: -0.12em; }
+.icon-diagonal { transform: rotate(-45deg); }

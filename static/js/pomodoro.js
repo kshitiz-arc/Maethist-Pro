@@ -429,11 +429,14 @@
 
         const overlay = el('div', 'pomo-overlay');
         overlay.id = 'pomodoroModal';
+        overlay.dataset.iconSet = 'phosphor';
         overlay.dataset.view = 'main';
         overlay.innerHTML = buildModalHTML();
         document.body.appendChild(overlay);
 
         const pill = el('div', 'pomo-pill');
+
+        pill.dataset.iconSet = 'phosphor';
         pill.id = 'floatingTimer';
         pill.innerHTML = buildPillHTML();
         pill.style.display = 'none';

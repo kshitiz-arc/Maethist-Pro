@@ -51,38 +51,20 @@
     return s?.ppt?.active ? s.ppt : null;
   }
 
-  function icon(paths) {
-    return (
-      '<svg viewBox="0 0 24 24" aria-hidden="true">' +
-      paths.map((d) => '<path d="' + d + '"></path>').join("") +
-      "</svg>"
-    );
-  }
-
-  const ICONS = {
-    file: icon(["M14 3v5h5", "M6 3h8l5 5v13H6z"]),
-    insert: icon(["M12 6v12", "M6 12h12"]),
-    export: icon(["M12 16V4", "m8 8 4-4 4 4", "M5 16v3h14v-3"]),
-    recent: icon(["M12 7v5l3 2", "M12 21a9 9 0 1 0-9-9"]),
-    tools: icon(["M4 7h10", "M18 7h2", "M4 17h4", "M12 17h8", "M16 5v4", "M8 15v4"]),
-    timer: icon(["M12 8v4l2.5 2", "M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16", "M9 2h6"]),
-    planner: icon(["M4 6h16v14H4z", "M4 10h16", "M9 3v4", "M15 3v4"]),
-    video: icon(["M3 6h13v12H3z", "m16 10 5-3v10l-5-3"]),
-    camera: icon(["M4 8h3l1.5-2h7L17 8h3v11H4z", "M12 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"]),
-    guide: icon(["M6 4h9l4 4v12H6z", "M9 11h7", "M9 15h5"]),
-    open: icon(["M3 7h6l2 2h10v10H3z"]),
-    save: icon(["M5 4h11l3 3v13H5z", "M8 4v6h7V4", "M8 20v-6h8v6"]),
-    saveAs: icon(["M5 4h10l4 4v8H5z", "M8 4v5h6V4", "m15 21 3-3 3 3", "M18 18v-4"]),
-    plus: icon(["M12 5v14", "M5 12h14"]),
-    pdf: icon(["M14 3v5h5", "M6 3h8l5 5v13H6z", "M9 13h6", "M9 17h4"]),
-    slides: icon(["M3 5h18v11H3z", "M12 16v4", "M8 20h8"]),
-    image: icon(["M3 5h18v14H3z", "m3 15 5-4 4 3 3-3 6 5", "M8.5 9.5h.01"]),
-    package: icon(["m12 3 8 4.5v9L12 21l-8-4.5v-9z", "M12 12 4 7.5", "m12 12 8-4.5", "M12 12v9"]),
-    backup: icon(["M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z", "M4 7v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7"]),
-    book: icon(["M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z", "M4 5.5v15"]),
-    trash: icon(["M4 7h16", "M10 11v6", "M14 11v6", "M6 7l1 13h10l1-13", "M9 7V4h6v3"]),
-    rename: icon(["m4 20 .8-3.4L15.2 6.2l2.6 2.6L7.4 19.2z", "m14.2 7.2 2.6 2.6", "M15.6 4.8a1.8 1.8 0 0 1 2.6 2.6"])
+  // Lucide, from the vendored registry (static/js/icon-set.js, rendered by
+  // static/js/icons.js). The keys are the names the panes and commands use.
+  const ICON_REFS = {
+    file: "file", insert: "plus", export: "upload", recent: "clock-arrow-down",
+    tools: "sliders-horizontal", timer: "timer", planner: "calendar-check",
+    video: "tv-minimal-play", camera: "camera", guide: "map", open: "folder-open",
+    save: "save", saveAs: "save-all", plus: "plus", pdf: "file-text", slides: "presentation",
+    image: "image", package: "package", backup: "hard-drive-download", book: "book-open",
+    trash: "trash", rename: "pencil-line"
   };
+  const ICONS = {};
+  Object.keys(ICON_REFS).forEach((key) => {
+    ICONS[key] = window.Inkyscib?.Icon?.svg?.("lucide:" + ICON_REFS[key]) || "";
+  });
 
   function setStatus(message, tone = "muted") {
     const element = document.getElementById("fileBackstageStatus");

@@ -34,6 +34,18 @@ that the pages load, so a new asset type needs adding to `_OFFLINE_SUFFIXES`.
 `OFFLINE_SHELL=off` is its remote off switch (`templates/sw-off.js`).
 `docs/V2-REVIEW.md` is the launch review, with the measurements.
 
+## Icons
+
+Lucide for the editor, Phosphor for the Planner, Pomodoro and tour, Remix for
+the marketing and legal pages: one family per surface. All three are vendored
+by `tools/vendor_icons.py` (pinned tags, sanitised SVG). To add one, put the
+name in that file's `ICONS` and re-run it; never paste an SVG by hand. In a
+template use `{{ icon("lucide:name", "class") }}`; in a script use
+`window.Inkyscib.Icon.svg("lucide:name")` or the legacy
+`<i class="fas fa-...">`, which `static/js/icons.js` maps per family. A
+surface opts into a family with `data-icon-set="phosphor"` on its root.
+`tests/test_icons.py` fails on any reference that is not vendored.
+
 ## Design System
 
 Always read `DESIGN.md` before making any visual or UI decision. All colour, typography,

@@ -188,10 +188,7 @@
   // normal gesture brings the controls back.
   let dockClose = null;
 
-  const CLOSE_ICON =
-    '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">' +
-    '<path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round"/>' +
-    "</svg>";
+  const CLOSE_ICON = window.Inkyscib?.Icon?.svg?.("lucide:x", { size: 18 }) || "";
 
   function makeCloseButton(id, onClose) {
     const button = document.createElement("button");

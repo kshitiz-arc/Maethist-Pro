@@ -57,7 +57,8 @@
   <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest', v='pwa-1') }}">
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/inkyscib-180.png', v='pwa-1') }}">
   <link rel="icon" href="{{ url_for('static', filename='logo.ico') }}" type="image/x-icon">
-  <script src="{{ url_for('static', filename='js/icons.js', v='icons-2') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/icon-set.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/icons.js') }}" defer></script>
   <script>
     try {
       // The editor's stylesheets key off an explicit data-theme, and the
@@ -498,12 +499,7 @@
       <button id="featureTourBtn" class="menu-action-btn feature-guide-menu-btn" type="button">
         <span class="ppt-import-label">
           <span class="feature-guide-menu-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M5 18.5V8.8A3.8 3.8 0 0 1 8.8 5H19" />
-              <path d="m15.5 2.5 3.5 2.6-3.5 2.6" />
-              <circle cx="5" cy="19" r="2.2" />
-              <circle cx="19" cy="5" r="2.2" />
-            </svg>
+            {{ icon("lucide:map") }}
           </span>
           Feature tour
         </span>
@@ -569,11 +565,7 @@
     <div class="menu-section planner-menu-section">
       <button id="plannerBtn" class="planner-menu-btn" type="button">
         <span class="planner-menu-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none">
-            <rect x="3.5" y="5.5" width="17" height="15" rx="3"></rect>
-            <path d="M7.5 3.5v4M16.5 3.5v4M3.5 9.5h17"></path>
-            <path d="m8 15 2.2 2.1L16 12"></path>
-          </svg>
+          {{ icon("lucide:calendar-check") }}
         </span>
         <span class="planner-menu-copy">
           <span class="planner-menu-title">Planner</span>
@@ -632,21 +624,10 @@
 
   <div class="toolbar">
     <button id="selectTool" class="tool" type="button" title="Select" aria-label="Select">
-      <svg class="tool-icon select-tool-icon" width="21" height="21" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M5 3 L18 14 L12.4 15.2 L15.4 21 L12.8 22.2 L9.8 16.4 L5.8 20.3 Z" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linejoin="round" />
-      </svg>
+      {{ icon("lucide:mouse-pointer-2", "tool-icon select-tool-icon", 21) }}
     </button>
     <button id="penTool" class="tool" type="button" title="Pen" aria-label="Pen">
-      <svg class="tool-icon pen-tool-icon" width="23" height="23" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4.4 19.6 L5.8 15.1 L15.4 5.5 C16.4 4.5 18 4.5 19 5.5 L19.5 6 C20.5 7 20.5 8.6 19.5 9.6 L9.9 19.2 Z"
-          fill="none" stroke="currentColor" stroke-width="1.85" stroke-linejoin="round" />
-        <path d="M5.8 15.1 L9.9 19.2" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" />
-        <path d="M13.8 7.1 L17.9 11.2" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"
-          opacity="0.72" />
-        <path class="tool-icon-accent pen-ink-mark" d="M3.6 21 C6.5 20.1 9.3 20.2 12.1 21" fill="none"
-          stroke-width="2.25" stroke-linecap="round" />
-      </svg>
+      {{ icon("lucide:pen-line", "tool-icon pen-tool-icon", 23) }}
     </button>
     <div id="penOptions" class="tool-options" data-tool-panel="pen" data-tool-title="Pen">
       <div class="tool-option-section">
@@ -809,16 +790,7 @@
     </div>
 
     <button id="eraserTool" class="tool" type="button" title="Eraser" aria-label="Eraser">
-      <svg class="tool-icon eraser-tool-icon" width="23" height="23" viewBox="0 0 24 24" aria-hidden="true">
-        <path
-          d="M4.2 15.2 L12.9 6.5 C13.9 5.5 15.4 5.5 16.4 6.5 L20 10.1 C21 11.1 21 12.6 20 13.6 L13.6 20 H8.8 L4.2 15.4 Z"
-          fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" />
-        <path d="M10.3 9.1 L17.4 16.2" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"
-          opacity="0.68" />
-        <path class="eraser-clean-line" d="M13.4 20 H20.6" fill="none" stroke-width="2" stroke-linecap="round" />
-        <circle class="eraser-dust" cx="5.2" cy="19.1" r="0.95" />
-        <circle class="eraser-dust" cx="3.2" cy="17.5" r="0.65" />
-      </svg>
+      {{ icon("lucide:eraser", "tool-icon eraser-tool-icon", 23) }}
     </button>
     <div id="eraserOptions" class="tool-options" data-tool-panel="eraser" data-tool-title="Eraser">
       <div class="tool-option-section">
@@ -851,15 +823,7 @@
     </div>
 
     <button id="highlightTool" class="tool" type="button" title="Highlighter" aria-label="Highlighter">
-      <svg class="tool-icon highlighter-tool-icon" width="24" height="23" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M5.2 15.3 L14.8 5.7 C15.7 4.8 17.1 4.8 18 5.7 L19 6.7 C19.9 7.6 19.9 9 19 9.9 L9.4 19.5 L4.5 20.2 Z"
-          fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" />
-        <path d="M13.2 7.3 L17.4 11.5" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"
-          opacity="0.72" />
-        <path class="highlighter-chisel" d="M5.2 15.3 L9.4 19.5" fill="none" stroke-width="3.2"
-          stroke-linecap="round" />
-        <path class="highlighter-swatch" d="M3.4 21.2 H20.8" fill="none" stroke-width="3.2" stroke-linecap="round" />
-      </svg>
+      {{ icon("lucide:highlighter", "tool-icon highlighter-tool-icon", 24) }}
     </button>
     <div id="highlightOptions" class="tool-options" data-tool-panel="highlight" data-tool-title="Highlighter">
       <div class="tool-option-section">
@@ -1025,18 +989,7 @@
     </div>
 
     <button id="manipulativeTool" class="tool" type="button" title="Algebra tiles" aria-label="Algebra tiles">
-      <svg class="tool-icon tile-tool-icon" width="23" height="23" viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="2.6" y="3.6" width="11.4" height="6" rx="1.6" fill="none" stroke="currentColor"
-          stroke-width="1.75" />
-        <rect x="15.6" y="3.6" width="5.8" height="6" rx="1.6" fill="none" stroke="currentColor"
-          stroke-width="1.75" />
-        <rect x="2.6" y="11.4" width="11.4" height="9" rx="1.6" fill="none" stroke="currentColor"
-          stroke-width="1.75" />
-        <rect class="tool-icon-accent tile-icon-unit" x="15.6" y="11.4" width="5.8" height="5.8" rx="1.6"
-          stroke-width="1.75" />
-        <path d="M17 19.6h3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-          opacity="0.6" />
-      </svg>
+      {{ icon("lucide:blocks", "tool-icon tile-tool-icon", 23) }}
     </button>
     <div id="manipulativeOptions" class="tool-options" data-tool-panel="manipulative" data-tool-title="Algebra tiles">
       <div class="tool-option-section">
@@ -1113,17 +1066,7 @@
     </div>
 
     <button id="compassTool" class="tool" type="button" title="Compass" aria-label="Compass">
-      <svg class="tool-icon compass-tool-icon" width="23" height="23" viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="4.3" r="1.35" fill="currentColor" />
-        <path d="M11.2 5.7 L6.7 18.2" fill="none" stroke="currentColor" stroke-width="1.85"
-          stroke-linecap="round" />
-        <path d="M12.8 5.7 L17.3 18.2" fill="none" stroke="currentColor" stroke-width="1.85"
-          stroke-linecap="round" />
-        <path d="M9.6 12.1 L14.4 12.1" fill="none" stroke="currentColor" stroke-width="1.5"
-          stroke-linecap="round" opacity="0.68" />
-        <path class="tool-icon-accent compass-arc-mark" d="M4.3 20.3 C8.2 17.8 15.8 17.8 19.7 20.3"
-          fill="none" stroke-width="2.15" stroke-linecap="round" />
-      </svg>
+      {{ icon("lucide:drafting-compass", "tool-icon compass-tool-icon", 23) }}
     </button>
     <div id="compassOptions" class="tool-options" data-tool-panel="compass" data-tool-title="Compass">
       <div class="tool-option-section">
@@ -1239,12 +1182,7 @@
     </div>
 
     <button id="angleTool" class="tool" type="button" title="Angle between two lines" aria-label="Angle between two lines">
-      <svg class="tool-icon" width="23" height="23" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 19.5 L20 19.5" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" />
-        <path d="M4 19.5 L17 6.5" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" />
-        <path class="tool-icon-accent" d="M12.5 19.5 A 8.5 8.5 0 0 0 10.4 14.1" fill="none"
-          stroke-width="1.9" stroke-linecap="round" />
-      </svg>
+      {{ icon("lucide:angle", "tool-icon", 23) }}
     </button>
     <div id="angleOptions" class="tool-options" data-tool-panel="angle" data-tool-title="Angle">
       <div class="tool-option-section">
@@ -1295,22 +1233,11 @@
     <button id="toolDockHelp" class="tool-help-btn" type="button"
       aria-expanded="false" aria-controls="toolDockEmpty"
       title="What do these controls do?" aria-label="What do these controls do?">
-      <span aria-hidden="true">?</span>
+      {{ icon("lucide:circle-question-mark", "tool-icon", 21) }}
     </button>
 
     <button id="lineTool" class="tool" type="button" title="Line" aria-label="Line">
-      <svg class="tool-icon line-tool-icon" width="23" height="23" viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="2.7" y="5.9" width="18.6" height="6.3" rx="1.5" fill="none" stroke="currentColor"
-          stroke-width="1.85" stroke-linejoin="round" />
-        <path d="M7.3 5.9 V8.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-          opacity="0.68" />
-        <path d="M12 5.9 V9.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-          opacity="0.68" />
-        <path d="M16.7 5.9 V8.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-          opacity="0.68" />
-        <path class="tool-icon-accent line-draw-mark" d="M3.5 18.4 H20.5" fill="none" stroke-width="2.15"
-          stroke-linecap="round" />
-      </svg>
+      {{ icon("lucide:slash", "tool-icon line-tool-icon", 23) }}
     </button>
     <div id="lineOptions" class="tool-options" data-tool-panel="line" data-tool-title="Line">
       <div class="tool-option-section">
@@ -1426,25 +1353,11 @@
     <div class="bar-zone bar-mode">
       <button id="pptExportTool" class="tool ppt-export-tool" type="button" title="PPT export" aria-label="PPT export"
       hidden>
-      <svg class="ppt-export-mark" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M5 2.5h6.2L15 6.3v11.2H5z" fill="none" stroke="currentColor" stroke-width="1.6"
-      stroke-linejoin="round" />
-      <path d="M11 2.8v4h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-      <path d="M8 13.5h5.2M11.2 10.8l2.4 2.7-2.4 2.7" fill="none" stroke="currentColor" stroke-width="1.6"
-      stroke-linecap="round" stroke-linejoin="round" />
-      </svg>
+      {{ icon("lucide:presentation", "ppt-export-mark", 20) }}
       </button>
       <button id="notebookExportTool" class="tool notebook-export-tool" type="button" title="Save notebook PDF"
       aria-label="Save notebook PDF" hidden>
-      <svg class="notebook-export-mark" width="21" height="21" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M6 3.5h8.2L19 8.3v12.2H6z" fill="none" stroke="currentColor" stroke-width="1.8"
-      stroke-linejoin="round" />
-      <path d="M14 3.8v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-      <path d="M8.7 13h7M8.7 16h4.8" fill="none" stroke="currentColor" stroke-width="1.65"
-      stroke-linecap="round" />
-      <path d="M5 20.4h14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-      opacity="0.58" />
-      </svg>
+      {{ icon("lucide:file-down", "notebook-export-mark", 21) }}
       </button>
     </div>
 
@@ -1463,13 +1376,7 @@
            18px before believing it. -->
       <button id="shapeAssistBtn" class="tool active" type="button" title="Shape assist: on"
         aria-label="Shape assist" aria-pressed="true">
-        <svg class="tool-icon" width="21" height="21" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 4.6 19 18.4H5Z" fill="none" stroke="currentColor" stroke-width="1.85"
-            stroke-linejoin="round" />
-          <circle class="tool-icon-accent" cx="12" cy="4.6" r="1.9" fill="none" stroke-width="1.7" />
-          <circle class="tool-icon-accent" cx="19" cy="18.4" r="1.9" fill="none" stroke-width="1.7" />
-          <circle class="tool-icon-accent" cx="5" cy="18.4" r="1.9" fill="none" stroke-width="1.7" />
-        </svg>
+        {{ icon("lucide:wand-sparkles", "tool-icon", 21) }}
       </button>
       <!-- Clear canvas is back beside history by request, after a spell in the
            File ribbon. The divider and the destructive colour are what keep it
@@ -1489,10 +1396,7 @@
         <button id="zoomIn" class="tool" type="button" title="Zoom in" aria-label="Zoom in"><i class="fas fa-search-plus"></i></button>
         <button id="panMode" class="tool" type="button" title="Pan" aria-label="Pan"><i class="fas fa-arrows-alt"></i></button>
         <button id="fitView" class="tool" type="button" title="Fit to page" aria-label="Fit to page">
-          <svg class="tool-icon" width="21" height="21" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15"
-              fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
+          {{ icon("lucide:scan", "tool-icon", 21) }}
         </button>
       </div>
 
@@ -1504,17 +1408,10 @@
              pattern used to be a button of its own in the View group. The id
              stays themeToggle so existing references keep working. -->
         <button id="themeToggle" class="tool" type="button" title="Canvas" aria-label="Canvas theme and pattern">
-          <svg class="tool-icon" width="21" height="21" viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="3.5" y="4.5" width="17" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.8" />
-            <circle cx="8" cy="9" r="1.1" fill="currentColor" /><circle cx="12" cy="9" r="1.1" fill="currentColor" /><circle cx="16" cy="9" r="1.1" fill="currentColor" />
-            <path d="M7 15.6c2-2.6 4-2.6 5.5-.6s3.2 2 4.5-.9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-          </svg>
+          {{ icon("lucide:palette", "tool-icon", 21) }}
         </button>
         <button id="ytToggleBtn" class="tool" type="button" title="YouTube" aria-label="YouTube" hidden>
-        <svg class="tool-icon yt-tool-icon" width="23" height="23" viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="2" y="4.5" width="20" height="15" rx="4" fill="none" stroke="currentColor" stroke-width="1.8" />
-        <path d="M10 8.5V15.5L16 12Z" fill="currentColor" />
-        </svg>
+        {{ icon("lucide:tv-minimal-play", "tool-icon yt-tool-icon", 23) }}
         </button>
         <button id="pomodoroBtn" class="tool" type="button" title="Pomodoro timer" aria-label="Pomodoro timer" hidden><i class="fas fa-clock"></i></button>
       </div>
@@ -1541,42 +1438,24 @@
   <div id="ytPlayer" class="yt-player" hidden>
     <div class="yt-player-header">
       <div class="yt-drag-handle" id="ytDragHandle">
-        <svg width="14" height="10" viewBox="0 0 14 10" class="yt-drag-dots" aria-hidden="true">
-          <circle cx="3" cy="2" r="1.2" fill="currentColor" />
-          <circle cx="7" cy="2" r="1.2" fill="currentColor" />
-          <circle cx="11" cy="2" r="1.2" fill="currentColor" />
-          <circle cx="3" cy="7" r="1.2" fill="currentColor" />
-          <circle cx="7" cy="7" r="1.2" fill="currentColor" />
-          <circle cx="11" cy="7" r="1.2" fill="currentColor" />
-        </svg>
+        {{ icon("lucide:grip-vertical", "yt-drag-dots", 14) }}
         <span class="yt-player-title">YouTube</span>
       </div>
       <div class="yt-player-controls">
         <button class="yt-ctrl-btn yt-save-frame" id="ytSaveFrame" title="Save frame to canvas locally" type="button"
           aria-label="Save current YouTube frame to canvas" disabled>
-          <svg class="yt-control-icon yt-capture-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M5 8h3l1.5-2h5L16 8h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z" />
-            <circle cx="12" cy="13" r="3.5" />
-          </svg>
+          {{ icon("lucide:camera", "yt-control-icon yt-capture-icon") }}
           <span class="yt-control-spinner" aria-hidden="true"></span>
         </button>
         <button class="yt-ctrl-btn" id="ytBackBtn" title="Back to Search" type="button" style="display: none;">
-          <svg class="yt-control-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M20 12H4M10 6l-6 6 6 6" />
-          </svg>
+          {{ icon("lucide:arrow-left", "yt-control-icon") }}
         </button>
         <button class="yt-ctrl-btn" id="ytMinimize" title="Minimize" type="button">
-          <svg class="yt-control-icon yt-minimize-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M5 12h14" />
-          </svg>
-          <svg class="yt-control-icon yt-restore-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />
-          </svg>
+          {{ icon("lucide:minimize-2", "yt-control-icon yt-minimize-icon") }}
+          {{ icon("lucide:maximize-2", "yt-control-icon yt-restore-icon") }}
         </button>
         <button class="yt-ctrl-btn" id="ytClose" title="Close" type="button">
-          <svg class="yt-control-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 6l12 12M18 6 6 18" />
-          </svg>
+          {{ icon("lucide:x", "yt-control-icon") }}
         </button>
       </div>
     </div>
@@ -1584,18 +1463,12 @@
       <input type="text" id="ytSearchInput" placeholder="Paste a YouTube URL or Search..." autocomplete="off"
         spellcheck="false" />
       <button id="ytSearchBtn" class="yt-search-submit" type="button" title="Play">
-        <svg class="yt-search-play-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M8 5l11 7-11 7Z" />
-        </svg>
+        {{ icon("lucide:play", "yt-search-play-icon") }}
       </button>
     </div>
     <div class="yt-video-container" id="ytVideoContainer">
       <div class="yt-placeholder" id="ytPlaceholder">
-        <svg class="yt-placeholder-icon" width="56" height="56" viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="2" y="4.5" width="20" height="15" rx="4" fill="none" stroke="currentColor" stroke-width="1"
-            opacity="0.3" />
-          <path d="M10 8.5V15.5L16 12Z" fill="currentColor" opacity="0.25" />
-        </svg>
+        {{ icon("lucide:tv-minimal-play", "yt-placeholder-icon", 56) }}
         <p>Paste a link or search YouTube to start watching</p>
         <span class="yt-placeholder-hint">Supports video URLs, IDs, or search queries</span>
       </div>

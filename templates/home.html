@@ -64,12 +64,12 @@
 
         <p class="system-label feature-grid-label">What it does</p>
         <div class="feature-grid">
-          <a class="feature" href="{{ url_for('features') }}#geometry"><b>&rarr;</b> Live geometry constructions</a>
-          <a class="feature" href="{{ url_for('features') }}#geometry"><b>&rarr;</b> Algebra tiles</a>
-          <a class="feature" href="{{ url_for('features') }}#material"><b>&rarr;</b> Write on your PDFs and slides</a>
-          <a class="feature" href="{{ url_for('features') }}#material"><b>&rarr;</b> Clean vector export</a>
-          <a class="feature" href="{{ url_for('features') }}#focus"><b>&rarr;</b> Notebook mode and library</a>
-          <a class="feature" href="{{ url_for('features') }}#focus"><b>&rarr;</b> Works offline, on a cheap tablet</a>
+          <a class="feature" href="{{ url_for('features') }}#geometry">{{ icon("remix:arrow-right-line", "feature-arrow") }} Live geometry constructions</a>
+          <a class="feature" href="{{ url_for('features') }}#geometry">{{ icon("remix:arrow-right-line", "feature-arrow") }} Algebra tiles</a>
+          <a class="feature" href="{{ url_for('features') }}#material">{{ icon("remix:arrow-right-line", "feature-arrow") }} Write on your PDFs and slides</a>
+          <a class="feature" href="{{ url_for('features') }}#material">{{ icon("remix:arrow-right-line", "feature-arrow") }} Clean vector export</a>
+          <a class="feature" href="{{ url_for('features') }}#focus">{{ icon("remix:arrow-right-line", "feature-arrow") }} Notebook mode and library</a>
+          <a class="feature" href="{{ url_for('features') }}#focus">{{ icon("remix:arrow-right-line", "feature-arrow") }} Works offline, on a cheap tablet</a>
         </div>
 
       </section>
@@ -81,12 +81,12 @@
           <div class="canvas-grid" aria-hidden="true"></div>
 
           <div class="toolbar" role="group" aria-label="Preview tools">
-            <button class="tool selected" data-tool="select" type="button" title="Select" aria-pressed="true">&#8598;</button>
-            <button class="tool" data-tool="pen" type="button" title="Pen" aria-pressed="false">&#9998;</button>
-            <button class="tool" data-tool="circle" type="button" title="Circle" aria-pressed="false">&#9675;</button>
-            <button class="tool" data-tool="line" type="button" title="Line" aria-pressed="false">&#9585;</button>
-            <button class="tool" data-tool="triangle" type="button" title="Triangle" aria-pressed="false">&#9651;</button>
-            <button class="tool" data-tool="rectangle" type="button" title="Rectangle" aria-pressed="false">&#9633;</button>
+            <button class="tool selected" data-tool="select" type="button" title="Select" aria-pressed="true">{{ icon("remix:cursor-line") }}</button>
+            <button class="tool" data-tool="pen" type="button" title="Pen" aria-pressed="false">{{ icon("remix:pencil-line") }}</button>
+            <button class="tool" data-tool="circle" type="button" title="Circle" aria-pressed="false">{{ icon("remix:checkbox-blank-circle-line") }}</button>
+            <button class="tool" data-tool="line" type="button" title="Line" aria-pressed="false">{{ icon("remix:subtract-line", "icon-diagonal") }}</button>
+            <button class="tool" data-tool="triangle" type="button" title="Triangle" aria-pressed="false">{{ icon("remix:triangle-line") }}</button>
+            <button class="tool" data-tool="rectangle" type="button" title="Rectangle" aria-pressed="false">{{ icon("remix:checkbox-blank-line") }}</button>
           </div>
 
           {# The drawing is the hero asset: it is the one thing on the page
@@ -119,9 +119,9 @@
           </div>
 
           <div class="zoom">
-            <button type="button" id="zoomOut" aria-label="Zoom out">&minus;</button>
+            <button type="button" id="zoomOut" aria-label="Zoom out">{{ icon("remix:subtract-line") }}</button>
             <span id="zoomValue" aria-live="polite">100%</span>
-            <button type="button" id="zoomIn" aria-label="Zoom in">+</button>
+            <button type="button" id="zoomIn" aria-label="Zoom in">{{ icon("remix:add-line") }}</button>
           </div>
 
         </div>

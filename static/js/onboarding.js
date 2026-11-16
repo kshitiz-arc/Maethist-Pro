@@ -12,45 +12,47 @@
     bootObserver: null,
   };
 
-  const svg = (content, viewBox = "0 0 24 24") =>
-    `<svg viewBox="${viewBox}" aria-hidden="true">${content}</svg>`;
+
+  // Phosphor, from the vendored registry (static/js/icon-set.js). The tour
+  // is a Phosphor surface; see static/js/icons.js.
+  const phosphor = (name) => window.Inkyscib?.Icon?.svg?.("phosphor:" + name) || "";
 
   const icons = {
-    pen: svg('<path d="m4 20 4.2-1 10-10a2.4 2.4 0 0 0-3.4-3.4l-10 10L4 20Z"/><path d="m13.5 7 3.5 3.5"/>'),
-    select: svg('<path d="M5 3 18 14l-5.5 1.2 3 5.8-2.8 1.2-3-5.7-4 3.8Z"/>'),
-    eraser: svg('<path d="m5 15 8-8a2.5 2.5 0 0 1 3.5 0l2 2a2.5 2.5 0 0 1 0 3.5L13 18H8Z"/><path d="m11 9 5 5"/><path d="M13 18h7"/>'),
-    highlight: svg('<path d="m5 15 9-9 4 4-9 9-5 1Z"/><path d="m12 8 4 4"/><path d="M3 22h17"/>'),
-    shape: svg('<circle cx="8" cy="9" r="4"/><rect x="12" y="12" width="8" height="8" rx="1"/>'),
-    line: svg('<path d="M4 18 19 5"/><path d="m14 5 5 0 0 5"/>'),
-    local: svg('<path d="M7 8V6a5 5 0 0 1 10 0v2"/><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 12v4"/>'),
-    move: svg('<path d="M12 3v18M3 12h18"/><path d="m12 3-3 3m3-3 3 3m-3 15-3-3m3 3 3-3M3 12l3-3m-3 3 3 3m15-3-3-3m3 3-3 3"/>'),
-    zoom: svg('<circle cx="10" cy="10" r="6"/><path d="m15 15 5 5M10 7v6M7 10h6"/>'),
-    pressure: svg('<path d="M5 18c4-8 7 4 14-10"/><path d="M5 21h14"/>'),
-    palette: svg('<path d="M12 3a9 9 0 1 0 0 18h1.2a2 2 0 0 0 0-4H12a2 2 0 0 1 0-4h3a6 6 0 0 0-3-10Z"/><circle cx="7.5" cy="9" r=".8"/><circle cx="10" cy="6.5" r=".8"/><circle cx="15" cy="7" r=".8"/>'),
-    slider: svg('<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2"/><circle cx="15" cy="17" r="2"/>'),
-    styles: svg('<path d="M4 6h16M4 12h10M4 18h16"/><path d="M16 12h1m2 0h1"/>'),
-    notebook: svg('<path d="M6 4h12v16H6z"/><path d="M9 4v16M3.5 7H7m-3.5 5H7m-3.5 5H7"/>'),
-    pattern: svg('<circle cx="6" cy="6" r="1"/><circle cx="12" cy="6" r="1"/><circle cx="18" cy="6" r="1"/><circle cx="6" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="18" cy="12" r="1"/><circle cx="6" cy="18" r="1"/><circle cx="12" cy="18" r="1"/><circle cx="18" cy="18" r="1"/>'),
-    backup: svg('<path d="M5 4h11l3 3v13H5z"/><path d="M8 4v6h7V4M8 16h8"/>'),
-    pages: svg('<path d="M7 3h10v14H7z"/><path d="M4 7v14h10"/>'),
-    pdf: svg('<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h4M8.5 15h7M8.5 18h5"/>'),
-    slides: svg('<rect x="3" y="5" width="18" height="13" rx="2"/><path d="M7 9h5M7 12h9M7 15h7"/>'),
-    export: svg('<path d="M12 16V4M8 8l4-4 4 4"/><path d="M5 13v7h14v-7"/>'),
-    video: svg('<rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9 5 3-5 3Z"/>'),
-    timer: svg('<circle cx="12" cy="13" r="8"/><path d="M12 13V8m-3-5h6"/>'),
-    capture: svg('<path d="M5 8h3l1.5-2h5L16 8h3v11H5z"/><circle cx="12" cy="13" r="3"/>'),
-    camera: svg('<path d="M5 8h3l1.5-2h5L16 8h3a2 2 0 0 1 2 2v8H3v-8a2 2 0 0 1 2-2Z"/><circle cx="12" cy="13" r="3"/>'),
-    location: svg('<path d="M4 7h16M4 17h16"/><path d="m8 4-3 3 3 3m8 4 3 3-3 3"/>'),
-    theme: svg('<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16Z"/>'),
-    history: svg('<path d="M7 7H3v4"/><path d="M3.5 11A8 8 0 1 1 6 18"/><path d="M12 8v5l3 2"/>'),
-    keyboard: svg('<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M6 10h1m3 0h1m3 0h1m3 0h1M7 14h10"/>'),
-    calendar: svg('<rect x="3.5" y="5.5" width="17" height="15" rx="3"/><path d="M7.5 3.5v4m9-4v4m-13 2h17"/><path d="m8 15 2 2 5-5"/>'),
-    bell: svg('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 20h4"/>'),
-    repeat: svg('<path d="m17 2 4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="m7 22-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>'),
-    progress: svg('<path d="M4 18V8m5 10V4m5 14v-6m5 6V7"/><path d="M2 21h20"/>'),
-    tile: svg('<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="16" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/>'),
-    compass: svg('<circle cx="12" cy="5" r="1.3" fill="currentColor" stroke="none"/><path d="M10.8 6.3 5.8 19"/><path d="M13.2 6.3 18.2 19"/><path d="M8.3 15.5h2.4"/>'),
-    angle: svg('<path d="M4 20h16"/><path d="M4 20 16 6"/><path d="M8 20a8 8 0 0 1 3-6.2"/>'),
+    pen: phosphor("pencil-simple"),
+    select: phosphor("cursor"),
+    eraser: phosphor("eraser"),
+    highlight: phosphor("highlighter-circle"),
+    shape: phosphor("shapes"),
+    line: phosphor("line-segment"),
+    local: phosphor("lock-simple"),
+    move: phosphor("arrows-out-cardinal"),
+    zoom: phosphor("magnifying-glass-plus"),
+    pressure: phosphor("pen-nib"),
+    palette: phosphor("palette"),
+    slider: phosphor("sliders-horizontal"),
+    styles: phosphor("list-dashes"),
+    notebook: phosphor("notebook"),
+    pattern: phosphor("dots-nine"),
+    backup: phosphor("floppy-disk"),
+    pages: phosphor("files"),
+    pdf: phosphor("file-pdf"),
+    slides: phosphor("presentation"),
+    export: phosphor("export"),
+    video: phosphor("play-circle"),
+    timer: phosphor("timer"),
+    capture: phosphor("camera"),
+    camera: phosphor("webcam"),
+    location: phosphor("arrows-down-up"),
+    theme: phosphor("circle-half"),
+    history: phosphor("clock-counter-clockwise"),
+    keyboard: phosphor("keyboard"),
+    calendar: phosphor("calendar-check"),
+    bell: phosphor("bell"),
+    repeat: phosphor("repeat"),
+    progress: phosphor("chart-bar"),
+    tile: phosphor("squares-four"),
+    compass: phosphor("compass-tool"),
+    angle: phosphor("triangle")
   };
 
   const featurePills = (items) => items.map(([name, label]) => `
@@ -343,6 +345,7 @@
 
     tour = document.createElement("div");
     tour.id = "featureTour";
+    tour.dataset.iconSet = "phosphor";
     tour.className = "feature-tour";
     tour.setAttribute("aria-hidden", "true");
     tour.innerHTML = `
@@ -350,8 +353,7 @@
       <section class="feature-tour-card" role="dialog" aria-modal="true" aria-labelledby="featureTourTitle" aria-describedby="featureTourCopy">
         <div class="feature-tour-card-top">
           <div class="feature-tour-brand"><span class="feature-tour-brand-mark">I</span><span>Feature map</span></div>
-          <button class="feature-tour-close" type="button" aria-label="Close feature tour">
-            <svg viewBox="0 0 24 24" fill="none"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          <button class="feature-tour-close" type="button" aria-label="Close feature tour">${phosphor("x")}
           </button>
         </div>
         <div class="feature-tour-card-body">

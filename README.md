@@ -142,6 +142,12 @@ Ashutosh). Inkyscib has no build step, so nothing is installed — the technique
 are rewritten in plain CSS against this project's own tokens. See
 `static/css/vengeance.css`.
 
+Icons are [Lucide](https://github.com/lucide-icons/lucide) (ISC),
+[Phosphor](https://github.com/phosphor-icons/core) (MIT) and
+[Remix Icon](https://github.com/Remix-Design/RemixIcon) (Remix Icon License
+v1.0), vendored at pinned releases. Their licences are in
+`static/icons/LICENSES.md`; they are not covered by Inkyscib's MIT licence.
+
 ## License
 
 [MIT](LICENSE) © 2025 Salaj — free to use, learn from, and build on.

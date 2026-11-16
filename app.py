@@ -34,6 +34,7 @@ from flask import (
     send_file,
     url_for,
 )
+from markupsafe import Markup, escape
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.utils import secure_filename
 
@@ -193,7 +194,7 @@ def add_static_version(endpoint, values):
     if token:
         values["v"] = token
 
-APP_VERSION = "2.0.1"
+APP_VERSION = "2.0.2"
 
 # Render sets RENDER=true on every service; INKYSCIB_ENV=production is the
 # switch for any other host. A random fallback is fine on a laptop, but under
@@ -1427,7 +1428,12 @@ def healthz():
 # InkLab is a separate prototype with its own isolation headers and is left
 # out; so is the planner's notification worker, which registers itself.
 OFFLINE_PAGES = ("/", "/write", "/features", "/about")
-_OFFLINE_SKIP_PREFIXES = ("js/inklab/", "js/planner-sw.js", "img/")
+# The per-icon SVG files are only read by the server (icon() inlines them);
+# the browser gets the same icons through js/icon-set.js.
+_OFFLINE_SKIP_PREFIXES = (
+    "js/inklab/", "js/planner-sw.js", "img/",
+    "icons/lucide/", "icons/phosphor/", "icons/remix/",
+)
 _OFFLINE_SUFFIXES = (
     ".css", ".js", ".woff2", ".png", ".ico", ".svg", ".webmanifest", ".webp",
 )
@@ -1457,6 +1463,44 @@ def offline_asset_urls():
 OFFLINE_SHELL_ENABLED = os.environ.get("OFFLINE_SHELL", "on").strip().lower() not in (
     "0", "off", "false", "no"
 )
+
+
+# Icons vendored by tools/vendor_icons.py (Lucide, Phosphor, Remix Icon; see
+# static/icons/LICENSES.md). icon("lucide:trash") inlines the SVG, so it is in
+# the HTML on first paint, needs no script, and matches what
+# window.Inkyscib.Icon.svg() builds in the browser, attribute for attribute.
+_ICON_SETS = {
+    "lucide": ("0 0 24 24", 'fill="none" stroke="currentColor" stroke-width="2" '
+               'stroke-linecap="round" stroke-linejoin="round"'),
+    "phosphor": ("0 0 256 256", 'fill="currentColor"'),
+    "remix": ("0 0 24 24", 'fill="currentColor"'),
+}
+_ICON_CACHE = {}
+_ICON_INNER = re.compile(r"<svg[^>]*>(.*)</svg>", re.S)
+
+
+def icon(ref, class_name="", size=None):
+    family, _, name = ref.partition(":")
+    if family not in _ICON_SETS or not re.fullmatch(r"[a-z0-9-]+", name):
+        raise ValueError(f"unknown icon {ref!r}")
+    inner = _ICON_CACHE.get(ref)
+    if inner is None:
+        path = Path(app.static_folder) / "icons" / family / f"{name}.svg"
+        if not path.is_file():
+            # Loud on purpose: a missing icon is a blank button in production.
+            raise ValueError(f"icon {ref!r} is not vendored; add it to tools/vendor_icons.py")
+        inner = _ICON_INNER.search(path.read_text(encoding="utf-8")).group(1)
+        _ICON_CACHE[ref] = inner
+    view_box, paint = _ICON_SETS[family]
+    classes = " ".join(part for part in ("icon", f"icon-{family}", f"icon-{name}", class_name) if part)
+    dims = f' width="{int(size)}" height="{int(size)}"' if size else ""
+    return Markup(
+        f'<svg class="{escape(classes)}" viewBox="{view_box}"{dims} {paint} '
+        f'aria-hidden="true" focusable="false">{inner}</svg>'
+    )
+
+
+app.jinja_env.globals["icon"] = icon
 
 
 @app.context_processor

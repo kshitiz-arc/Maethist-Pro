@@ -28,13 +28,12 @@
     const next = theme === "light" ? "light" : "dark";
     root.dataset.theme = next;
     if (themeButton) {
-      themeButton.textContent = next === "light" ? "◑" : "◐";
       themeButton.setAttribute(
         "aria-label",
         next === "light" ? "Switch to dark interface" : "Switch to light interface"
       );
     }
-    if (themeColor) themeColor.content = next === "light" ? "#F7F7F5" : "#141413";
+    if (themeColor) themeColor.content = next === "light" ? "#F3F7FB" : "#0E2238";
     try {
       localStorage.setItem("theme", next);
     } catch (error) {
@@ -53,7 +52,6 @@
 
   if (themeButton) {
     const current = resolvedTheme();
-    themeButton.textContent = current === "light" ? "◑" : "◐";
     themeButton.setAttribute(
       "aria-label",
       current === "light" ? "Switch to dark interface" : "Switch to light interface"

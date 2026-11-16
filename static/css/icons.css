@@ -30,3 +30,46 @@
     animation-duration: 2.5s;
   }
 }
+
+/* ---------- vendored icons (static/js/icons.js, the icon() Jinja global) ----------
+   Each family keeps its own paint whatever the surrounding stylesheet says.
+   Older rules style "the svg inside this button" with a stroke, written for
+   the hand-drawn icons; on a filled Phosphor or Remix glyph that stroke turns
+   the shape into a blob, and a fill on Lucide's open paths turns them solid. */
+svg.icon { flex: none; overflow: visible; }
+
+svg.icon-lucide,
+svg.icon-lucide * {
+  fill: none !important;
+  stroke: currentColor !important;
+}
+
+svg.icon-phosphor,
+svg.icon-phosphor *,
+svg.icon-remix,
+svg.icon-remix * {
+  fill: currentColor !important;
+  stroke: none !important;
+}
+
+/* Lucide is drawn on a 24px grid at 2px; on the 21-23px tool buttons that
+   reads heavier than the old hand-drawn set, so the chrome thins it a touch. */
+.tool svg.icon-lucide,
+.tool-help-btn svg.icon-lucide,
+.file-ribbon svg.icon-lucide,
+.file-backstage svg.icon-lucide {
+  stroke-width: 1.85;
+}
+
+.tool svg.icon.tool-icon,
+.tool-help-btn svg.icon.tool-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.local-fa > svg.icon { width: 1em; height: 1em; }
+
+
+/* The help button drew its own dashed ring around a "?" glyph. Lucide's
+   circle-question-mark already is a ring, so the outer one doubled it. */
+.tool-help-btn:has(> svg.icon) { border-color: transparent; }
