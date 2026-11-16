@@ -32,14 +32,14 @@ class ReleaseTests(unittest.TestCase):
     def setUpClass(cls):
         cls.client = app.test_client()
 
-    def test_the_version_is_two_and_agrees_with_the_version_file(self):
-        self.assertEqual(app_module.APP_VERSION, "2.0.0")
+    def test_the_version_agrees_with_the_version_file(self):
+        self.assertEqual(app_module.APP_VERSION, "2.0.1")
         self.assertEqual((ROOT / "VERSION").read_text().strip(), app_module.APP_VERSION)
 
     def test_the_health_check_answers_and_is_never_cached(self):
         response = self.client.get("/healthz")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json(), {"status": "ok", "version": "2.0.0"})
+        self.assertEqual(response.get_json(), {"status": "ok", "version": "2.0.1"})
         self.assertEqual(response.headers["Cache-Control"], "no-store")
 
     def test_production_refuses_to_start_without_a_secret_key(self):
@@ -114,7 +114,7 @@ class OfflineShellTests(unittest.TestCase):
 
     def test_the_cache_name_changes_when_an_asset_does(self):
         name = re.search(r'const CACHE = "([^"]+)"', self.source).group(1)
-        self.assertTrue(name.startswith("inkyscib-shell-2.0.0-"))
+        self.assertTrue(name.startswith("inkyscib-shell-2.0.1-"))
         with unittest.mock.patch.object(
             app_module, "offline_asset_urls", return_value=["/static/x.js?v=00000000"]
         ):
@@ -268,6 +268,235 @@ class BrowserTests(unittest.TestCase):
         )
         self.assertGreaterEqual(box[0], 0)
         self.assertLessEqual(box[1], box[2])
+
+
+
+class ImportGuardTests(unittest.TestCase):
+    """2.0.1: the conversion endpoints refuse oversized uploads before reading
+    them, and run at most IMPORT_CONCURRENCY conversions at once."""
+
+    def setUp(self):
+        self.client = app.test_client()
+
+    def test_an_oversized_upload_is_refused_with_a_readable_message(self):
+        for route in ("/api/pdf/import", "/api/ppt/import"):
+            with self.subTest(route=route):
+                body = b"x" * (app_module.MAX_IMPORT_UPLOAD_BYTES + 1)
+                response = self.client.post(
+                    route, data=body, headers={"Content-Type": "multipart/form-data; boundary=x"}
+                )
+                self.assertEqual(response.status_code, 413)
+                self.assertIn("too large", response.get_json()["error"])
+
+    def test_a_full_server_answers_busy_instead_of_queueing_forever(self):
+        slots = app_module._IMPORT_SLOTS
+        taken = 0
+        try:
+            while slots.acquire(blocking=False):
+                taken += 1
+            with unittest.mock.patch.object(app_module, "IMPORT_WAIT_SECONDS", 0.05):
+                response = self.client.post("/api/pdf/import", data={})
+        finally:
+            for _ in range(taken):
+                slots.release()
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.headers["Retry-After"], "10")
+        self.assertIn("busy", response.get_json()["error"])
+
+    def test_a_normal_request_still_reaches_the_endpoint(self):
+        response = self.client.post("/api/pdf/import", data={})
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Choose a PDF", response.get_json()["error"])
+
+
+class OfflineSwitchTests(unittest.TestCase):
+    """OFFLINE_SHELL=off is the remote undo for a broken service worker."""
+
+    def setUp(self):
+        self.client = app.test_client()
+
+    def test_pages_say_whether_the_shell_is_on(self):
+        for path in ("/", "/write"):
+            with self.subTest(path=path):
+                html = self.client.get(path).get_data(as_text=True)
+                self.assertIn('<meta name="inkyscib-offline-shell" content="on"', html)
+        with unittest.mock.patch.object(app_module, "OFFLINE_SHELL_ENABLED", False):
+            html = self.client.get("/write").get_data(as_text=True)
+        self.assertIn('<meta name="inkyscib-offline-shell" content="off"', html)
+
+    def test_switched_off_the_worker_removes_itself_and_its_cache(self):
+        with unittest.mock.patch.object(app_module, "OFFLINE_SHELL_ENABLED", False):
+            response = self.client.get("/sw.js")
+        source = response.get_data(as_text=True)
+        self.assertEqual(response.headers["Cache-Control"], "no-cache")
+        self.assertIn("self.registration.unregister()", source)
+        self.assertIn('startsWith("inkyscib-shell-")', source)
+        self.assertNotIn("ASSETS", source)
+
+    def test_a_sleeping_host_does_not_leave_a_blank_tab(self):
+        source = self.client.get("/sw.js").get_data(as_text=True)
+        self.assertIn("NETWORK_GRACE_MS", source)
+        self.assertIn("Promise.race([fromNetwork, slow])", source)
+
+
+@unittest.skipUnless(PLAYWRIGHT_AVAILABLE, "Playwright is not installed")
+class DataSafetyBrowserTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.server = make_browser_server(app)
+        cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
+        cls.thread.start()
+        cls.base_url = f"http://127.0.0.1:{cls.server.server_port}"
+        cls.playwright = sync_playwright().start()
+        cls.browser = cls.playwright.chromium.launch(headless=True)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.browser.close()
+        cls.playwright.stop()
+        cls.server.shutdown()
+        cls.thread.join(timeout=3)
+
+    def editor(self, extra_script=""):
+        context = self.browser.new_context(viewport={"width": 960, "height": 600}, accept_downloads=True)
+        self.addCleanup(context.close)
+        context.add_init_script(TOUR_DONE + ";" + extra_script)
+        page = context.new_page()
+        page.goto(self.base_url + "/write", wait_until="load")
+        page.wait_for_function("() => window.appState?.storageReady === true")
+        return page
+
+    DRAW = """() => {
+      const c = document.querySelector('#drawingCanvas'); const r = c.getBoundingClientRect();
+      const ev = (t, x, y) => c.dispatchEvent(new PointerEvent(t, {bubbles: true, cancelable: true,
+        pointerId: 5, pointerType: 'pen', isPrimary: true, clientX: x, clientY: y, pressure: 0.5,
+        buttons: t === 'pointerup' ? 0 : 1}));
+      const x = r.left + r.width * 0.5, y = r.top + r.height * 0.6;
+      ev('pointerdown', x, y); for (let i = 1; i < 25; i++) ev('pointermove', x + i * 5, y + i * 2);
+      ev('pointerup', x + 125, y + 50);
+    }"""
+
+    def test_the_first_save_asks_the_browser_not_to_evict_the_notes(self):
+        page = self.editor("""
+          window.__persistCalls = 0;
+          if (navigator.storage) {
+            navigator.storage.persisted = () => Promise.resolve(false);
+            navigator.storage.persist = () => { window.__persistCalls += 1; return Promise.resolve(true); };
+          }
+        """)
+        page.evaluate("() => document.querySelector('#penTool').click()")
+        page.keyboard.press("Escape")
+        page.evaluate(self.DRAW)
+        page.evaluate("() => window.saveDrawing && window.saveDrawing({ force: true })")
+        page.wait_for_function("() => window.__persistCalls >= 1", timeout=10000)
+        page.evaluate("() => window.saveDrawing && window.saveDrawing({ force: true })")
+        page.wait_for_timeout(300)
+        self.assertEqual(page.evaluate("() => window.__persistCalls"), 1, "asked more than once")
+
+    def test_the_backup_reminder_is_due_only_when_work_has_gone_unbacked(self):
+        page = self.editor()
+        day = 24 * 60 * 60 * 1000
+        result = page.evaluate(
+            """(day) => {
+              const set = (k, v) => v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v);
+              const iso = (ms) => new Date(ms).toISOString();
+              const now = Date.now(), due = (n) => window.Inkyscib.BackupReminder.due(n);
+              const out = {};
+              ['inkyscib-first-work-at','inkyscib-last-work-at','inkyscib-last-backup','inkyscib-backup-snooze-until']
+                .forEach((k) => set(k, null));
+              out.noWork = due(now);
+              set('inkyscib-first-work-at', iso(now - 1 * day));
+              out.oneDayNoBackup = due(now);
+              set('inkyscib-first-work-at', iso(now - 3 * day));
+              out.threeDaysNoBackup = due(now);
+              set('inkyscib-backup-snooze-until', iso(now + day));
+              out.snoozed = due(now);
+              set('inkyscib-backup-snooze-until', null);
+              set('inkyscib-last-backup', iso(now - 2 * day));
+              set('inkyscib-last-work-at', iso(now - 1 * day));
+              out.recentBackup = due(now);
+              set('inkyscib-last-backup', iso(now - 9 * day));
+              out.staleBackup = due(now);
+              set('inkyscib-last-work-at', iso(now - 10 * day));
+              out.staleButNoNewWork = due(now);
+              return out;
+            }""",
+            day,
+        )
+        self.assertIsNone(result["noWork"])
+        self.assertIsNone(result["oneDayNoBackup"])
+        self.assertEqual(result["threeDaysNoBackup"], {"never": True})
+        self.assertIsNone(result["snoozed"])
+        self.assertIsNone(result["recentBackup"])
+        self.assertEqual(result["staleBackup"], {"never": False, "days": 9})
+        self.assertIsNone(result["staleButNoNewWork"])
+
+    def test_the_reminder_sits_clear_of_the_chrome_and_its_button_backs_up(self):
+        page = self.editor()
+        page.evaluate(
+            """() => { localStorage.setItem('inkyscib-first-work-at', new Date(Date.now() - 5 * 864e5).toISOString());
+                       window.Inkyscib.BackupReminder.check(); }"""
+        )
+        page.wait_for_selector(".backup-reminder")
+        boxes = page.evaluate(
+            """() => { const r = (s) => document.querySelector(s).getBoundingClientRect();
+              const b = r('.backup-reminder'), t = r('.toolbar'), l = r('.editor-legal');
+              return { top: b.top, bottom: b.bottom, right: b.right, toolbarBottom: t.bottom,
+                       legalTop: l.top, legalLeft: l.left, w: innerWidth }; }"""
+        )
+        self.assertGreater(boxes["top"], boxes["toolbarBottom"])
+        self.assertLessEqual(boxes["bottom"], boxes["legalTop"] + 1)
+        self.assertLessEqual(boxes["right"], boxes["w"])
+        with page.expect_download() as download:
+            page.locator(".backup-reminder-go").click()
+        self.assertTrue(download.value.suggested_filename.endswith(".inky"))
+        page.wait_for_function("() => !document.querySelector('.backup-reminder')")
+        self.assertTrue(page.evaluate("() => !!localStorage.getItem('inkyscib-last-backup')"))
+
+    def test_a_backup_restores_every_stroke(self):
+        """The council's point: a backup nobody has restored is a hope. Draw,
+        export the whole library, wipe the browser, import, and compare."""
+        page = self.editor()
+        page.evaluate("() => document.querySelector('#penTool').click()")
+        page.keyboard.press("Escape")
+        page.evaluate(self.DRAW)
+        page.evaluate("() => window.saveDrawing({ force: true })")
+        before = page.evaluate("() => JSON.stringify(window.appState.paths.map((p) => p.points.length))")
+        self.assertNotEqual(before, "[]")
+
+        with page.expect_download() as download:
+            page.evaluate("() => window.Inkyscib.Library.exportBackup()")
+        backup_path = download.value.path()
+        backup = Path(backup_path).read_text(encoding="utf-8")
+        self.assertIn('"kind":"inkyscib-backup"', backup)
+
+        # A fresh browser, as after a reset tablet: nothing stored at all.
+        fresh = self.editor()
+        self.assertEqual(fresh.evaluate("() => window.appState.paths.length"), 0)
+        fresh.on("dialog", lambda dialog: dialog.accept())
+        ids_before = fresh.evaluate(
+            "async () => (await window.Inkyscib.Library.listDocuments()).documents.map((d) => d.id)"
+        )
+        fresh.evaluate(
+            """async (text) => {
+              const file = new File([text], 'restore.inky', { type: 'application/json' });
+              await window.Inkyscib.Library.importBackup(file);
+            }""",
+            backup,
+        )
+        docs = fresh.evaluate("async () => (await window.Inkyscib.Library.listDocuments()).documents.length")
+        self.assertGreaterEqual(docs, 2, "the restored notebook was not added to the library")
+        restored = fresh.evaluate(
+            """async (before) => {
+              const { documents } = await window.Inkyscib.Library.listDocuments();
+              const added = documents.filter((d) => !before.includes(d.id));
+              if (added.length !== 1) return 'added ' + added.length;
+              await window.Inkyscib.Library.openDocument(added[0].id);
+              return JSON.stringify(window.appState.paths.map((p) => p.points.length));
+            }""",
+            ids_before,
+        )
+        self.assertEqual(restored, before)
 
 
 if __name__ == "__main__":

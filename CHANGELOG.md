@@ -1,5 +1,38 @@
 # Changelog
 
+## 2.0.1 — 2026-11-15
+
+### Changed
+
+- **Video moments are captured at maximum resolution and quality.** The
+  server now picks the video's highest-resolution SDR stream up to 4K, in any
+  codec (VP9 and AV1 as well as H.264; YouTube serves nothing above 1080p as
+  H.264), and encodes JPEG at quality 95 with no chroma subsampling, so slide
+  text and thin coloured lines stay crisp. Measured: a 4K source gives
+  3840x2160 (3.7 MB) in 8.7 s for the first frame and 0.7 s for the next; a
+  1080p source gives 1920x1080 (0.8 MB). On by default again; the per-frame
+  storage ceiling rose from 2 MB to 12 MB to hold it.
+
+### Added
+
+- **Persistent storage.** After the first save, Inkyscib asks the browser not
+  to evict its storage under disk pressure (`navigator.storage.persist()`).
+- **Backup reminder.** After two days of work with no backup, or a week since
+  the last one, a small bar offers "Back up now". "Later" snoozes it two days.
+- **Remote off switch for the offline shell** (`OFFLINE_SHELL=off`), in case a
+  release ever ships a broken service worker.
+- **Cold-start fallback.** If the host is asleep, the offline shell serves the
+  cached page after 3.5 s instead of leaving a blank tab for a minute.
+
+### Fixed
+
+- **Import uploads are capped** at 50 MB on the server, with at most two
+  conversions at once; the rest get a clear "busy, try again" answer instead of
+  exhausting memory.
+- **A save too big for localStorage no longer leaves an old copy behind.**
+  IndexedDB was always the copy that loads; the stale mirror is now removed.
+
+
 ## 2.0.0 — 2026-11-15
 
 The first version meant to be launched publicly. The launch review, with every
@@ -32,8 +65,8 @@ measurement behind the claims below, is `docs/V2-REVIEW.md`.
 - **Footer credit** now reads "Created by @kshitizarc" and links to LinkedIn.
   The animated "TT" signature is gone.
 - **The lecture player opens in 180ms**, not 480ms.
-- **Saved video moments use YouTube's preview image.** The server no longer
-  downloads video streams unless `YOUTUBE_FULL_FRAMES=true`.
+- **Saved video moments used YouTube's preview image** in 2.0.0. Reverted in
+  2.0.1, which captures at up to 4K.
 
 ### Removed
 

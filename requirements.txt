@@ -7,3 +7,9 @@ Pillow==11.3.0
 PyMuPDF==1.28.2
 defusedxml==0.7.1
 pywin32==312; platform_system == "Windows"
+# Full-resolution (up to 4K) YouTube frames: yt-dlp resolves the stream, PyAV
+# seeks and decodes one frame. PyAV ships its own FFmpeg with H.264, VP9 and
+# AV1 decoders, so no system ffmpeg is needed. yt-dlp tracks YouTube's changes
+# closely: when frame capture starts failing, upgrading it is the first fix.
+yt-dlp==2026.8.19
+av==16.1.0

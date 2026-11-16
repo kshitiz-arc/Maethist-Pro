@@ -24,10 +24,14 @@ changes too. `templates/legal/*` describes the code as it runs; start at
 
 `VERSION` and `APP_VERSION` in `app.py` must agree. `render.yaml` deploys to
 Render with `gunicorn wsgi:app --config gunicorn.conf.py`; production refuses
-to start without `SECRET_KEY`. Full-resolution YouTube frames are off unless
-`YOUTUBE_FULL_FRAMES=true`, and should stay off on a public host. The offline
+to start without `SECRET_KEY`. YouTube frames are cut at the source's own
+resolution up to `YOUTUBE_FRAME_MAX_HEIGHT` (2160), JPEG 95 at 4:4:4; the
+browser-side ceiling is 12 MB per frame in `storage.js` and `youtube.js`, and
+`app.py`'s `YOUTUBE_FRAME_MAX_DATA_URL` must stay under it.
+`YOUTUBE_FULL_FRAMES=false` falls back to storyboard previews. The offline
 shell is `/sw.js` (`templates/sw.js`): it precaches every file under `static/`
 that the pages load, so a new asset type needs adding to `_OFFLINE_SUFFIXES`.
+`OFFLINE_SHELL=off` is its remote off switch (`templates/sw-off.js`).
 `docs/V2-REVIEW.md` is the launch review, with the measurements.
 
 ## Design System

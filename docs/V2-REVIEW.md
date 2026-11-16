@@ -20,7 +20,7 @@ that is what version 2 fixes.
 | 4 | No way to deploy: no host config, unpinned dependencies, a secret key that silently fell back to a random value, no version number. | **Fixed.** `render.yaml`, `gunicorn.conf.py`, pinned requirements, `/healthz`, `VERSION`, fail-fast secret. |
 | 5 | The repository carried about 35 MB of unrelated material (form redesign folders, a `.docx`, QA dumps, a 3 MB log). | **Fixed without deleting anything.** They are ignored by git. The files are still on disk. |
 | 6 | Four dialogs wore four palettes: the tour was indigo, the File sheet teal, the Planner purple, My Notebooks lavender. | **Fixed.** All read the Blueprint tokens. |
-| 7 | The server downloaded YouTube streams for anonymous visitors: a terms-of-service risk and the most expensive thing a stranger could trigger. | **Fixed.** Off by default; saved moments use YouTube's preview image. |
+| 7 | The server downloaded YouTube streams for anonymous visitors: a terms-of-service risk and the most expensive thing a stranger could trigger. | **Reversed in 2.0.1 at the owner's request:** capture is on by default at up to 4K, with a concurrency ceiling and an off switch; saved moments use YouTube's preview image. |
 
 ## Decisions you made, and what they changed
 
@@ -29,7 +29,7 @@ that is what version 2 fixes.
 | Remove Google Analytics | No cookie banner, no consent log, no US-transfer or child-tracking question. A first visit contacts no third party. You have no visitor numbers; a cookieless counter can be added later without a banner. |
 | Host on Render | `render.yaml` blueprint: one web service, health-checked, secret generated for you. |
 | New visual identity: Blueprint | Drafting blue, cyan accent, Space Grotesk headlines. `DESIGN.md` is rewritten to match. |
-| Preview-only YouTube frames | `yt-dlp` and `av` are no longer installed in production (`requirements-optional.txt`). |
+| Preview-only YouTube frames, later reversed | 2.0.1 restored full capture and raised it to 4K at JPEG 95, 4:4:4. `yt-dlp` and `av` are back in `requirements.txt`. |
 | Footer credit | "Created by @kshitizarc", linked to your LinkedIn profile, at full legibility. |
 
 ## Audit: button placement and overlap

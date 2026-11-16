@@ -274,3 +274,50 @@ footer .footer-credit-link:focus-visible {
 .tool-dock-title, .file-ribbon-tab {
   font-family: var(--display);
 }
+
+/* ---------- backup reminder (static/js/backup-reminder.js) ----------
+   Bottom-left, above the footer, clear of the toolbar, the floating panels
+   (which open top-left under the bars) and the page switcher (bottom-right). */
+.backup-reminder {
+  position: fixed;
+  left: 12px;
+  bottom: 44px;
+  z-index: 9990;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  max-width: min(460px, calc(100vw - 24px));
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 10px 28px var(--d-4);
+  font-family: var(--sans);
+}
+
+.backup-reminder-text {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: var(--t-2);
+  line-height: 1.4;
+}
+
+.backup-reminder button {
+  min-height: var(--tap);
+  padding: 0 14px;
+  border-radius: var(--r-sm);
+  font: 600 var(--t-2) / 1 var(--display);
+  cursor: pointer;
+}
+
+.backup-reminder-go { border: 0; background: var(--accent); color: var(--on-accent); }
+.backup-reminder-later { border: 1px solid var(--rule); background: transparent; color: var(--ink-2); }
+
+.backup-reminder button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 640px) {
+  .backup-reminder { right: 8px; left: 8px; bottom: 52px; max-width: none; }
+}

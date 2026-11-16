@@ -21,7 +21,10 @@
   const STORAGE_KEY = "inkyscib-yt-player";
   const DEFAULT_SIZE = { width: 420, height: 300 };
   const MIN_SIZE = { width: 280, height: 200 };
-  const MAX_FRAME_DATA_URL = 2 * 1024 * 1024;
+  // A 4K frame at JPEG quality 95 is about 3-5 MB as a data URL. Matches
+  // INKYSCIB_MAX_FRAME_DATA_URL_LENGTH in storage.js and
+  // YOUTUBE_FRAME_MAX_DATA_URL in app.py.
+  const MAX_FRAME_DATA_URL = 12 * 1024 * 1024;
 
   let isOpen = false;
   let isMinimized = false;
@@ -725,7 +728,7 @@
   // back detail that was never painted.
   //
   // /api/youtube/frame decodes the real frame at the exact timestamp instead:
-  // 1920x1080 in place of ~420x215, no permission prompt, nothing moving on
+  // up to 3840x2160 in place of ~420x215, no permission prompt, nothing moving on
   // screen. It takes a couple of seconds, which is what the ribbon's progress
   // chip is for.
 

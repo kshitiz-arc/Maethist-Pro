@@ -8,6 +8,7 @@ import io
 import json
 import logging
 import math
+import functools
 import hashlib
 import os
 import posixpath
@@ -192,7 +193,7 @@ def add_static_version(endpoint, values):
     if token:
         values["v"] = token
 
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.0.1"
 
 # Render sets RENDER=true on every service; INKYSCIB_ENV=production is the
 # switch for any other host. A random fallback is fine on a laptop, but under
@@ -212,13 +213,14 @@ if not _secret_key:
     _secret_key = os.urandom(32).hex()
 app.config["SECRET_KEY"] = _secret_key
 
-# Cutting a full-resolution frame means the server downloads part of a YouTube
-# stream with yt-dlp. On a public host that is the most expensive thing an
-# anonymous visitor can trigger, and it sits badly with YouTube's terms, so it
-# is off unless someone turns it on for their own machine. Off, a saved moment
-# uses YouTube's own storyboard preview.
-YOUTUBE_FULL_FRAMES = os.environ.get("YOUTUBE_FULL_FRAMES", "").strip().lower() in (
-    "1", "true", "yes", "on"
+# A saved video moment is cut from the video itself at the highest resolution
+# YouTube offers (up to YOUTUBE_FRAME_MAX_HEIGHT), by reading byte ranges of the
+# stream with yt-dlp and PyAV. It is the most expensive thing an anonymous
+# visitor can trigger, so it is bounded by YOUTUBE_FRAME_CONCURRENCY below, and
+# a host can switch it off with YOUTUBE_FULL_FRAMES=false, in which case a
+# saved moment falls back to YouTube's own low-resolution storyboard preview.
+YOUTUBE_FULL_FRAMES = os.environ.get("YOUTUBE_FULL_FRAMES", "true").strip().lower() not in (
+    "0", "false", "no", "off"
 )
 
 # Abuse limits: requests are already capped by MAX_CONTENT_LENGTH, but a small
@@ -230,6 +232,16 @@ MAX_PDF_PAGES = 300
 MAX_EXPORT_SLIDES = 300
 MAX_SLIDE_IMAGE_BYTES = 30 * 1024 * 1024
 MAX_YOUTUBE_QUERY_CHARS = 200
+# Imports. PDFs and .pptx files are normally converted in the browser
+# (pdf-local-import.js, ppt-local-import.js); these endpoints are the fallback
+# and the path for legacy .ppt. A conversion parses an untrusted file with
+# PyMuPDF or Pillow and can hold hundreds of MB, so uploads are capped well
+# below the global MAX_CONTENT_LENGTH (which is sized for slide exports) and
+# only a couple run at once. Both are environment-tunable for a bigger host.
+MAX_IMPORT_UPLOAD_BYTES = int(os.environ.get("MAX_IMPORT_UPLOAD_MB", "50")) * 1024 * 1024
+IMPORT_CONCURRENCY = max(1, int(os.environ.get("IMPORT_CONCURRENCY", "2")))
+IMPORT_WAIT_SECONDS = 15
+_IMPORT_SLOTS = threading.BoundedSemaphore(IMPORT_CONCURRENCY)
 MAX_YOUTUBE_SEARCH_RESULTS = 20
 YOUTUBE_SEARCH_CACHE_TTL_SECONDS = 10 * 60
 YOUTUBE_SEARCH_CACHE = {}
@@ -1436,6 +1448,22 @@ def offline_asset_urls():
     return urls
 
 
+# The remote off switch for the offline shell. If a release ever ships a
+# broken worker, set OFFLINE_SHELL=off and redeploy: every visitor's browser
+# re-checks /sw.js on its next visit (it is served no-cache), receives a worker
+# that deletes the cached app and unregisters itself, and the page stops
+# registering a new one. Visitors' notes are untouched -- they live in
+# IndexedDB and localStorage, not in Cache Storage.
+OFFLINE_SHELL_ENABLED = os.environ.get("OFFLINE_SHELL", "on").strip().lower() not in (
+    "0", "off", "false", "no"
+)
+
+
+@app.context_processor
+def inject_offline_shell():
+    return {"offline_shell_enabled": OFFLINE_SHELL_ENABLED}
+
+
 @app.route("/sw.js")
 def service_worker():
     """The offline shell worker, served from the root so its scope is the site.
@@ -1444,6 +1472,12 @@ def service_worker():
     token derived from the file, so the script's bytes change whenever any
     asset does. That byte change is what makes a browser install the update.
     """
+    if not OFFLINE_SHELL_ENABLED:
+        response = Response(render_template("sw-off.js"), mimetype="text/javascript")
+        response.headers["Cache-Control"] = "no-cache"
+        response.headers["Service-Worker-Allowed"] = "/"
+        return response
+
     assets = offline_asset_urls()
     digest = hashlib.sha256("\n".join(assets).encode()).hexdigest()[:12]
     body = render_template(
@@ -1922,9 +1956,9 @@ def youtube_storyboard():
 #
 # So the server cuts the frame instead. yt-dlp resolves the stream (the URL is
 # behind a signature cipher, which is not a thing to hand-roll), PyAV seeks to
-# the exact timestamp and decodes one frame. Measured on a 1080p source: 2.5s
-# to resolve, 2.1s to seek and decode, 1920x1080, ~360 KB of JPEG. The resolve
-# is cached per video, so a second frame from the same video skips it.
+# the exact timestamp and decodes one frame, at the source's own resolution up
+# to 4K. The resolve is cached per video, so a second frame from the same video
+# skips it. Measured numbers for 1080p and 4K sources are in docs/V2-REVIEW.md.
 #
 # Nothing is downloaded to disk and no audio is touched: PyAV reads byte ranges
 # over HTTP and stops as soon as it has the frame.
@@ -1938,7 +1972,20 @@ YOUTUBE_STREAM_CACHE_TTL = 4 * 3600  # signed stream URLs outlive this comfortab
 # memory one. 256 is far more than one server's worth of concurrently-watched
 # lectures, and eviction closes the connection rather than dropping it.
 YOUTUBE_STREAM_CACHE_MAX_ENTRIES = 256
-MAX_FRAME_WIDTH = 1920
+# 4K. YouTube serves 2160p as VP9 or AV1, never H.264, which is why the stream
+# choice below is by resolution rather than by codec. A host on a small
+# instance can lower this (1440 or 1080) to trade detail for decode time.
+YOUTUBE_FRAME_MAX_HEIGHT = int(os.environ.get("YOUTUBE_FRAME_MAX_HEIGHT", "2160"))
+MAX_FRAME_WIDTH = YOUTUBE_FRAME_MAX_HEIGHT * 16 // 9
+# JPEG at 4:4:4 (no chroma subsampling) and quality 95: lecture frames are
+# mostly slides, text and thin coloured lines, which 4:2:0 smears. The frame is
+# already lossy at the source, so PNG would only multiply the size. If a 4K
+# frame would not fit the editor's per-frame storage budget, quality steps down
+# rather than the frame being refused.
+YOUTUBE_FRAME_JPEG_QUALITIES = (95, 92, 88, 84, 80)
+# Must stay below INKYSCIB_MAX_FRAME_DATA_URL_LENGTH in static/js/storage.js
+# (and MAX_FRAME_DATA_URL in youtube.js), measured on the base64 data URL.
+YOUTUBE_FRAME_MAX_DATA_URL = 12 * 1024 * 1024
 _YTDLP_SSL_PATCHED = False
 
 # One lock per video. A capture and the /prepare call a video load fires can
@@ -1965,7 +2012,9 @@ _YOUTUBE_VIDEO_LOCKS_GUARD = threading.Lock()
 # undertaken to protect the server.
 # A global semaphore costs one integer and protects the machine just as well:
 # the work is CPU-bound, so more than a few at once is slower for everyone.
-YOUTUBE_FRAME_CONCURRENCY = 3
+# A 4K decode holds a few hundred MB while it runs, so on a small instance
+# two at a time is the safe default. Raise it on a bigger machine.
+YOUTUBE_FRAME_CONCURRENCY = max(1, int(os.environ.get("YOUTUBE_FRAME_CONCURRENCY", "2")))
 YOUTUBE_FRAME_WAIT_SECONDS = 20
 _YOUTUBE_FRAME_SLOTS = threading.BoundedSemaphore(YOUTUBE_FRAME_CONCURRENCY)
 
@@ -2080,11 +2129,13 @@ def _patch_ytdlp_ssl():
 
 
 def _youtube_stream(video_id):
-    """The best H.264 stream for this video, cached until its URL expires.
+    """The highest-resolution video stream, cached until its URL expires.
 
-    H.264 on purpose: it is what every build of FFmpeg can decode and what
-    seeks most reliably. Height is capped so a 4K source does not produce a
-    frame too large for the document's media budget.
+    Chosen by resolution, up to YOUTUBE_FRAME_MAX_HEIGHT, then frame rate, in
+    any codec PyAV's bundled FFmpeg decodes (H.264, VP9, AV1): above 1080p
+    YouTube offers nothing else. SDR is preferred, because an HDR frame
+    converted to RGB without tone mapping comes out washed out; an HDR-only
+    video still works, just with flatter colour.
 
     Call with the video's lock held.
     """
@@ -2103,10 +2154,12 @@ def _youtube_stream(video_id):
         # Not a flag but a compat option: it is what drives prefer_system_certs.
         "compat_opts": {"no-certifi"},
         "format": (
-            f"bestvideo[ext=mp4][vcodec^=avc1][height<={MAX_FRAME_WIDTH // 16 * 9}]"
-            "/bestvideo[ext=mp4][vcodec^=avc1]"
-            "/best[ext=mp4]/best"
+            f"bestvideo[dynamic_range=SDR][height<={YOUTUBE_FRAME_MAX_HEIGHT}]"
+            f"/bestvideo[height<={YOUTUBE_FRAME_MAX_HEIGHT}]"
+            "/bestvideo/best"
         ),
+        # Highest resolution first, then frame rate; codec only breaks ties.
+        "format_sort": [f"res:{YOUTUBE_FRAME_MAX_HEIGHT}", "fps"],
     }
     with yt_dlp.YoutubeDL(options) as ydl:
         info = ydl.extract_info(
@@ -2271,6 +2324,44 @@ def _prepare_video(video_id):
         return entry
 
 
+def _frame_to_rgb(frame):
+    """The decoded frame as an RGB image, with its own colour metadata honoured.
+
+    Video is stored in limited (TV) range; converting it as if it were full
+    range lifts blacks and dulls whites. The frame says which range and matrix
+    it uses, so the conversion is told rather than left to guess.
+    """
+    options = {"dst_color_range": "JPEG"}
+    color_range = getattr(frame, "color_range", 0) or 0
+    if color_range:
+        options["src_color_range"] = color_range
+    try:
+        return frame.to_image(**options)
+    except Exception:  # an older PyAV without colour-range arguments
+        return frame.to_image()
+
+
+def _encode_frame(image):
+    """JPEG data URL at the highest quality that fits the storage budget."""
+    data_url = None
+    for quality in YOUTUBE_FRAME_JPEG_QUALITIES:
+        buffer = io.BytesIO()
+        # No optimize=True: it bought ~5% on file size for 2-4x the encode
+        # time, and this is on the path someone is waiting on.
+        image.save(buffer, "JPEG", quality=quality, subsampling=0)
+        data_url = "data:image/jpeg;base64," + base64.b64encode(buffer.getvalue()).decode("ascii")
+        if len(data_url) <= YOUTUBE_FRAME_MAX_DATA_URL:
+            return data_url, quality
+    # Still too big at the lowest quality: an extreme source. Halve it.
+    smaller = image.resize((image.width // 2, image.height // 2), Image.LANCZOS)
+    buffer = io.BytesIO()
+    smaller.save(buffer, "JPEG", quality=YOUTUBE_FRAME_JPEG_QUALITIES[-1], subsampling=0)
+    return (
+        "data:image/jpeg;base64," + base64.b64encode(buffer.getvalue()).decode("ascii"),
+        YOUTUBE_FRAME_JPEG_QUALITIES[-1],
+    )
+
+
 def _video_frame(video_id, seconds):
     """Decode the frame at ``seconds``, or None if the video cannot be read."""
     with _video_lock(video_id):
@@ -2318,20 +2409,17 @@ def _video_frame(video_id, seconds):
             if picked is None:
                 return None
 
-            image = picked.to_image()
+            image = _frame_to_rgb(picked)
             if image.width > MAX_FRAME_WIDTH:
                 height = round(image.height * MAX_FRAME_WIDTH / image.width)
                 image = image.resize((MAX_FRAME_WIDTH, height), Image.LANCZOS)
 
-            buffer = io.BytesIO()
-            # No optimize=True: it bought ~5% on file size for 2-4x the encode
-            # time, and this is on the path someone is waiting on.
-            image.save(buffer, "JPEG", quality=92)
+            data_url, quality = _encode_frame(image)
             return {
-                "image": "data:image/jpeg;base64,"
-                + base64.b64encode(buffer.getvalue()).decode("ascii"),
+                "image": data_url,
                 "width": image.width,
                 "height": image.height,
+                "quality": quality,
                 "frameTime": round(picked.pts * time_base, 3),
             }
         except Exception:
@@ -2413,7 +2501,36 @@ def youtube_frame():
     return response
 
 
+def _import_guard(view):
+    """Size cap and concurrency ceiling for the two import endpoints.
+
+    The size check runs on Content-Length, before Flask parses the multipart
+    body, so an oversized upload is refused without being read. Conversions
+    beyond IMPORT_CONCURRENCY wait briefly for a slot and are then told to
+    retry, instead of piling up until the instance runs out of memory.
+    """
+    @functools.wraps(view)
+    def guarded(*args, **kwargs):
+        size = request.content_length or 0
+        if size > MAX_IMPORT_UPLOAD_BYTES:
+            limit = MAX_IMPORT_UPLOAD_BYTES // (1024 * 1024)
+            return jsonify({
+                "error": f"That file is too large to import here (the limit is {limit} MB). "
+                         "Try a smaller file, or split the document."
+            }), 413
+        if not _IMPORT_SLOTS.acquire(timeout=IMPORT_WAIT_SECONDS):
+            response = jsonify({"error": "The server is busy converting other files. Try again in a moment."})
+            response.headers["Retry-After"] = "10"
+            return response, 503
+        try:
+            return view(*args, **kwargs)
+        finally:
+            _IMPORT_SLOTS.release()
+    return guarded
+
+
 @app.post("/api/ppt/import")
+@_import_guard
 def import_ppt():
     upload = request.files.get("ppt")
     if not upload or not upload.filename:
@@ -2473,6 +2590,7 @@ def import_ppt():
 
 
 @app.post("/api/pdf/import")
+@_import_guard
 def import_pdf():
     if _pymupdf is None:
         return jsonify({"error": "PDF import needs PyMuPDF installed (pip install PyMuPDF)."}), 503

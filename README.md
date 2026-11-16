@@ -107,7 +107,9 @@ health-checks `/healthz`.
 ```bash
 SECRET_KEY=...                       # required; the app refuses to start without it
 INKYSCIB_ENV=production              # set automatically on Render
-YOUTUBE_FULL_FRAMES=false            # leave off on a public host (see below)
+YOUTUBE_FRAME_MAX_HEIGHT=2160        # video-moment resolution; 1080 on a small instance
+OFFLINE_SHELL=on                     # set to off to remotely remove the offline cache
+MAX_IMPORT_UPLOAD_MB=50              # server-side PDF/PowerPoint conversion limit
 SITE_ORIGIN=https://your-domain      # canonical URLs, sitemap, social cards
 TRUST_PROXY_HEADERS=true             # behind nginx/Render/Fly; enables HSTS
 FORCE_HTTPS=true                     # 301 http -> https
@@ -125,7 +127,8 @@ gunicorn wsgi:app --access-logformat '%(t)s "%(r)s" %(s)s %(b)s %(M)sms'
 **Notes**
 - **No analytics.** Version 2 removed Google Analytics and the cookie banner. A visit sends nothing to any third party unless you open a YouTube lecture.
 - **Works offline.** After one visit online, the canvas opens with no connection: a service worker keeps a copy of the app itself. Your notes were always stored on your device.
-- **Saved video moments** use YouTube's own preview image. Full-resolution frames need `pip install -r requirements-optional.txt` and `YOUTUBE_FULL_FRAMES=true`, and are meant for running Inkyscib on your own machine.
+- **Saved video moments** are cut from the video itself at its own resolution, up to 4K (3840×2160), as high-quality JPEG. A 4K decode needs real CPU: on Render's free plan the first frame of a 4K video can take a minute, so use a paid plan or set `YOUTUBE_FRAME_MAX_HEIGHT=1080`. `YOUTUBE_FULL_FRAMES=false` falls back to YouTube's low-resolution preview images.
+- **Your notes are protected from eviction where the browser allows it** (`navigator.storage.persist()`), and after two days of work without a backup Inkyscib reminds you to download one.
 - **PDF import** works on any platform (via PyMuPDF).
 - **PowerPoint import** is best on Windows with Microsoft PowerPoint installed (used for the highest-fidelity rendering). Without it, Inkyscib falls back to a built-in basic `.pptx` renderer.
 

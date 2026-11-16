@@ -13,6 +13,11 @@ const INKYSCIB_DB_VERSION = 2;
 const INKYSCIB_DB_STORE = 'records';
 const INKYSCIB_DB_DOCUMENT_STORE = 'documents';
 const INKYSCIB_MAX_MEDIA_DATA_URL_LENGTH = 2 * 1024 * 1024;
+// Saved video moments are cut at up to 4K (app.py: YOUTUBE_FRAME_MAX_HEIGHT),
+// so they get their own, larger budget. They live in IndexedDB, which has no
+// practical ceiling at this size; the localStorage mirror may refuse them,
+// and persistDrawing handles that.
+const INKYSCIB_MAX_FRAME_DATA_URL_LENGTH = 12 * 1024 * 1024;
 const INKYSCIB_GEOMETRY_CONSTRUCTIONS = new Set([
     'radius',
     'diameter',
@@ -188,7 +193,7 @@ function compactPath(path) {
     if (path.tool === 'youtube-frame') {
         const validImage = typeof path.image === 'string' &&
             /^data:image\/(?:jpeg|png|webp);base64,/i.test(path.image) &&
-            path.image.length <= INKYSCIB_MAX_MEDIA_DATA_URL_LENGTH;
+            path.image.length <= INKYSCIB_MAX_FRAME_DATA_URL_LENGTH;
         const validVideo = typeof path.videoId === 'string' && /^[A-Za-z0-9_-]{11}$/.test(path.videoId);
         if (!validImage || !validVideo) return null;
     }
@@ -311,7 +316,7 @@ function normalizeLoadedPath(path) {
     if (path.tool === 'youtube-frame') {
         const validImage = typeof path.image === 'string' &&
             /^data:image\/(?:jpeg|png|webp);base64,/i.test(path.image) &&
-            path.image.length <= INKYSCIB_MAX_MEDIA_DATA_URL_LENGTH;
+            path.image.length <= INKYSCIB_MAX_FRAME_DATA_URL_LENGTH;
         const validVideo = typeof path.videoId === 'string' && /^[A-Za-z0-9_-]{11}$/.test(path.videoId);
         if (!validImage || !validVideo) return null;
     }
@@ -438,6 +443,35 @@ function safeSetItem(key, value) {
     } catch (e) {
         console.warn(`Failed to save ${key}:`, e);
         return false;
+    }
+}
+
+function safeRemoveItem(key) {
+    try {
+        localStorage.removeItem(key);
+    } catch (e) {
+        /* storage blocked: nothing to remove */
+    }
+}
+
+// Ask the browser not to evict this site's storage under disk pressure.
+// Without it, Chrome on a nearly full Android tablet may clear IndexedDB --
+// every notebook -- to make room. Chrome grants it silently to sites the
+// person uses often or has installed; it never shows a prompt. Asked once
+// per page load, after the first save that actually wrote something.
+let inkyscibPersistRequested = false;
+function requestPersistentStorage() {
+    if (inkyscibPersistRequested) return;
+    inkyscibPersistRequested = true;
+    try {
+        const storage = navigator.storage;
+        if (!storage || typeof storage.persist !== 'function') return;
+        storage.persisted()
+            .then((already) => (already ? true : storage.persist()))
+            .then((granted) => { window.__inkyscibStoragePersisted = !!granted; })
+            .catch(() => {});
+    } catch (e) {
+        /* not supported: the work is still saved, just evictable */
     }
 }
 
@@ -1024,6 +1058,12 @@ async function persistDrawing(options) {
 
         const localDrawingSaved = safeSetItem('inkyscib_drawing', JSON.stringify(validPaths));
         const localNotebookSaved = safeSetItem('inkyscib_notebook', JSON.stringify(notebookState));
+        // localStorage is a mirror; IndexedDB is the copy that loads. A 4K video
+        // frame can push a drawing past localStorage's ~5 MB quota, and a failed
+        // write leaves the *previous* drawing behind: stale, and taking the room
+        // the preferences need. Drop it, so the only copy left is the current one.
+        if (!localDrawingSaved) safeRemoveItem('inkyscib_drawing');
+        if (!localNotebookSaved) safeRemoveItem('inkyscib_notebook');
         safeSetItem('inkyscib_manipulatives', JSON.stringify(manipulativeVariables));
         await writeStoredRecord('manipulatives', manipulativeVariables);
         const idbPreferencesSaved = await (window.__inkyscibLastPreferenceSave || Promise.resolve(false));
@@ -1034,6 +1074,7 @@ async function persistDrawing(options) {
         if ((preferencesSaved || idbPreferencesSaved) &&
             (localDrawingSaved || localNotebookSaved || idbDrawingSaved || idbPptSaved || idbNotebookSaved)) {
             console.log('Drawing saved successfully');
+            requestPersistentStorage();
         } else if (preferencesSaved || idbPreferencesSaved) {
             console.warn('Preferences saved, but drawing could not be saved. Browser storage may be blocked or full.');
         }

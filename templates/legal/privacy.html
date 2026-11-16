@@ -54,10 +54,11 @@
           nobody.
         </li>
         <li>
-          <strong>A saved video moment.</strong> The server fetches the
-          video's public preview image from YouTube on your behalf and passes
-          it to your browser, where it is stored. Nothing about which video you
-          watched is recorded.
+          <strong>A saved video moment.</strong> The server reads the frame you
+          asked for from the video's public YouTube stream, at the video's own
+          resolution, and passes it to your browser, where it is stored. Only
+          the few seconds of video around that moment are read, and nothing is
+          written to disk. Nothing about which video you watched is recorded.
         </li>
       </ul>
 

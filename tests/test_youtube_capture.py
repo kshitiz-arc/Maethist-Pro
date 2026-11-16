@@ -26,7 +26,9 @@ import math
 import ssl
 import threading
 import time
+import sys
 import unittest
+from pathlib import Path
 import urllib.error
 from unittest.mock import patch
 
@@ -85,9 +87,9 @@ def watch_page(spec=SPEC):
     ).encode("utf-8")
 
 
-# Full-resolution capture is off by default since v2 (app.YOUTUBE_FULL_FRAMES).
-# Everything below was written against the full path, so it is switched on for
-# this module; PreviewOnlyDefaultTests at the end pins the default itself.
+# Full-resolution capture is the default (app.YOUTUBE_FULL_FRAMES). Pinned on
+# here so a developer's YOUTUBE_FULL_FRAMES=false cannot change what these
+# tests exercise; FullResolutionDefaultTests at the end checks the default.
 app_module.YOUTUBE_FULL_FRAMES = True
 
 
@@ -880,13 +882,82 @@ class FrameCaptureBrowserTests(unittest.TestCase):
         self.assert_never_used_a_thumbnail()
 
 
-class PreviewOnlyDefaultTests(unittest.TestCase):
-    """What a public deployment does: the server never downloads a stream."""
+class FullResolutionDefaultTests(unittest.TestCase):
+    """Since 2.0.1 a saved moment is cut from the video itself, at the source's
+    own resolution up to 4K, unless the host switches it off."""
 
     def setUp(self):
         self.client = app.test_client()
 
-    def test_a_frame_request_never_touches_the_video_stream(self):
+    def test_full_capture_is_on_unless_the_host_switches_it_off(self):
+        source = (Path(app.root_path) / "app.py").read_text(encoding="utf-8")
+        self.assertIn('os.environ.get("YOUTUBE_FULL_FRAMES", "true")', source)
+        self.assertEqual(app_module.YOUTUBE_FRAME_MAX_HEIGHT, 2160)
+        self.assertEqual(app_module.MAX_FRAME_WIDTH, 3840)
+
+    def test_the_stream_is_chosen_by_resolution_not_by_codec(self):
+        """4K exists on YouTube only as VP9 or AV1. Asking for H.264 capped
+        every frame at 1080p."""
+        captured = {}
+
+        class FakeYDL:
+            def __init__(self, options):
+                captured.update(options)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+            def extract_info(self, url, download=False):
+                return {"url": "https://example.googlevideo.com/v", "format_id": "315",
+                        "width": 3840, "height": 2160, "duration": 600}
+
+        fake_module = type(sys)("yt_dlp")
+        fake_module.YoutubeDL = FakeYDL
+        app_module.YOUTUBE_STREAM_CACHE.pop("abcdefghijk", None)
+        with patch.dict(sys.modules, {"yt_dlp": fake_module}), patch("app._patch_ytdlp_ssl"):
+            entry = app_module._youtube_stream("abcdefghijk")
+        app_module.YOUTUBE_STREAM_CACHE.pop("abcdefghijk", None)
+        self.assertNotIn("avc1", captured["format"])
+        self.assertIn("height<=2160", captured["format"])
+        self.assertIn("dynamic_range=SDR", captured["format"])
+        self.assertEqual(captured["format_sort"][0], "res:2160")
+        self.assertEqual((entry["width"], entry["height"]), (3840, 2160))
+
+    def test_frames_are_encoded_at_quality_95_without_chroma_subsampling(self):
+        from PIL import Image as PILImage
+        image = PILImage.new("RGB", (640, 360))
+        # Thin coloured lines: what 4:2:0 subsampling smears.
+        for x in range(0, 640, 4):
+            for y in range(360):
+                image.putpixel((x, y), (220, 30, 30))
+        data_url, quality = app_module._encode_frame(image)
+        self.assertEqual(quality, 95)
+        raw = base64.b64decode(data_url.split(",", 1)[1])
+        decoded = PILImage.open(io.BytesIO(raw))
+        decoded.load()
+        # JpegImagePlugin exposes the sampling via layer; 4:4:4 means every
+        # component is sampled 1x1.
+        self.assertEqual({(h, v) for _, h, v, _ in decoded.layer}, {(1, 1)})
+
+    def test_an_oversized_frame_steps_quality_down_instead_of_failing(self):
+        from PIL import Image as PILImage
+        image = PILImage.effect_noise((800, 450), 120).convert("RGB")
+        with patch.object(app_module, "YOUTUBE_FRAME_MAX_DATA_URL", 250_000):
+            data_url, quality = app_module._encode_frame(image)
+        self.assertLess(quality, 95)
+        self.assertTrue(data_url.startswith("data:image/jpeg;base64,"))
+
+    def test_the_server_budget_fits_inside_the_browser_budget(self):
+        storage = (Path(app.root_path) / "static/js/storage.js").read_text(encoding="utf-8")
+        player = (Path(app.root_path) / "static/js/youtube.js").read_text(encoding="utf-8")
+        self.assertIn("INKYSCIB_MAX_FRAME_DATA_URL_LENGTH = 12 * 1024 * 1024", storage)
+        self.assertIn("MAX_FRAME_DATA_URL = 12 * 1024 * 1024", player)
+        self.assertLessEqual(app_module.YOUTUBE_FRAME_MAX_DATA_URL, 12 * 1024 * 1024)
+
+    def test_switched_off_a_frame_request_never_touches_the_video_stream(self):
         frame = {"image": "data:image/jpeg;base64,AAAA", "width": 320, "height": 180}
         with patch.object(app_module, "YOUTUBE_FULL_FRAMES", False), \
                 patch("app._video_frame") as cut, \
@@ -896,7 +967,7 @@ class PreviewOnlyDefaultTests(unittest.TestCase):
         self.assertEqual(response.get_json()["source"], "storyboard")
         cut.assert_not_called()
 
-    def test_warming_is_declined_without_resolving_anything(self):
+    def test_switched_off_warming_is_declined_without_resolving_anything(self):
         with patch.object(app_module, "YOUTUBE_FULL_FRAMES", False), \
                 patch("app._prepare_video") as prepare:
             response = self.client.get("/api/youtube/prepare?v=abcdefghijk")

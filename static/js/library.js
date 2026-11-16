@@ -690,6 +690,9 @@
 
             const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
             downloadBlob(blob, backupFilename());
+            // Read by backup-reminder.js, which nudges when this gets old.
+            try { localStorage.setItem('inkyscib-last-backup', new Date().toISOString()); } catch (error) { /* blocked */ }
+            document.dispatchEvent(new CustomEvent('inkyscibBackupSaved'));
 
             const count = documents.length;
             setStatus(`Backup saved · ${count} notebook${count === 1 ? '' : 's'}. Keep the .inky file somewhere safe.`, 'success');
