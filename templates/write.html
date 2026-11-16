@@ -9,27 +9,27 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Inkyscib" />
-  <title>Open the canvas — write, draw and annotate | Inkyscib</title>
-  <meta name="description" content="Open the Inkyscib canvas: handwrite notes, construct live geometry, annotate a PDF or a deck, and export clean vector PDF. Free, no account, offline." />
+  <meta name="apple-mobile-web-app-title" content="MAETHIST" />
+  <title>Open the canvas — write, draw and annotate | MAETHIST</title>
+  <meta name="description" content="Open the MAETHIST canvas: handwrite notes, construct live geometry, annotate a PDF or a deck, and export clean vector PDF. Free, no account, offline." />
   <link rel="canonical" href="{{ canonical_url }}">
   {% if search_console_token %}
   <meta name="google-site-verification" content="{{ search_console_token }}" />
   {% endif %}
 
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Inkyscib" />
+  <meta property="og:site_name" content="MAETHIST" />
   <meta property="og:locale" content="en_US" />
-  <meta property="og:title" content="Open the canvas — write, draw and annotate | Inkyscib" />
-  <meta property="og:description" content="Open the Inkyscib canvas: handwrite notes, construct live geometry, annotate a PDF or a deck, and export clean vector PDF. Free, no account, offline." />
+  <meta property="og:title" content="Open the canvas — write, draw and annotate | MAETHIST" />
+  <meta property="og:description" content="Open the MAETHIST canvas: handwrite notes, construct live geometry, annotate a PDF or a deck, and export clean vector PDF. Free, no account, offline." />
   <meta property="og:url" content="{{ canonical_url }}" />
   <meta property="og:image" content="{{ site_url(url_for('static', filename='img/og-cover.png')) }}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="The Inkyscib homepage: a live ruler-and-compass construction beside the words 'the geometry is real'." />
+  <meta property="og:image:alt" content="The MAETHIST homepage: a live ruler-and-compass construction beside the words 'the geometry is real'." />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Open the canvas — write, draw and annotate | Inkyscib" />
-  <meta name="twitter:description" content="Open the Inkyscib canvas: handwrite notes, construct live geometry, annotate a PDF or a deck, and export clean vector PDF. Free, no account, offline." />
+  <meta name="twitter:title" content="Open the canvas — write, draw and annotate | MAETHIST" />
+  <meta name="twitter:description" content="Open the MAETHIST canvas: handwrite notes, construct live geometry, annotate a PDF or a deck, and export clean vector PDF. Free, no account, offline." />
   <meta name="twitter:image" content="{{ site_url(url_for('static', filename='img/og-cover.png')) }}" />
 
   <!-- Same face as the marketing pages, so the walk from / into /write no
@@ -55,8 +55,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vengeance.css', v='veng-1') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/chrome-compact.css') }}">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest', v='pwa-1') }}">
-  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/inkyscib-180.png', v='pwa-1') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/maethist-180.png', v='pwa-1') }}">
   <link rel="icon" href="{{ url_for('static', filename='logo.ico') }}" type="image/x-icon">
+  <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='icons/maethist-192.png') }}">
   <script src="{{ url_for('static', filename='js/icon-set.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/icons.js') }}" defer></script>
   <script>
@@ -192,7 +193,7 @@
   {# The editor is a canvas, not a document, so its heading is for screen
      readers and crawlers rather than sighted users. .sr-only comes from
      editor-chrome.css, which this page already loads. #}
-  <h1 class="sr-only">Inkyscib — the writing canvas</h1>
+  <h1 class="sr-only">MAETHIST — the writing canvas</h1>
   <script>
     // Failsafe. The chrome is held at opacity:0 until editor-chrome.js says it
     // is assembled; if any of those scripts fail to run, the editor must not
@@ -1419,7 +1420,7 @@
   </div>
 
   <footer>
-    <div class="left"><span class="footer-copyright">© {{ current_year }} INKYSCIB</span> <span class="footer-credit"><span class="footer-credit-words">Created by</span>
+    <div class="left"><span class="footer-copyright"><img class="footer-mark" src="{{ url_for('static', filename='img/maethist-mark.png') }}" alt="" width="16" height="16"> © {{ current_year }} MAETHIST</span> <span class="footer-credit"><span class="footer-credit-words">Created by</span>
       <a class="footer-credit-link" href="https://www.linkedin.com/in/kshitiz47/" target="_blank"
         rel="noopener noreferrer" aria-label="Created by @kshitizarc, opens LinkedIn in a new tab">@kshitizarc</a></span></div>
     {# The editor is where most visitors land from a shared link, so the

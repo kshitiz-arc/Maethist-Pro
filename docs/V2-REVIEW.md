@@ -1,4 +1,4 @@
-# Inkyscib 2.0 launch review
+# MAETHIST 2.0 launch review
 
 2026-11-15. Written for the owner, as the review a CEO would want before
 pressing publish: is it ready, what was wrong, what changed, what is still open.
@@ -148,7 +148,7 @@ fails if any tracker, measurement id or analytics origin returns.
    and reload.
 4. **`SITE_ORIGIN`.** Set it on Render to your public address, or canonical
    links and the sitemap will point nowhere useful.
-5. **Published privately.** The code is at `github.com/kshitiz-arc/Inkyscib-v2` (private,
+5. **Published privately.** The code is at `github.com/kshitiz-arc/Maethist-Pro` (private,
    branch `main`). Locally it is the branch `v2-release`; the old `master` and the old
    `Inkyscib_Beta` remote are untouched.
 6. **Editor weight** (above), and the items in `TODOS.md` 20.
@@ -156,5 +156,5 @@ fails if any tracker, measurement id or analytics origin returns.
 ## Before you go live
 
 1. Set the privacy contact address and get the legal pages read.
-2. Create the Render blueprint from `Inkyscib-v2` and set `SITE_ORIGIN`.
+2. Create the Render blueprint from `MAETHIST-v2` and set `SITE_ORIGIN`.
 3. Open the deployed site on the tablet: draw, open every menu, go offline, reload.

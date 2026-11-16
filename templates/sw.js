@@ -1,4 +1,4 @@
-/* Inkyscib offline shell.
+/* MAETHIST offline shell.
  *
  * Rendered by Flask (app.py: service_worker) so the asset list below is the
  * real one, with each file's own version token. Three rules:

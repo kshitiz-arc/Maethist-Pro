@@ -58,16 +58,16 @@ class PlannerIntegrationTests(unittest.TestCase):
         self.assertEqual(manifest["display"], "standalone")
         self.assertEqual(manifest["scope"], "/")
         self.assertIn(
-            "/static/icons/inkyscib-maskable-512.png",
+            "/static/icons/maethist-maskable-512.png",
             [icon["src"] for icon in manifest["icons"]],
         )
 
         expected_sizes = {
-            "inkyscib-180.png": (180, 180),
-            "inkyscib-192.png": (192, 192),
-            "inkyscib-512.png": (512, 512),
-            "inkyscib-maskable-512.png": (512, 512),
-            "inkyscib-badge-96.png": (96, 96),
+            "maethist-180.png": (180, 180),
+            "maethist-192.png": (192, 192),
+            "maethist-512.png": (512, 512),
+            "maethist-maskable-512.png": (512, 512),
+            "maethist-badge-96.png": (96, 96),
         }
         for filename, expected_size in expected_sizes.items():
             with self.subTest(filename=filename):
@@ -371,7 +371,7 @@ class PlannerBrowserTests(unittest.TestCase):
         notifications = page.evaluate("() => window.__plannerNotifications")
 
         self.assertEqual(len(notifications), 1)
-        self.assertEqual(notifications[0]["title"], "Inkyscib Planner")
+        self.assertEqual(notifications[0]["title"], "MAETHIST Planner")
         self.assertIn(
             "Join the study call",
             notifications[0]["options"]["body"],
@@ -386,11 +386,11 @@ class PlannerBrowserTests(unittest.TestCase):
         )
         self.assertEqual(
             notifications[0]["options"]["icon"],
-            "/static/icons/inkyscib-192.png",
+            "/static/icons/maethist-192.png",
         )
         self.assertEqual(
             notifications[0]["options"]["badge"],
-            "/static/icons/inkyscib-badge-96.png",
+            "/static/icons/maethist-badge-96.png",
         )
         self.assertFalse(notifications[0]["options"]["requireInteraction"])
         self.assertFalse(notifications[0]["options"]["renotify"])
@@ -448,7 +448,7 @@ class PlannerBrowserTests(unittest.TestCase):
         )
         options = notification["options"]
 
-        self.assertEqual(notification["title"], "Inkyscib Planner")
+        self.assertEqual(notification["title"], "MAETHIST Planner")
         self.assertEqual(
             options["tag"],
             "inkyscib-planner-lock-screen-test",
@@ -688,12 +688,12 @@ class PlannerBrowserTests(unittest.TestCase):
             'button[data-planner-action="device-calendar"]'
         )
         self.assertIn(
-            "Works when Inkyscib is closed",
+            "Works when MAETHIST is closed",
             device_button.get_attribute("aria-label"),
         )
         device_button.click()
         disclosure = page.locator(".planner-toast.is-reminder").filter(
-            has_text="Alerts when Inkyscib is closed"
+            has_text="Alerts when MAETHIST is closed"
         )
         disclosure.wait_for(state="visible")
         self.assertIn(
@@ -790,7 +790,7 @@ class PlannerBrowserTests(unittest.TestCase):
                 'button[data-planner-action="device-calendar"]'
             ).click()
             disclosure = page.locator(".planner-toast.is-reminder").filter(
-                has_text="Alerts when Inkyscib is closed"
+                has_text="Alerts when MAETHIST is closed"
             ).last
             disclosure.wait_for(state="visible")
             return disclosure
@@ -873,7 +873,7 @@ class PlannerBrowserTests(unittest.TestCase):
             'button[data-planner-action="device-calendar"]'
         ).click()
         disclosure = page.locator(".planner-toast.is-reminder").filter(
-            has_text="Alerts when Inkyscib is closed"
+            has_text="Alerts when MAETHIST is closed"
         )
         with page.expect_download() as download_info:
             disclosure.locator(".planner-toast-action").click()

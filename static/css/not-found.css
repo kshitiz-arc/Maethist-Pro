@@ -614,3 +614,6 @@ h1 {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* MAETHIST mark on its paper tile; see marketing.css. */
+.brand-mark { padding: 3px; background: #F3F7FB; object-fit: contain; }

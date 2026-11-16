@@ -579,24 +579,24 @@
       if (helpers?.buildLocalPdf) {
         blob = await helpers.buildLocalPdf(images);
       } else if (helpers?.exportDeckViaServer) {
-        blob = await helpers.exportDeckViaServer("pdf", images, "inkyscib-notebook");
+        blob = await helpers.exportDeckViaServer("pdf", images, "maethist-notebook");
       } else {
         const response = await fetch("/api/ppt/export/pdf", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename: "inkyscib-notebook", slides: images })
+          body: JSON.stringify({ filename: "maethist-notebook", slides: images })
         });
         if (!response.ok) throw new Error("PDF export failed.");
         blob = await response.blob();
       }
 
       if (helpers?.downloadBlob) {
-        helpers.downloadBlob(blob, "inkyscib-notebook.pdf");
+        helpers.downloadBlob(blob, "maethist-notebook.pdf");
       } else {
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
         anchor.href = url;
-        anchor.download = "inkyscib-notebook.pdf";
+        anchor.download = "maethist-notebook.pdf";
         document.body.appendChild(anchor);
         anchor.click();
         anchor.remove();

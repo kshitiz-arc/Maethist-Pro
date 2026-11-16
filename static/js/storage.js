@@ -511,18 +511,18 @@ function openInkyscibDb() {
                 try {
                     db.close();
                 } catch (error) {
-                    console.warn('Could not release the Inkyscib database for upgrade:', error);
+                    console.warn('Could not release the MAETHIST database for upgrade:', error);
                 }
                 inkyscibDbPromise = null;
             };
             resolve(db);
         };
         request.onerror = () => {
-            console.warn('IndexedDB unavailable for Inkyscib:', request.error);
+            console.warn('IndexedDB unavailable for MAETHIST:', request.error);
             resolve(null);
         };
         request.onblocked = () => {
-            console.warn('IndexedDB upgrade blocked for Inkyscib.');
+            console.warn('IndexedDB upgrade blocked for MAETHIST.');
             resolve(null);
         };
     });
@@ -836,7 +836,7 @@ function compactPptDeck(state) {
 
     return {
         active: true,
-        name: ppt.name || 'Inkyscib presentation',
+        name: ppt.name || 'MAETHIST presentation',
         renderMode: ppt.renderMode || 'browser',
         // Points at the original upload in the `documents` store. Decks
         // imported before that store existed have none, and keep working from
@@ -967,7 +967,7 @@ function normalizePptDeck(deck) {
 
     return {
         active: true,
-        name: deck.name || 'Inkyscib presentation',
+        name: deck.name || 'MAETHIST presentation',
         renderMode: deck.renderMode || 'browser',
         docId: typeof deck.docId === 'string' ? deck.docId : null,
         currentSlide: Math.max(0, Math.min(deck.currentSlide || 0, slides.length - 1)),

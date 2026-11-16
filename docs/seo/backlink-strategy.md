@@ -1,4 +1,4 @@
-# Inkyscib backlink strategy
+# MAETHIST backlink strategy
 
 Written 2026-09-20. Review quarterly.
 
@@ -20,7 +20,7 @@ teacher forum or a Hacker News thread can repeat. Lead with it.
 | Target | Why it fits | The pitch |
 |---|---|---|
 | r/teachers, r/matheducation, r/Professors | Teachers on school budgets, actively swapping tools | Show a slide being annotated live; no launch language |
-| r/GoodNotes, r/onenote, r/Notebooks, r/tablets | People searching for a free alternative right now | Answer "is there a free version of X" threads honestly, including what Inkyscib does *not* do |
+| r/GoodNotes, r/onenote, r/Notebooks, r/tablets | People searching for a free alternative right now | Answer "is there a free version of X" threads honestly, including what MAETHIST does *not* do |
 | Hacker News (Show HN) | Local-first, no-build-step, vanilla-canvas engineering is on-topic twice over | Title: what it is + that it is MIT and local-first. Be in the thread all day |
 | Lobste.rs | Same, with a stricter audience | Only with the engineering angle (canvas render cost, PDF vector export) |
 | Indian ed-tech / teacher WhatsApp and Telegram groups | The actual first users, in the actual region | A one-line message and a link, from a real teacher |

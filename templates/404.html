@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>404 - Inkyscib</title>
+  <title>404 - MAETHIST</title>
   {# An error page is not a document a crawler should index, and a soft 404 in
      the index costs more than the page is worth. #}
   <meta name="robots" content="noindex" />
@@ -17,13 +17,14 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/not-found.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vengeance.css', v='veng-1') }}" />
   <link rel="icon" href="{{ url_for('static', filename='logo.ico') }}" type="image/x-icon">
+  <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='icons/maethist-192.png') }}">
 </head>
 <body>
   <main class="lost-page" aria-labelledby="lost-title">
     <section class="lost-copy">
       <a class="brand-link" href="{{ url_for('home') }}">
-        <span class="brand-mark" aria-hidden="true">I</span>
-        <span>Inkyscib</span>
+        <img class="brand-mark" src="{{ url_for('static', filename='img/maethist-mark.png') }}" alt="" width="38" height="38">
+        <span>MAETHIST</span>
       </a>
 
       <div class="status-code" aria-label="404">
@@ -33,19 +34,19 @@
       </div>
 
       <h1 id="lost-title">I think you are lost.</h1>
-      <p>This page slipped off the canvas. Go back to Inkyscib and keep writing where the notes actually live.</p>
+      <p>This page slipped off the canvas. Go back to MAETHIST and keep writing where the notes actually live.</p>
 
       <a class="return-button" href="{{ url_for('home') }}">
         <span class="button-icon" aria-hidden="true">
           <span></span>
         </span>
-        <span>Back to Inkyscib</span>
+        <span>Back to MAETHIST</span>
       </a>
 
       {# A 404 is a real entry point from a stale link, so it needs more than
          one way onward: one to read about the product, one straight into it. #}
       <p class="lost-links">
-        Or see <a href="{{ url_for('features') }}">what Inkyscib does</a>, or go
+        Or see <a href="{{ url_for('features') }}">what MAETHIST does</a>, or go
         straight to <a href="{{ url_for('write') }}">the canvas</a>.
       </p>
     </section>

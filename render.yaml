@@ -1,4 +1,4 @@
-# Render blueprint for Inkyscib. In the Render dashboard choose
+# Render blueprint for MAETHIST. In the Render dashboard choose
 # "New > Blueprint" and point it at this repository.
 services:
   - type: web

@@ -194,7 +194,7 @@ def add_static_version(endpoint, values):
     if token:
         values["v"] = token
 
-APP_VERSION = "2.0.2"
+APP_VERSION = "2.1.0"
 
 # Render sets RENDER=true on every service; INKYSCIB_ENV=production is the
 # switch for any other host. A random fallback is fine on a laptop, but under
@@ -209,7 +209,7 @@ if not _secret_key:
     if IS_PRODUCTION:
         raise RuntimeError(
             "SECRET_KEY is not set. Set it in the host's environment before "
-            "starting Inkyscib in production."
+            "starting MAETHIST in production."
         )
     _secret_key = os.urandom(32).hex()
 app.config["SECRET_KEY"] = _secret_key
@@ -990,7 +990,7 @@ def build_slide_xml(index, placement):
         '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>'
         '<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>'
         '<p:pic>'
-        f'<p:nvPicPr><p:cNvPr id="2" name="Inkyscib slide {index}"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr>'
+        f'<p:nvPicPr><p:cNvPr id="2" name="MAETHIST slide {index}"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr>'
         '<p:blipFill><a:blip r:embed="rIdImage"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>'
         f'<p:spPr><a:xfrm><a:off x="{placement["x"]}" y="{placement["y"]}"/>'
         f'<a:ext cx="{placement["width"]}" cy="{placement["height"]}"/></a:xfrm>'
@@ -1061,8 +1061,8 @@ def build_slide_layout_rels():
 def build_theme_xml():
     return (
         simple_xml_header() +
-        f'<a:theme xmlns:a="{A_NS}" name="Inkyscib">'
-        '<a:themeElements><a:clrScheme name="Inkyscib">'
+        f'<a:theme xmlns:a="{A_NS}" name="MAETHIST">'
+        '<a:themeElements><a:clrScheme name="MAETHIST">'
         '<a:dk1><a:sysClr val="windowText" lastClr="000000"/></a:dk1>'
         '<a:lt1><a:sysClr val="window" lastClr="FFFFFF"/></a:lt1>'
         '<a:dk2><a:srgbClr val="1F2937"/></a:dk2><a:lt2><a:srgbClr val="F8FAFC"/></a:lt2>'
@@ -1070,8 +1070,8 @@ def build_theme_xml():
         '<a:accent3><a:srgbClr val="F59E0B"/></a:accent3><a:accent4><a:srgbClr val="EF4444"/></a:accent4>'
         '<a:accent5><a:srgbClr val="06B6D4"/></a:accent5><a:accent6><a:srgbClr val="A855F7"/></a:accent6>'
         '<a:hlink><a:srgbClr val="2563EB"/></a:hlink><a:folHlink><a:srgbClr val="7C3AED"/></a:folHlink>'
-        '</a:clrScheme><a:fontScheme name="Inkyscib"><a:majorFont><a:latin typeface="Aptos Display"/></a:majorFont><a:minorFont><a:latin typeface="Aptos"/></a:minorFont></a:fontScheme>'
-        '<a:fmtScheme name="Inkyscib"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst>'
+        '</a:clrScheme><a:fontScheme name="MAETHIST"><a:majorFont><a:latin typeface="Aptos Display"/></a:majorFont><a:minorFont><a:latin typeface="Aptos"/></a:minorFont></a:fontScheme>'
+        '<a:fmtScheme name="MAETHIST"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst>'
         '<a:lnStyleLst><a:ln w="6350"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst>'
         '<a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme>'
         '</a:themeElements></a:theme>'
@@ -1083,7 +1083,7 @@ def build_doc_props(slide_count):
         simple_xml_header() +
         '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" '
         'xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">'
-        '<Application>Inkyscib</Application>'
+        '<Application>MAETHIST</Application>'
         f'<Slides>{slide_count}</Slides>'
         '</Properties>'
     )
@@ -1094,8 +1094,8 @@ def build_doc_props(slide_count):
         'xmlns:dcterms="http://purl.org/dc/terms/" '
         'xmlns:dcmitype="http://purl.org/dc/dcmitype/" '
         'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
-        '<dc:title>Inkyscib annotated presentation</dc:title>'
-        '<dc:creator>Inkyscib</dc:creator>'
+        '<dc:title>MAETHIST annotated presentation</dc:title>'
+        '<dc:creator>MAETHIST</dc:creator>'
         '</cp:coreProperties>'
     )
     return app_xml, core_xml
@@ -1183,7 +1183,7 @@ def build_image_pptx(slides):
 
 
 def clean_download_name(name, suffix):
-    stem = secure_filename(Path(name or "inkyscib-presentation").stem) or "inkyscib-presentation"
+    stem = secure_filename(Path(name or "maethist-presentation").stem) or "maethist-presentation"
     return f"{stem}{suffix}"
 
 
@@ -1214,7 +1214,7 @@ CONTENT_SECURITY_POLICY = "; ".join([
     # data: covers the pomodoro alarm chime.
     "media-src 'self' data: blob:",
     "worker-src 'self' blob:",
-    # Intentionally permissive: Inkyscib is meant to be embeddable on any
+    # Intentionally permissive: MAETHIST is meant to be embeddable on any
     # site. The trade-off is clickjacking exposure, accepted by design since
     # the app holds no user accounts or sensitive state.
     "frame-ancestors *",
@@ -1323,7 +1323,7 @@ def set_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
-    # Allow camera only for Inkyscib itself, block microphone
+    # Allow camera only for MAETHIST itself, block microphone
     response.headers["Permissions-Policy"] = "camera=(self), microphone=(), geolocation=()"
 
     # IMPORTANT:
@@ -1608,7 +1608,7 @@ def sitemap_xml():
 @app.route("/llms.txt")
 def llms_txt():
     """llmstxt.org: a short Markdown brief for LLM crawlers, so a model that
-    summarises Inkyscib gets the price, the storage model and the licence
+    summarises MAETHIST gets the price, the storage model and the licence
     right rather than inferring them from marketing copy."""
     return Response(render_template("llms.txt"), mimetype="text/markdown")
 
@@ -2584,7 +2584,7 @@ def import_ppt():
     # strip a non-ASCII stem entirely, which used to reject valid uploads.
     suffix = Path(upload.filename).suffix.lower()
     if suffix not in {".ppt", ".pptx"}:
-        return jsonify({"error": "Inkyscib can import .ppt and .pptx files."}), 400
+        return jsonify({"error": "MAETHIST can import .ppt and .pptx files."}), 400
 
     filename = secure_filename(upload.filename) or f"presentation{suffix}"
 
@@ -2880,7 +2880,7 @@ def _draw_centreline(shape, points):
 
 
 def draw_path_on_page(page, path):
-    """Add one Inkyscib path to a page as vector geometry.
+    """Add one MAETHIST path to a page as vector geometry.
 
     Returns True when it was drawn, False when this path is not something the
     server can reproduce exactly — in which case the caller reports it rather

@@ -1,6 +1,6 @@
 /* Data-subject rights, exercised by the person who holds the data.
  *
- * Inkyscib keeps notes, drawings and preferences in the visitor's own browser,
+ * MAETHIST keeps notes, drawings and preferences in the visitor's own browser,
  * so GDPR Art. 15 (access), Art. 17 (erasure) and Art. 20 (portability) are
  * three buttons rather than a support queue. Nobody else can reach this data
  * -- which also means nobody else can delete it for them.
@@ -111,9 +111,9 @@
         } catch (error) { /* blocked storage exports as empty */ }
 
         var payload = {
-          product: "Inkyscib",
+          product: "MAETHIST",
           exportedAt: new Date().toISOString(),
-          note: "Everything this browser holds for Inkyscib. GDPR Art. 15 and"
+          note: "Everything this browser holds for MAETHIST. GDPR Art. 15 and"
             + " Art. 20; nothing here was ever sent to a server.",
           localStorage: local,
           indexedDB: databases,
@@ -194,7 +194,7 @@
         );
         if (!confirmed) return;
         eraseEverything().then(function () {
-          window.alert("Everything Inkyscib held in this browser is gone.");
+          window.alert("Everything MAETHIST held in this browser is gone.");
           window.location.reload();
         });
       });

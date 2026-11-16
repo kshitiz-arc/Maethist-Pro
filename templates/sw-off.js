@@ -1,7 +1,7 @@
-/* Inkyscib offline shell: switched off (OFFLINE_SHELL=off in app.py).
+/* MAETHIST offline shell: switched off (OFFLINE_SHELL=off in app.py).
  *
  * Replaces whatever worker a visitor has installed. It deletes the cached
- * copy of the app, unregisters itself, and reloads any open Inkyscib tab so
+ * copy of the app, unregisters itself, and reloads any open MAETHIST tab so
  * it is served straight from the network. It never touches the visitor's
  * notes, which live in IndexedDB and localStorage, not in Cache Storage.
  */

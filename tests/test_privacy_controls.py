@@ -1,6 +1,6 @@
 """Access, portability and erasure, exercised in a real browser.
 
-Inkyscib holds a visitor's work in their own browser, so GDPR Art. 15, 17 and
+MAETHIST holds a visitor's work in their own browser, so GDPR Art. 15, 17 and
 20 are three buttons on /legal/privacy rather than a support queue. These tests
 drive window.InkyscibPrivacy (static/js/privacy-controls.js) against seeded
 localStorage, an IndexedDB database and a cookie.

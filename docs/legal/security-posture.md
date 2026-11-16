@@ -16,7 +16,7 @@ produces one. A free, solo, MIT-licensed project with no enterprise customers ha
 show a report to, so pursuing either now would be spending money to answer a question
 nobody has asked.
 
-**PCI-DSS is out of scope**, because Inkyscib takes no payments and has no payment form.
+**PCI-DSS is out of scope**, because MAETHIST takes no payments and has no payment form.
 
 What *is* worth doing now is the part both frameworks actually care about and that also
 just makes the project safer: knowing what the controls are, and closing the ones that are
@@ -70,6 +70,6 @@ It is there so this decision has to be made deliberately rather than drifted int
 
 ## If a SOC 2 report is ever genuinely needed
 
-It will be because an institution wants to deploy Inkyscib for its students. At that point
+It will be because an institution wants to deploy MAETHIST for its students. At that point
 the gap is not the controls above — it is evidence collection over time, a written policy
 set, and an auditor. Start with ISO 27001 Annex A as a checklist, not with a vendor.

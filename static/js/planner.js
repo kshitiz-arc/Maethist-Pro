@@ -1,4 +1,4 @@
-// Inkyscib Planner
+// MAETHIST Planner
 // Local-only calendar, recurring tasks, progress, and best-effort reminders.
 (function () {
   'use strict';
@@ -201,7 +201,7 @@
                   </span>
                   <span>
                     <strong>Remind me</strong>
-                    <small id="plannerReminderHint">Off means a smart nudge after 3 hours while Inkyscib is open.</small>
+                    <small id="plannerReminderHint">Off means a smart nudge after 3 hours while MAETHIST is open.</small>
                   </span>
                 </div>
                 <label class="planner-switch" aria-label="Set a reminder time">
@@ -786,11 +786,11 @@
       deviceAlert.dataset.plannerAction = 'device-calendar';
       deviceAlert.dataset.taskId = task.id;
       deviceAlert.dataset.occurrenceDate = record.occurrenceDate;
-      deviceAlert.title = 'Copy this reminder to your device calendar so it can alert when Inkyscib is closed.';
+      deviceAlert.title = 'Copy this reminder to your device calendar so it can alert when MAETHIST is closed.';
       deviceAlert.setAttribute(
         'aria-label',
         'Add device calendar alert for ' + task.title +
-        '. Works when Inkyscib is closed; later task changes will not sync.'
+        '. Works when MAETHIST is closed; later task changes will not sync.'
       );
       deviceAlert.innerHTML = [
         phIcon('phosphor:calendar-check'),
@@ -885,7 +885,7 @@
     ui.formError.hidden = true;
     ui.formError.textContent = '';
     ui.timeFields.hidden = true;
-    ui.reminderHint.textContent = 'Off means a smart nudge after 3 hours while Inkyscib is open.';
+    ui.reminderHint.textContent = 'Off means a smart nudge after 3 hours while MAETHIST is open.';
     ui.taskTitle.value = '';
     const defaults = defaultReminderParts(selectedDate, new Date());
     ui.hour.dataset.preferred = String(defaults.hour);
@@ -902,13 +902,13 @@
     ui.timeFields.hidden = !ui.reminderToggle.checked;
     ui.reminderHint.textContent = ui.reminderToggle.checked
       ? notificationComposerHint()
-      : 'Off means a smart nudge after 3 hours while Inkyscib is open.';
+      : 'Off means a smart nudge after 3 hours while MAETHIST is open.';
     if (ui.reminderToggle.checked) renderTimeOptions();
   }
 
   function notificationComposerHint() {
     const state = notificationState();
-    if (state === 'granted') return 'App alert ready while Inkyscib is open. After saving, use Device alert for closed-app delivery.';
+    if (state === 'granted') return 'App alert ready while MAETHIST is open. After saving, use Device alert for closed-app delivery.';
     if (state === 'denied') return 'App alerts are blocked. After saving, Device alert still works through your calendar.';
     if (state === 'unsupported' || state === 'insecure') return 'After saving, use Device alert to hand this reminder to your calendar.';
     return 'App alert available while open. After saving, use Device alert for closed-app delivery.';
@@ -1341,7 +1341,7 @@
         }
         showToast({
           title: 'App reminders are ready',
-          message: 'System alerts work while Inkyscib is open. Use a task\'s Device alert for closed-app reminders.',
+          message: 'System alerts work while MAETHIST is open. Use a task\'s Device alert for closed-app reminders.',
           kind: 'success'
         });
         return true;
@@ -1383,7 +1383,7 @@
         }
         showToast({
           title: 'App reminders enabled',
-          message: 'System alerts work while Inkyscib is open. Use a task\'s Device alert for closed-app reminders.',
+          message: 'System alerts work while MAETHIST is open. Use a task\'s Device alert for closed-app reminders.',
           kind: 'success'
         });
         return true;
@@ -1414,10 +1414,10 @@
     if (state === 'granted' && notificationTestTimer) {
       ui.notifyBtn.dataset.testing = 'true';
       ui.notifyText.textContent = 'Test in 5 seconds';
-      ui.notifyBtn.title = 'Lock your screen now. Inkyscib will send a system notification with your device sound settings.';
+      ui.notifyBtn.title = 'Lock your screen now. MAETHIST will send a system notification with your device sound settings.';
     } else if (state === 'granted') {
       ui.notifyText.textContent = 'Reminders on · test';
-      ui.notifyBtn.title = 'Test app alerts while Inkyscib remains open. Device alert on each task works after closing it.';
+      ui.notifyBtn.title = 'Test app alerts while MAETHIST remains open. Device alert on each task works after closing it.';
     } else if (state === 'denied') {
       ui.notifyText.textContent = 'Alerts blocked';
       ui.notifyBtn.title = 'Enable notifications for this site in browser settings.';
@@ -1426,12 +1426,12 @@
       ui.notifyBtn.title = 'System notifications are not available here. In-app reminders still work.';
     } else {
       ui.notifyText.textContent = 'Enable reminders';
-      ui.notifyBtn.title = 'Turn on system alerts while Inkyscib is open. Use Device alert for closed-app reminders.';
+      ui.notifyBtn.title = 'Turn on system alerts while MAETHIST is open. Use Device alert for closed-app reminders.';
     }
     ui.notifyBtn.setAttribute('aria-label', ui.notifyText.textContent + '. ' + ui.notifyBtn.title);
     if (composerOpen) ui.reminderHint.textContent = ui.reminderToggle.checked
       ? notificationComposerHint()
-      : 'Off means a smart nudge after 3 hours while Inkyscib is open.';
+      : 'Off means a smart nudge after 3 hours while MAETHIST is open.';
   }
 
   function scheduleNotificationTest() {
@@ -1441,7 +1441,7 @@
       updateNotificationControl();
       const testDate = toDateKey(new Date());
       dispatchDeviceNotification(
-        'Inkyscib Planner',
+        'MAETHIST Planner',
         'Lock-screen test — planner notifications are ready.',
         testDate,
         'inkyscib-planner-lock-screen-test',
@@ -1452,7 +1452,7 @@
         showToast({
           title: success ? 'Test alert sent' : 'Test alert could not be sent',
           message: success
-            ? 'If it was hidden or silent, allow Inkyscib on the lock screen and turn on notification sound in device settings.'
+            ? 'If it was hidden or silent, allow MAETHIST on the lock screen and turn on notification sound in device settings.'
             : 'Check this site’s notification permission, then try again.',
           kind: success ? 'success' : 'warning',
           duration: 7600
@@ -1588,8 +1588,8 @@
     const useSystemAlert = deliveryOptions.forceSystemAlert === true || document.hidden;
     const options = {
       body,
-      icon: '/static/icons/inkyscib-192.png',
-      badge: '/static/icons/inkyscib-badge-96.png',
+      icon: '/static/icons/maethist-192.png',
+      badge: '/static/icons/maethist-badge-96.png',
       tag,
       timestamp,
       renotify: deliveryOptions.renotify === true,
@@ -1640,9 +1640,9 @@
       : (task.recurrence === 'none' ? 'the 3-hour nudge' : 'this repeating smart nudge');
 
     showToast({
-      title: 'Alerts when Inkyscib is closed',
+      title: 'Alerts when MAETHIST is closed',
       message: 'Your device calendar gets a copy of ' + copiedReminder +
-        '. Later edits, completion, or deletion in Inkyscib will not sync to that copy.',
+        '. Later edits, completion, or deletion in MAETHIST will not sync to that copy.',
       kind: 'reminder',
       actionLabel: 'Create calendar file',
       duration: 11000,
@@ -1697,7 +1697,7 @@
         // transient user activation on mobile browsers.
         sharePromise = navigator.share({
           files: [file],
-          title: 'Inkyscib Planner',
+          title: 'MAETHIST Planner',
           text: 'Add this local reminder to your device calendar.'
         });
       } catch (error) {
@@ -1757,7 +1757,7 @@
       title: 'Calendar file ready',
       message: lead + (hasCatchUp
         ? ' An overdue alert was moved about five minutes ahead so there is time to import it.'
-        : ' Your calendar can then alert even when Inkyscib is closed.'),
+        : ' Your calendar can then alert even when MAETHIST is closed.'),
       kind: 'success',
       duration: 11000
     });
@@ -1787,7 +1787,7 @@
       'VERSION:2.0',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
-      'X-WR-CALNAME:' + escapeIcsText('Inkyscib Planner')
+      'X-WR-CALNAME:' + escapeIcsText('MAETHIST Planner')
     ];
 
     events.forEach((event) => {
@@ -1797,13 +1797,13 @@
       const recurrenceCopy = event.recurrence
         ? ' Repeats ' + (event.recurrence === 'daily' ? 'daily.' : 'weekly.')
         : '';
-      const description = reminderType + ' copied from Inkyscib.' + recurrenceCopy +
-        ' This device-calendar copy can alert while Inkyscib is closed. ' +
-        'Later edits, completion, or deletion in Inkyscib do not sync to Calendar.';
+      const description = reminderType + ' copied from MAETHIST.' + recurrenceCopy +
+        ' This device-calendar copy can alert while MAETHIST is closed. ' +
+        'Later edits, completion, or deletion in MAETHIST do not sync to Calendar.';
 
       lines.push(
         'BEGIN:VEVENT',
-        'UID:' + safeTaskId + '.' + event.uidKind + '@planner.inkyscib.salajtech.com',
+        'UID:' + safeTaskId + '.' + event.uidKind + '@planner.maethist',
         'DTSTAMP:' + stamp,
         'CREATED:' + created,
         'LAST-MODIFIED:' + stamp,
@@ -1826,13 +1826,13 @@
       lines.push(
         'SUMMARY:' + escapeIcsText(task.title),
         'DESCRIPTION:' + escapeIcsText(description),
-        'CATEGORIES:' + escapeIcsText('Inkyscib Planner'),
+        'CATEGORIES:' + escapeIcsText('MAETHIST Planner'),
         'STATUS:CONFIRMED',
         'TRANSP:TRANSPARENT',
         'BEGIN:VALARM',
         'ACTION:DISPLAY',
         'TRIGGER:PT0S',
-        'DESCRIPTION:' + escapeIcsText('Inkyscib reminder - ' + task.title),
+        'DESCRIPTION:' + escapeIcsText('MAETHIST reminder - ' + task.title),
         'END:VALARM',
         'END:VEVENT'
       );
@@ -2105,7 +2105,7 @@
     }
 
     // Every mutation is persisted immediately, so refreshing here safely
-    // reduces duplicate notifications when multiple Inkyscib tabs are open.
+    // reduces duplicate notifications when multiple MAETHIST tabs are open.
     if (storageSyncEnabled) store = loadStore();
     const now = Date.now();
     const today = bounds.min;
@@ -2213,7 +2213,7 @@
         kind: 'reminder',
         items: explicitDue,
         promise: dispatchDeviceNotification(
-          'Inkyscib Planner',
+          'MAETHIST Planner',
           message + ' - click to view',
           today,
           one
@@ -2243,7 +2243,7 @@
         kind: 'auto',
         items: autoDue,
         promise: dispatchDeviceNotification(
-          'Inkyscib Planner',
+          'MAETHIST Planner',
           message,
           today,
           'inkyscib-planner-smart-' + today,

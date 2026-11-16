@@ -739,7 +739,7 @@
         `/api/youtube/frame?v=${encodeURIComponent(videoId)}&t=${encodeURIComponent(videoTime.toFixed(3))}`
       );
     } catch (_) {
-      throw new Error("Could not reach Inkyscib to get this frame");
+      throw new Error("Could not reach MAETHIST to get this frame");
     }
     let body = null;
     try {

@@ -1,7 +1,7 @@
 {% extends "_marketing.html" %}
 
-{% block title %}About Inkyscib — who builds it, and why it stays free{% endblock %}
-{% block description %}Who builds Inkyscib: a mathematics educator and applied-ML researcher in Ranchi, building the classroom tools he needed in front of his own students.{% endblock %}
+{% block title %}About MAETHIST — who builds it, and why it stays free{% endblock %}
+{% block description %}Who builds MAETHIST: a mathematics educator and applied-ML researcher in Ranchi, building the classroom tools he needed in front of his own students.{% endblock %}
 {% block body_class %}page-content{% endblock %}
 
 {% block structured_data %}
@@ -19,9 +19,9 @@
 {
   "@context": "https://schema.org",
   "@type": "Organization",
-  "name": "Inkyscib",
+  "name": "MAETHIST",
   "url": "{{ site_url('/') }}",
-  "logo": "{{ site_url(url_for('static', filename='icons/inkyscib-512.png', v='pwa-1')) }}",
+  "logo": "{{ site_url(url_for('static', filename='icons/maethist-512.png', v='pwa-1')) }}",
   "founder": [
     {
       "@type": "Person",
@@ -30,14 +30,6 @@
       "sameAs": [
         "https://www.linkedin.com/in/kshitiz47/",
         "https://github.com/kshitiz-arc"
-      ]
-    },
-    {
-      "@type": "Person",
-      "name": "Salaj Shekhar",
-      "sameAs": [
-        "https://www.linkedin.com/in/salajs/",
-        "https://github.com/SalajPro"
       ]
     }
   ]
@@ -61,7 +53,7 @@
     </div>
 
     <p class="statement">
-      Studying shouldn't cost more than the tablet you study on. Inkyscib is
+      Studying shouldn't cost more than the tablet you study on. MAETHIST is
       <em>one calm, free place</em> to write, teach and think — in a browser, on
       whatever device you already own.
     </p>
@@ -127,7 +119,7 @@
           </p>
 
           <p class="profile-bio">
-            Inkyscib comes out of that overlap. It is built by someone who has to
+            MAETHIST comes out of that overlap. It is built by someone who has to
             stand in front of a class and use it the next morning.
           </p>
 
@@ -161,68 +153,6 @@
           <div class="maker-links">
             <a href="https://www.linkedin.com/in/kshitiz47/" target="_blank" rel="noopener noreferrer">LINKEDIN {{ icon("remix:arrow-right-up-line", "link-out") }}</a>
             <a href="https://github.com/kshitiz-arc" target="_blank" rel="noopener noreferrer">GITHUB {{ icon("remix:arrow-right-up-line", "link-out") }}</a>
-          </div>
-        </div>
-
-      </article>
-
-      {#
-        Salaj's details come from his own public GitHub profile and profile
-        README — nothing beyond what he publishes about himself there.
-        salaj_portrait: same swap as above, a filename in static/img/.
-      #}
-      {% set salaj_portrait = None %}
-
-      <article class="profile panel clip-hud">
-
-        <div class="profile-portrait">
-          {% if salaj_portrait %}
-          <img src="{{ url_for('static', filename='img/' ~ salaj_portrait) }}"
-            alt="Salaj Shekhar" width="186" height="186" />
-          {% else %}
-          <div class="profile-monogram" aria-hidden="true">SS</div>
-          {% endif %}
-        </div>
-
-        <div>
-          <span class="profile-tier">Student</span>
-          <h3 class="profile-name">Salaj Shekhar</h3>
-          <p class="profile-role">
-            Student · Developer · Security enthusiast
-          </p>
-
-          <p class="profile-bio">
-            One of Kshitiz's students at Sarala Birla Public School, and head of
-            the school's Innovation &amp; Robotics team. He works on web security
-            and exploitation, machine learning, and robotics — the kind of
-            student who would rather take the system apart than be handed it.
-          </p>
-
-          <div class="profile-tags">
-            <span>ETHICAL HACKING</span>
-            <span>PENTESTING · RED TEAMING</span>
-            <span>WEB SECURITY</span>
-            <span>AI &amp; MACHINE LEARNING</span>
-            <span>ROBOTICS &amp; IOT</span>
-          </div>
-
-          <ul class="profile-list">
-            <li><b>PneumoX</b> — chest X-ray classification on EfficientNetB0, with Grad-CAM visualisation</li>
-            <li><b>SPP</b> — an interpreted programming language written in Python</li>
-            <li><b>Real-FruitNinja</b> — motion-controlled game on an ESP32 and MPU6050 over Wi-Fi</li>
-            <li><b>Study-Floss</b> — a browser extension to help students hold focus</li>
-            <li><b>Canon-Catch-AI</b> — a reinforcement-learning agent trained to catch objects</li>
-          </ul>
-
-          <p class="profile-quote">
-            “Break systems. Understand them. Rebuild better.”
-          </p>
-
-          <div class="maker-links">
-            <a href="https://github.com/SalajPro" target="_blank" rel="noopener noreferrer">GITHUB {{ icon("remix:arrow-right-up-line", "link-out") }}</a>
-            <a href="https://salajtech.com" target="_blank" rel="noopener noreferrer">SALAJTECH.COM {{ icon("remix:arrow-right-up-line", "link-out") }}</a>
-            <a href="https://www.linkedin.com/in/salajs/" target="_blank" rel="noopener noreferrer">LINKEDIN {{ icon("remix:arrow-right-up-line", "link-out") }}</a>
-            <a href="https://tryhackme.com/p/SalajS" target="_blank" rel="noopener noreferrer">TRYHACKME {{ icon("remix:arrow-right-up-line", "link-out") }}</a>
           </div>
         </div>
 
@@ -274,7 +204,7 @@
               An end-to-end ML pipeline classifying emotion from online
               handwriting trajectories on the EMOTHAW dataset — extracting
               pressure, velocity, acceleration and stroke features from raw pen
-              data. The same question Inkyscib's canvas sits next to: what a
+              data. The same question MAETHIST's canvas sits next to: what a
               stroke tells you about the person making it.
             </p>
             <div class="track-stack">PYTHON · SCIKIT-LEARN · NUMPY · PANDAS · SCIPY</div>
@@ -288,7 +218,7 @@
             <p>
               A multi-model computer-vision pipeline fusing OpenCV, YOLOv8 and
               MediaPipe for real-time scene understanding and pose estimation —
-              the groundwork behind Inkyscib's experimental hand-tracking canvas.
+              the groundwork behind MAETHIST's experimental hand-tracking canvas.
             </p>
             <div class="track-stack">PYTHON · OPENCV · YOLOV8 · MEDIAPIPE</div>
           </div>
@@ -325,14 +255,14 @@
         </article>
 
         <article class="card panel clip-hud">
-          <span class="card-index">Open source</span>
-          <h3>Open on GitHub</h3>
+          <span class="card-index">Feedback</span>
+          <h3>Tell us what is missing</h3>
           <p>
-            Bugs, ideas and pull requests are all welcome — if something is
-            missing for the way you study or teach, say so.
+            Bugs and ideas are all welcome — if something is missing for the
+            way you study or teach, say so.
           </p>
           <div class="maker-links">
-            <a href="https://github.com/SalajPro" target="_blank" rel="noopener noreferrer">REPOSITORY {{ icon("remix:arrow-right-up-line", "link-out") }}</a>
+            <a href="https://github.com/kshitiz-arc" target="_blank" rel="noopener noreferrer">GITHUB {{ icon("remix:arrow-right-up-line", "link-out") }}</a>
           </div>
         </article>
 
@@ -389,12 +319,12 @@
           <span class="card-index">Tell us</span>
           <h3>If something blocks you</h3>
           <p>
-            If any part of Inkyscib stops you doing something, please open an
+            If any part of MAETHIST stops you doing something, please open an
             issue on the repository and say what you were trying to do. A
             barrier nobody reports is one nobody fixes.
           </p>
           <div class="maker-links">
-            <a href="https://github.com/SalajPro" target="_blank" rel="noopener noreferrer">REPORT A BARRIER {{ icon("remix:arrow-right-up-line", "link-out") }}</a>
+            <a href="https://github.com/kshitiz-arc" target="_blank" rel="noopener noreferrer">REPORT A BARRIER {{ icon("remix:arrow-right-up-line", "link-out") }}</a>
           </div>
         </article>
 

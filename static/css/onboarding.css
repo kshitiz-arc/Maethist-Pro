@@ -1539,3 +1539,12 @@ body.feature-tour-open .menu-overlay {
   height: var(--tap);
   transform: translate(-50%, -50%);
 }
+
+/* MAETHIST mark on its paper tile; see marketing.css. */
+.feature-tour-brand-mark,
+[data-theme="light"] .feature-tour-brand-mark {
+  padding: 2px;
+  border-color: var(--rule);
+  background: #F3F7FB;
+  object-fit: contain;
+}

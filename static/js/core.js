@@ -498,7 +498,7 @@ function handleClearCanvasModalKeydown(e) {
 
 document.addEventListener('keydown', handleClearCanvasModalKeydown);
 async function initApp() {
-    console.log('Initializing Inkyscib...');
+    console.log('Initializing MAETHIST...');
     ensureClearCanvasModal();
     if (typeof window.loadDrawing === 'function') {
         await window.loadDrawing();
@@ -535,7 +535,7 @@ async function initApp() {
     setupWindowEvents();
     requestAnimationFrame(handleWindowResize);
     
-    console.log('Inkyscib initialized successfully.');
+    console.log('MAETHIST initialized successfully.');
     // The editor is now genuinely usable. Nothing was covering it, so this
     // only releases the 180ms fade on the restored drawing -- and it is the
     // readiness signal the tests wait on, replacing the old boot-overlay class
@@ -672,7 +672,7 @@ function createPath(pos) {
         path.lineType = settings.lineType || 'solid';
         path.arrowStyle = settings.arrowStyle || 'triangle';
         // geometric kind, independent of the visual style
-        // Inkyscib is a bounded page, so every drawn line is a finite segment.
+        // MAETHIST is a bounded page, so every drawn line is a finite segment.
         // Keep the property for old documents, but never create new rays or
         // infinite lines.
         path.lineKind = 'segment';

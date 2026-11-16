@@ -1,4 +1,4 @@
-"""The footer credit: "(c) <year> INKYSCIB Created by @kshitizarc".
+"""The footer credit: "(c) <year> MAETHIST Created by @kshitizarc".
 
 The handle links to the author's LinkedIn profile. Pinned here: the words,
 where the link goes, that it opens in a new tab without handing that tab a
@@ -71,7 +71,7 @@ class FooterCreditTests(unittest.TestCase):
             }"""
         )
         self.assertEqual(
-            credit["text"], f"© {datetime.date.today().year} INKYSCIB Created by @kshitizarc"
+            credit["text"], f"© {datetime.date.today().year} MAETHIST Created by @kshitizarc"
         )
         self.assertEqual(credit["href"], "https://www.linkedin.com/in/kshitiz47/")
         # A new tab, and no handle back to this page for the one it opens.

@@ -203,7 +203,7 @@
         break;
       }
     }
-    if (eocd < 0) throw new Error("That file is not a readable Inkyscib document.");
+    if (eocd < 0) throw new Error("That file is not a readable MAETHIST document.");
 
     const count = view.getUint16(eocd + 10, true);
     let pointer = view.getUint32(eocd + 16, true);
@@ -211,7 +211,7 @@
     const files = {};
     for (let index = 0; index < count; index += 1) {
       if (view.getUint32(pointer, true) !== 0x02014b50) {
-        throw new Error("That Inkyscib document is damaged.");
+        throw new Error("That MAETHIST document is damaged.");
       }
       const method = view.getUint16(pointer + 10, true);
       const compressedSize = view.getUint32(pointer + 20, true);
@@ -232,11 +232,11 @@
         files[name] = raw;
       } else if (method === 8) {
         if (!canInflate) {
-          throw new Error("This browser cannot read compressed Inkyscib documents.");
+          throw new Error("This browser cannot read compressed MAETHIST documents.");
         }
         files[name] = await inflateRaw(raw);
       } else {
-        throw new Error("That Inkyscib document uses an unsupported compression method.");
+        throw new Error("That MAETHIST document uses an unsupported compression method.");
       }
 
       pointer += 46 + nameLength + extraLength + commentLength;
@@ -292,7 +292,7 @@
   async function build(options = {}) {
     const library = window.Inkyscib?.Library;
     if (!library?.snapshotActiveWorkspace || !library.readActiveWorkspace) {
-      throw new Error("Inkyscib is still loading — try again in a moment.");
+      throw new Error("MAETHIST is still loading — try again in a moment.");
     }
 
     // Flush the in-memory workspace into storage first, so what gets written
@@ -300,7 +300,7 @@
     await library.snapshotActiveWorkspace();
     const snapshot = await library.readActiveWorkspace();
 
-    const title = (options.title || snapshot?.ppt?.name || "Inkyscib document")
+    const title = (options.title || snapshot?.ppt?.name || "MAETHIST document")
       .replace(/\.(pdf|pptx?|inkydoc)$/i, "")
       .trim();
     const docId = typeof snapshot?.ppt?.docId === "string" ? snapshot.ppt.docId : null;
@@ -364,11 +364,11 @@
   }
 
   function safeFilename(title) {
-    const cleaned = String(title || "Inkyscib document")
+    const cleaned = String(title || "MAETHIST document")
       .replace(/[\\/:*?"<>|]+/g, " ")
       .replace(/\s+/g, " ")
       .trim();
-    return (cleaned || "Inkyscib document").slice(0, 80);
+    return (cleaned || "MAETHIST document").slice(0, 80);
   }
 
   /**
@@ -381,7 +381,7 @@
     const files = await readZip(bytes);
 
     if (!files["manifest.json"] || !files["document.json"]) {
-      throw new Error("That file is not an Inkyscib document.");
+      throw new Error("That file is not an MAETHIST document.");
     }
 
     let manifest;
@@ -390,15 +390,15 @@
       manifest = JSON.parse(decoder.decode(files["manifest.json"]));
       document_ = JSON.parse(decoder.decode(files["document.json"]));
     } catch (error) {
-      throw new Error("That Inkyscib document could not be read.");
+      throw new Error("That MAETHIST document could not be read.");
     }
 
     if (manifest?.format !== FORMAT) {
-      throw new Error("That file is not an Inkyscib document.");
+      throw new Error("That file is not an MAETHIST document.");
     }
     if (Number(manifest.version) > FORMAT_VERSION) {
       throw new Error(
-        "That document was saved by a newer version of Inkyscib. Update, then open it again."
+        "That document was saved by a newer version of MAETHIST. Update, then open it again."
       );
     }
 
@@ -441,11 +441,11 @@
 
     const library = window.Inkyscib?.Library;
     if (!library?.loadDocumentData) {
-      throw new Error("Inkyscib is still loading — try again in a moment.");
+      throw new Error("MAETHIST is still loading — try again in a moment.");
     }
 
     await library.loadDocumentData(parsed.document, {
-      title: parsed.manifest.title || "Inkyscib document"
+      title: parsed.manifest.title || "MAETHIST document"
     });
 
     return parsed.manifest;

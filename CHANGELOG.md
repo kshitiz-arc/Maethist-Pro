@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.1.0 — 2026-11-17
+
+### Changed
+
+- **Inkyscib is now MAETHIST.** Every name a person reads changed: page
+  titles, the wordmark, the editor footer, the tour, error and status
+  messages, Planner alerts and calendar exports, download file names
+  (`maethist-backup-<date>.inky`, `maethist-notebook.pdf`,
+  `maethist-presentation.pptx`), the installed app's name, the legal pages
+  and the docs.
+- **New mark.** The favicon, the installable-app icons, the Android adaptive
+  icon, the notification badge, the header and 404 logos, the tour badge and
+  the share card all use the new maths-symbols icon, built from one source by
+  `tools/make_brand_icons.py`. On pages it sits on a small paper tile, because
+  its black outlines would vanish on the dark sheet.
+
+### Kept on purpose
+
+- **Internal names did not change**, so nobody loses their work: storage keys
+  (`inkyscib_drawing`, `inkyscib-*`), the IndexedDB database `inkyscib_cache`,
+  the backup format's `app: "inkyscib"` marker, the offline cache prefix, the
+  `window.Inkyscib` script namespace and the `.inky` / `.inkydoc` file
+  extensions. Renaming any of them would orphan every existing visitor's
+  notebooks or make older backups unopenable.
+
 ## 2.0.2 — 2026-11-17
 
 ### Changed

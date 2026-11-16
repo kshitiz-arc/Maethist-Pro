@@ -12,7 +12,7 @@ this file is stale.
 
 ## The short version
 
-Inkyscib has no accounts and no server-side store of anyone's work. Three of the five rows
+MAETHIST has no accounts and no server-side store of anyone's work. Three of the five rows
 below are "held for the length of one request, then gone", and the two that persist hold
 nothing that points at a person.
 
@@ -60,6 +60,6 @@ watches real browser traffic and no longer carries a fonts exception.
 
 ## Roles
 
-Inkyscib is the **controller** for rows 3, 4 and 5. For row 1 it is not a controller at
+MAETHIST is the **controller** for rows 3, 4 and 5. For row 1 it is not a controller at
 all: the data never reaches it. For row 2 it is a controller for the seconds the file
 exists. Google and the hosting provider are **processors/third parties** as set out above.

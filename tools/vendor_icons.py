@@ -1,8 +1,8 @@
-"""Vendor the icons Inkyscib uses from three open icon libraries.
+"""Vendor the icons MAETHIST uses from three open icon libraries.
 
     python tools/vendor_icons.py            # needs outbound network, once
 
-Inkyscib has no build step and no node_modules, so "installing" an icon set
+MAETHIST has no build step and no node_modules, so "installing" an icon set
 means copying the SVGs it actually uses into the repository, at a pinned
 release, with each library's licence beside them:
 
@@ -239,7 +239,7 @@ def main():
 
     (OUT_DIR / "LICENSES.md").write_text(
         "# Icon licences\n\n"
-        "Inkyscib's own code is MIT. The icons below are not: each set keeps its\n"
+        "MAETHIST's own code is MIT. The icons below are not: each set keeps its\n"
         "own licence, reproduced verbatim. Written by tools/vendor_icons.py.\n\n"
         + "\n".join(licences),
         encoding="utf-8",

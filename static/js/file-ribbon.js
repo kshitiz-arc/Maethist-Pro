@@ -519,11 +519,11 @@
   }
 
   function pageFilename(base, pageNumber) {
-    const cleaned = String(base || "Inkyscib")
+    const cleaned = String(base || "MAETHIST")
       .replace(/\.(pdf|pptx?|inkydoc)$/i, "")
       .replace(/[\\/:*?"<>|]+/g, " ")
       .replace(/\s+/g, " ")
-      .trim() || "Inkyscib";
+      .trim() || "MAETHIST";
     return pageNumber ? cleaned + " - page " + pageNumber + ".png" : cleaned + ".png";
   }
 

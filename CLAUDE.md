@@ -1,4 +1,4 @@
-# Inkyscib
+# MAETHIST
 
 A browser workspace for studying from your own material: import a PDF or a deck, write on
 it by hand, construct real geometry, export clean vector PDF. Free, offline-capable, no

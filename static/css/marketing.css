@@ -1,4 +1,4 @@
-/* Inkyscib marketing pages: home, features, about.
+/* MAETHIST marketing pages: home, features, about.
  *
  * Built on the token set in DESIGN.md. Thirteen colours, a 4px module, two
  * families. Nothing here invents a private palette.
@@ -756,3 +756,18 @@ h1, h2, h3,
 .feature .feature-arrow { width: 14px; height: 14px; color: var(--accent); flex: none; align-self: center; }
 .link-out { width: 0.95em; height: 0.95em; vertical-align: -0.12em; }
 .icon-diagonal { transform: rotate(-45deg); }
+
+/* ---------- MAETHIST mark ----------
+   The mark is drawn with black outlines, which vanish on the dark sheet, so
+   it always sits on a small paper tile. Same tile on every page. */
+.logo-icon {
+  width: 30px;
+  height: 30px;
+  padding: 2px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: #F3F7FB;
+  box-shadow: 0 0 0 1px var(--rule);
+  object-fit: contain;
+}
+.logo { letter-spacing: 0.04em; }

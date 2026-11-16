@@ -1,11 +1,11 @@
-# Inkyscib
+# MAETHIST
 
 > A free, ad-free study and teaching workspace that runs in the browser. Import a
 > PDF or a slide deck, write on it by hand, construct real ruler-and-compass
 > geometry, and export clean vector PDF. No account, no subscription, and every
 > drawing stays in the visitor's own browser storage.
 
-Inkyscib is built for students and teachers on inexpensive hardware — the target
+MAETHIST is built for students and teachers on inexpensive hardware — the target
 device is a budget Android tablet, not an iPad. It is a Flask app with a vanilla
 JavaScript canvas: no framework, no build step, and no server-side copy of
 anyone's notes.

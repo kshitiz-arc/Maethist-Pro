@@ -1,6 +1,6 @@
 // The original file, kept.
 //
-// Everything Inkyscib shows you for an imported document is a picture of that
+// Everything MAETHIST shows you for an imported document is a picture of that
 // document, and until now the picture was all that survived the import — the
 // uploaded bytes were read once, rasterised, and dropped. That is why a
 // download is a photograph of a photograph, and why re-importing one degrades
@@ -66,7 +66,7 @@
       try {
         tx = database.transaction(STORE, mode);
       } catch (error) {
-        console.warn("Inkyscib document store unavailable:", error);
+        console.warn("MAETHIST document store unavailable:", error);
         resolve({ ok: false, value: undefined });
         return;
       }
@@ -74,11 +74,11 @@
       if (request) request.onsuccess = () => { value = request.result; };
       tx.oncomplete = () => resolve({ ok: true, value });
       tx.onerror = () => {
-        console.warn("Inkyscib document store transaction failed:", tx.error);
+        console.warn("MAETHIST document store transaction failed:", tx.error);
         resolve({ ok: false, value: undefined });
       };
       tx.onabort = () => {
-        console.warn("Inkyscib document store transaction aborted:", tx.error);
+        console.warn("MAETHIST document store transaction aborted:", tx.error);
         resolve({ ok: false, value: undefined });
       };
     });
@@ -104,7 +104,7 @@
       );
     }
     if (typeof source?.arrayBuffer === "function") return source.arrayBuffer();
-    throw new Error("That is not a file Inkyscib can store.");
+    throw new Error("That is not a file MAETHIST can store.");
   }
 
   /**
@@ -125,7 +125,7 @@
     if (!database) {
       // Without IndexedDB the original cannot be kept. Say so rather than
       // pretending — callers fall back to the old raster-only behaviour.
-      throw new Error("This browser will not let Inkyscib store the original file.");
+      throw new Error("This browser will not let MAETHIST store the original file.");
     }
 
     if (verifiable) {

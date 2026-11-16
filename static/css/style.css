@@ -1537,7 +1537,7 @@ body::-webkit-scrollbar {
   text-wrap: balance;
 }
 
-/* Long words (Inkyscib at 16vw) must never force the column wider. */
+/* Long words (MAETHIST at 16vw) must never force the column wider. */
 .hero-copy {
   overflow-wrap: anywhere;
   text-wrap: pretty;

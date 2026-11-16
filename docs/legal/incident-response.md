@@ -10,7 +10,7 @@ Written 2026-09-20. One page, because a plan nobody can read on a bad day is not
 
 ## What a breach looks like here
 
-Inkyscib holds almost nothing, so most of the usual scenarios do not apply. There is no
+MAETHIST holds almost nothing, so most of the usual scenarios do not apply. There is no
 user table to dump and no password file to leak. The realistic incidents, in order of how
 much they would actually matter:
 
@@ -68,7 +68,7 @@ Publish this before you know the details. Silence looks worse than an incomplete
 
 > **<date> — service interruption under investigation**
 >
-> We took Inkyscib offline at <time UTC> while we investigate a problem with the way the
+> We took MAETHIST offline at <time UTC> while we investigate a problem with the way the
 > site was being served. Your notes are stored in your own browser and are not held on our
 > servers. We do not yet know whether anything could have been read from a browser while
 > the site was affected; we are checking, and we will update this page with what we find,

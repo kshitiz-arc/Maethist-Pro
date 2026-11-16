@@ -1,6 +1,6 @@
 /* Reminds a student to back up before the browser can lose their work.
  *
- * Inkyscib keeps every notebook in this browser and nowhere else. Clearing
+ * MAETHIST keeps every notebook in this browser and nowhere else. Clearing
  * site data, a reset tablet or a browser that evicts storage under pressure
  * deletes it, and nobody outside tech expects that. The .inky backup is the
  * only copy that survives, so this nudges toward it:

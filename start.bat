@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-title Inkyscib
+title MAETHIST
 cd /d "%~dp0"
 
 where python >nul 2>nul
@@ -37,7 +37,7 @@ set "HOST=0.0.0.0"
 for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notmatch '^(127\.|169\.254\.)' -and $_.InterfaceAlias -notmatch 'Loopback' } | Select-Object -First 1 -ExpandProperty IPAddress)"') do set "LANIP=%%i"
 
 echo.
-echo Starting Inkyscib...
+echo Starting MAETHIST...
 echo   On this PC:       http://127.0.0.1:%PORT%
 if defined LANIP (
     echo   On other devices: http://!LANIP!:%PORT%
@@ -60,5 +60,5 @@ start "" /min powershell -NoProfile -WindowStyle Hidden -Command "Start-Sleep -S
 %PY% app.py
 
 echo.
-echo Inkyscib server stopped.
+echo MAETHIST server stopped.
 pause

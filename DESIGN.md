@@ -1,4 +1,4 @@
-# Design System — Inkyscib
+# Design System — MAETHIST
 
 Preview of this system rendered: https://claude.ai/code/artifact/a28264c7-a3ff-4e5f-ae59-6fe268ae10f1
 
@@ -296,7 +296,7 @@ says so in the filename chip at `--ink-3` rather than behind an overlay.
 | 2026-09-03 | Radii collapsed 23 values to 4 | 279 declarations rewritten onto `--r-sm/md/lg/pill`. Live editor went from 17 distinct radii to 5 |
 | 2026-09-03 | `html` had no font-family | The cascade root fell back to Times New Roman; anything outside `body`'s subtree inherited serif. Now set in `tokens.css` |
 | 2026-09-03 | Marketing pages rebuilt on the token set | First application of this system. `marketing.css` rewritten from the HUD version; `home.html` hero rebuilt; the starfield, nebula parallax and "SYSTEM READY" ticker deleted from template, CSS and JS |
-| 2026-09-03 | Marketing copy stops narrating the software | `INITIALIZE CANVAS` to `Open the canvas`, `MOD_01.3 // PAGES` to `Pages`, `OPERATOR_01 // TEACHER` to `Teacher`, `SYSTEM ONLINE // INKYSCIB OS v1.0` to `Free / offline / no account`. An instrument states what it does; it does not announce that it has booted |
+| 2026-09-03 | Marketing copy stops narrating the software | `INITIALIZE CANVAS` to `Open the canvas`, `MOD_01.3 // PAGES` to `Pages`, `OPERATOR_01 // TEACHER` to `Teacher`, `SYSTEM ONLINE // MAETHIST OS v1.0` to `Free / offline / no account`. An instrument states what it does; it does not announce that it has booted |
 | 2026-09-03 | Marketing now honours the system colour scheme | `<html>` carried a hardcoded `data-theme="dark"` and the CSS had no `prefers-color-scheme` block, so a light-mode visitor was always served dark. Three states now: system default, plus explicit light and dark |
 | 2026-09-03 | Hero holds two columns down to 54rem | 62rem stacked at 992px, which caught the ~960px tablet and pushed the drawing below the fold. The drawing is the one thing on the page the product actually made |
 | 2026-09-03 | 13 tokens replace 938 literals and 8 vocabularies | Feature-private, breakpoint-scoped tokens already shipped an invisible panel on tablet |
@@ -364,3 +364,4 @@ says so in the filename chip at `--ink-3` rather than behind an overlay.
 | 2026-11-15 | The tour, the File sheet, the planner and My Notebooks read the core tokens | Each had its own palette (indigo, teal, lavender), so four dialogs were four different products. Their `--tour-*`, `--ribbon-*` and `--planner-*` names survive only as aliases |
 | 2026-11-15 | The footer credit is a plain readable link, not an animated signature | Owner request: "Created by @kshitizarc", linked to LinkedIn. It rested at 40% opacity, under 3:1 |
 | 2026-11-17 | Icons from Lucide (editor), Phosphor (Planner, Pomodoro, tour), Remix Icon (marketing, legal) | Owner request to use all three. One family per surface, chosen by `data-icon-set` on the surface root, so stroke and filled styles never share a row. Content drawings (shapes, nibs, line styles) stay hand-drawn. `tools/vendor_icons.py`, `static/icons/LICENSES.md` |
+| 2026-11-17 | Renamed to MAETHIST; new maths-symbols mark | Owner request. The mark is full colour with black outlines, so it always sits on a paper tile (`#F3F7FB`) rather than directly on the dark sheet. Internal identifiers keep the old name so stored work survives. `tools/make_brand_icons.py` |

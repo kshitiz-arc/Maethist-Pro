@@ -1,7 +1,7 @@
 {
   "id": "/write",
-  "name": "Inkyscib",
-  "short_name": "Inkyscib",
+  "name": "MAETHIST",
+  "short_name": "MAETHIST",
   "description": "A free study canvas: handwriting, live geometry and PDF annotation that works offline.",
   "start_url": "/write",
   "scope": "/",
@@ -11,19 +11,19 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/static/icons/inkyscib-192.png",
+      "src": "/static/icons/maethist-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/static/icons/inkyscib-512.png",
+      "src": "/static/icons/maethist-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/static/icons/inkyscib-maskable-512.png",
+      "src": "/static/icons/maethist-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -37,7 +37,7 @@
       "url": "/write?planner=1",
       "icons": [
         {
-          "src": "/static/icons/inkyscib-192.png",
+          "src": "/static/icons/maethist-192.png",
           "sizes": "192x192",
           "type": "image/png"
         }

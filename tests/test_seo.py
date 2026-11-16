@@ -175,7 +175,7 @@ class TitleAndDescriptionTests(unittest.TestCase):
                 titles = TITLE_RE.findall(html)
                 self.assertEqual(len(titles), 1)
                 self.assertTrue(20 <= len(titles[0]) <= 65, titles[0])
-                self.assertIn("Inkyscib", titles[0])
+                self.assertIn("MAETHIST", titles[0])
 
     def test_every_page_has_one_description_in_the_snippet_window(self):
         for path, html in self.html.items():
@@ -551,7 +551,7 @@ class LlmsTxtTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.mimetype.startswith("text/markdown"))
-        self.assertTrue(body.startswith("# Inkyscib"))
+        self.assertTrue(body.startswith("# MAETHIST"))
         self.assertIn("\n> ", body)
 
     def test_llms_txt_links_to_every_indexable_page_absolutely(self):

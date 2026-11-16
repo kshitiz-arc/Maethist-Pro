@@ -33,7 +33,7 @@
 
     return {
       active: slides.length > 0,
-      name: deck?.name || "Inkyscib presentation",
+      name: deck?.name || "MAETHIST presentation",
       renderMode: deck?.renderMode || "browser",
       // Null for decks with no stored original: PPTX imports, and PDFs
       // imported before the document store existed.
@@ -970,7 +970,7 @@
       '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>' +
       '<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>' +
       '<p:pic>' +
-      `<p:nvPicPr><p:cNvPr id="2" name="Inkyscib slide ${index}"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr>` +
+      `<p:nvPicPr><p:cNvPr id="2" name="MAETHIST slide ${index}"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr>` +
       '<p:blipFill><a:blip r:embed="rIdImage"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>' +
       `<p:spPr><a:xfrm><a:off x="${placement.x}" y="${placement.y}"/><a:ext cx="${placement.width}" cy="${placement.height}"/></a:xfrm>` +
       '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>' +
@@ -1040,8 +1040,8 @@
   function pptxThemeXml() {
     return (
       xmlHeader() +
-      `<a:theme xmlns:a="${PPTX_A_NS}" name="Inkyscib">` +
-      '<a:themeElements><a:clrScheme name="Inkyscib">' +
+      `<a:theme xmlns:a="${PPTX_A_NS}" name="MAETHIST">` +
+      '<a:themeElements><a:clrScheme name="MAETHIST">' +
       '<a:dk1><a:sysClr val="windowText" lastClr="000000"/></a:dk1>' +
       '<a:lt1><a:sysClr val="window" lastClr="FFFFFF"/></a:lt1>' +
       '<a:dk2><a:srgbClr val="1F2937"/></a:dk2><a:lt2><a:srgbClr val="F8FAFC"/></a:lt2>' +
@@ -1049,8 +1049,8 @@
       '<a:accent3><a:srgbClr val="F59E0B"/></a:accent3><a:accent4><a:srgbClr val="EF4444"/></a:accent4>' +
       '<a:accent5><a:srgbClr val="06B6D4"/></a:accent5><a:accent6><a:srgbClr val="A855F7"/></a:accent6>' +
       '<a:hlink><a:srgbClr val="2563EB"/></a:hlink><a:folHlink><a:srgbClr val="7C3AED"/></a:folHlink>' +
-      '</a:clrScheme><a:fontScheme name="Inkyscib"><a:majorFont><a:latin typeface="Aptos Display"/></a:majorFont><a:minorFont><a:latin typeface="Aptos"/></a:minorFont></a:fontScheme>' +
-      '<a:fmtScheme name="Inkyscib"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst>' +
+      '</a:clrScheme><a:fontScheme name="MAETHIST"><a:majorFont><a:latin typeface="Aptos Display"/></a:majorFont><a:minorFont><a:latin typeface="Aptos"/></a:minorFont></a:fontScheme>' +
+      '<a:fmtScheme name="MAETHIST"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst>' +
       '<a:lnStyleLst><a:ln w="6350"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst>' +
       '<a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme>' +
       '</a:themeElements></a:theme>'
@@ -1062,15 +1062,15 @@
       app: (
         xmlHeader() +
         '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">' +
-        '<Application>Inkyscib</Application>' +
+        '<Application>MAETHIST</Application>' +
         `<Slides>${slideCount}</Slides>` +
         '</Properties>'
       ),
       core: (
         xmlHeader() +
         '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
-        '<dc:title>Inkyscib annotated presentation</dc:title>' +
-        '<dc:creator>Inkyscib</dc:creator>' +
+        '<dc:title>MAETHIST annotated presentation</dc:title>' +
+        '<dc:creator>MAETHIST</dc:creator>' +
         '</cp:coreProperties>'
       )
     };
@@ -1188,14 +1188,14 @@
   }
 
   function exportFilename(filename, format) {
-    return `${(filename || "inkyscib-presentation").replace(/\.[^.]+$/, "")}.${format}`;
+    return `${(filename || "maethist-presentation").replace(/\.[^.]+$/, "")}.${format}`;
   }
 
   async function exportDeck(format) {
     const s = state();
     if (!s?.ppt?.active) return;
 
-    const filename = s.ppt.name || "inkyscib-presentation";
+    const filename = s.ppt.name || "maethist-presentation";
     setStatus(`Preparing ${format.toUpperCase()} export on this device...`, "loading");
 
     try {

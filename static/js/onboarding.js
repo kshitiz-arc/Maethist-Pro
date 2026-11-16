@@ -165,7 +165,7 @@
 
   const steps = [
     {
-      kicker: "Welcome to Inkyscib",
+      kicker: "Welcome to MAETHIST",
       title: "One canvas. Your whole study flow.",
       copy: "This quick visual tour maps the workspace before you make your first mark. Nothing to configure, and the guide itself runs entirely in your browser.",
       visual: visuals.welcome,
@@ -352,7 +352,7 @@
       <div class="feature-tour-spotlight" aria-hidden="true"></div>
       <section class="feature-tour-card" role="dialog" aria-modal="true" aria-labelledby="featureTourTitle" aria-describedby="featureTourCopy">
         <div class="feature-tour-card-top">
-          <div class="feature-tour-brand"><span class="feature-tour-brand-mark">I</span><span>Feature map</span></div>
+          <div class="feature-tour-brand"><img class="feature-tour-brand-mark" src="/static/img/maethist-mark.png" alt="" width="26" height="26"><span>Feature map</span></div>
           <button class="feature-tour-close" type="button" aria-label="Close feature tour">${phosphor("x")}
           </button>
         </div>

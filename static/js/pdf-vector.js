@@ -1,4 +1,4 @@
-// Inkyscib strokes as PDF path operators.
+// MAETHIST strokes as PDF path operators.
 //
 // The canvas renderer in canvas.js draws ink as quadratic Béziers with round
 // caps and joins. PDF draws cubic Béziers with round caps and joins. That is a

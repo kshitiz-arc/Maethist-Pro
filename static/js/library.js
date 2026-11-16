@@ -329,7 +329,7 @@
         if (busy) return;
 
         if (!state()?.storageReady) {
-            setStatus('Inkyscib is still loading — try again in a moment.', 'error');
+            setStatus('MAETHIST is still loading — try again in a moment.', 'error');
             return;
         }
 
@@ -634,7 +634,7 @@
     function backupFilename() {
         const now = new Date();
         const pad = (value) => String(value).padStart(2, '0');
-        return `inkyscib-backup-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.inky`;
+        return `maethist-backup-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.inky`;
     }
 
     function downloadBlob(blob, filename) {
@@ -720,12 +720,12 @@
             try {
                 payload = JSON.parse(await file.text());
             } catch (error) {
-                setStatus('That file is not a valid Inkyscib backup.', 'error');
+                setStatus('That file is not a valid MAETHIST backup.', 'error');
                 return;
             }
 
             if (payload?.app !== 'inkyscib' || payload?.kind !== BACKUP_KIND || !Array.isArray(payload.documents)) {
-                setStatus('That file is not a valid Inkyscib backup.', 'error');
+                setStatus('That file is not a valid MAETHIST backup.', 'error');
                 return;
             }
 

@@ -1,4 +1,4 @@
-// Inkyscib focus timer: pomodoro sessions, one quiet stats line, focus sounds.
+// MAETHIST focus timer: pomodoro sessions, one quiet stats line, focus sounds.
 //
 // Rebuilt 2026-09-15 from four reports: the panel was complicated, the rain did
 // not sound like rain, the deep sea sound was inaudible, and the settings icon
@@ -14,7 +14,7 @@
     const LEGACY_FOCUS_KEY = 'pomodoro_focus';
     const LEGACY_BREAK_KEY = 'pomodoro_break';
     const TICK_MS = 250;
-    const BASE_TITLE = document.title || 'Inkyscib';
+    const BASE_TITLE = document.title || 'MAETHIST';
 
     const MODES = {
         focus: { label: 'Focus', icon: 'fa-brain' },
@@ -883,7 +883,7 @@
         function notify(title, body) {
             if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
             try {
-                new Notification(title, { body, icon: '/static/logo.ico' });
+                new Notification(title, { body, icon: '/static/icons/maethist-192.png', badge: '/static/icons/maethist-badge-96.png' });
             } catch (e) { /* notifications blocked */ }
         }
 

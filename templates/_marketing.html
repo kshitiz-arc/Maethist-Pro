@@ -8,9 +8,9 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Inkyscib" />
+  <meta name="apple-mobile-web-app-title" content="MAETHIST" />
   <meta name="description" content="{% block description %}A free, ad-free study canvas: handwritten notes, live ruler-and-compass geometry, algebra tiles and PDF annotation — in your browser, on any device.{% endblock %}" />
-  <title>{% block title %}Inkyscib — free handwriting, geometry and PDF canvas{% endblock %}</title>
+  <title>{% block title %}MAETHIST — free handwriting, geometry and PDF canvas{% endblock %}</title>
   <link rel="canonical" href="{{ canonical_url }}">
   {% if search_console_token %}
   <meta name="google-site-verification" content="{{ search_console_token }}" />
@@ -19,7 +19,7 @@
   {# Social cards. og:title/og:description reuse the page's own blocks via
      Jinja's self, so there is exactly one place to change the copy. #}
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Inkyscib" />
+  <meta property="og:site_name" content="MAETHIST" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:title" content="{{ self.title() }}" />
   <meta property="og:description" content="{{ self.description() }}" />
@@ -27,7 +27,7 @@
   <meta property="og:image" content="{{ site_url(url_for('static', filename='img/og-cover.png')) }}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="The Inkyscib homepage: a live ruler-and-compass construction beside the words 'the geometry is real'." />
+  <meta property="og:image:alt" content="The MAETHIST homepage: a live ruler-and-compass construction beside the words 'the geometry is real'." />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="{{ self.title() }}" />
   <meta name="twitter:description" content="{{ self.description() }}" />
@@ -64,8 +64,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/vengeance.css', v='veng-1') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/privacy.css', v='v2') }}">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest', v='pwa-1') }}">
-  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/inkyscib-180.png', v='pwa-1') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/maethist-180.png', v='pwa-1') }}">
   <link rel="icon" href="{{ url_for('static', filename='logo.ico') }}" type="image/x-icon">
+  <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='icons/maethist-192.png') }}">
 
   <script src="{{ url_for('static', filename='js/marketing.js', v='hud-3') }}" defer></script>
   <script src="{{ url_for('static', filename='js/odometer.js', v='veng-1') }}" defer></script>
@@ -81,9 +82,9 @@
 
     <header>
 
-      <a class="logo" href="{{ url_for('home') }}" aria-label="Inkyscib home">
-        <span class="logo-icon" aria-hidden="true">◇</span>
-        <span>Inkyscib</span>
+      <a class="logo" href="{{ url_for('home') }}" aria-label="MAETHIST home">
+        <img class="logo-icon" src="{{ url_for('static', filename='img/maethist-mark.png') }}" alt="" width="30" height="30">
+        <span>MAETHIST</span>
       </a>
 
       {# Real routes, not scroll targets: every one of these goes to a page. #}

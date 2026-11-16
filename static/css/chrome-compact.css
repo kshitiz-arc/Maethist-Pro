@@ -321,3 +321,14 @@ footer .footer-credit-link:focus-visible {
 @media (max-width: 640px) {
   .backup-reminder { right: 8px; left: 8px; bottom: 52px; max-width: none; }
 }
+
+/* The editor footer's mark, on the same paper tile as everywhere else. */
+.footer-mark {
+  width: 16px;
+  height: 16px;
+  padding: 1px;
+  margin-right: 4px;
+  border-radius: 3px;
+  background: #F3F7FB;
+  vertical-align: -3px;
+}
