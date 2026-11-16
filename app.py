@@ -1431,7 +1431,9 @@ OFFLINE_PAGES = ("/", "/write", "/features", "/about")
 # The per-icon SVG files are only read by the server (icon() inlines them);
 # the browser gets the same icons through js/icon-set.js.
 _OFFLINE_SKIP_PREFIXES = (
-    "js/inklab/", "js/planner-sw.js", "img/",
+    "js/inklab/", "js/planner-sw.js",
+    # The share card is only ever fetched by social-media crawlers.
+    "img/og-cover",
     "icons/lucide/", "icons/phosphor/", "icons/remix/",
 )
 _OFFLINE_SUFFIXES = (
