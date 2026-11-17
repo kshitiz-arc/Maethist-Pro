@@ -108,7 +108,11 @@
   function viewportPlayerSize(width, height) {
     const margin = 8;
     const maxWidth = Math.max(240, Math.min(960, window.innerWidth - margin * 2));
-    const maxHeight = Math.max(180, Math.min(720, window.innerHeight - margin * 2));
+    // Never taller than the room under the tool bar. A player taller than
+    // that had to choose between staying on screen and staying below the
+    // chrome; staying on screen won, and on a 768px laptop its title bar and
+    // the top of the video sat under the tool bar.
+    const maxHeight = Math.max(180, Math.min(720, window.innerHeight - chromeFloor() - margin * 2));
     const minWidth = Math.min(MIN_SIZE.width, maxWidth);
     const minHeight = Math.min(MIN_SIZE.height, maxHeight);
     return {
@@ -147,8 +151,11 @@
   function clampPlayerToViewport() {
     if (!isOpen) return;
     const margin = 8;
-    const layoutWidth = ytPlayer.offsetWidth || expandedSize.width;
-    const layoutHeight = ytPlayer.offsetHeight || expandedSize.height;
+    // The size that was set, not the one on screen: the player animates its
+    // height, and reading offsetHeight mid-animation wrote the half-way height
+    // back as the new size (a 400px player opened at 300px).
+    const layoutWidth = Number.parseFloat(ytPlayer.style.width) || ytPlayer.offsetWidth || expandedSize.width;
+    const layoutHeight = Number.parseFloat(ytPlayer.style.height) || ytPlayer.offsetHeight || expandedSize.height;
     const size = viewportPlayerSize(
       isMinimized ? expandedSize.width : layoutWidth,
       isMinimized ? expandedSize.height : layoutHeight
@@ -1098,7 +1105,9 @@
       bottom = clamp(resizeState.bottom + dy, resizeState.top + minHeight, window.innerHeight - margin);
     }
     if (direction.includes("n")) {
-      top = clamp(resizeState.top + dy, margin, resizeState.bottom - minHeight);
+      // The top edge stops at the chrome, like the drag does.
+      const ceiling = Math.min(chromeFloor() + margin, resizeState.bottom - minHeight);
+      top = clamp(resizeState.top + dy, ceiling, resizeState.bottom - minHeight);
     }
 
     const width = Math.max(1, right - left);

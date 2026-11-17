@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.4.1 — 2026-11-18
+
+### Fixed
+
+- **The YouTube player went under the tool bar on shorter screens.** On a
+  768px laptop a tall player had to choose between staying on screen and
+  staying below the chrome. It chose the screen, so its title bar and the
+  top of the video sat under the tool bar. The player is now never taller
+  than the room under the tool bar, and dragging its top edge stops at the
+  tool bar, as moving it already did.
+- The player opened at 300px instead of its 400px default, and could snap
+  back to a smaller size after a resize. The viewport check read the height
+  partway through its animation and saved that as the new size.
+
+
 ## 2.4.0 — 2026-11-17
 
 ### Added: lecture tools in the YouTube player

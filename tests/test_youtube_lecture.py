@@ -292,6 +292,48 @@ class LectureToolsTests(unittest.TestCase):
         for got, want in zip(after, before):
             self.assertAlmostEqual(got, want, delta=2)
 
+    def test_the_player_never_sits_under_the_tool_bar(self):
+        """Reported on a laptop: a tall player chose staying on screen over
+        staying below the chrome, and its title bar and the top of the video
+        went under the tool bar. Checked on a 768px laptop and the 600px
+        tablet, opened from an oversized saved size, with the notes open,
+        docked, and with the top edge dragged upward."""
+        for width, height in ((1366, 768), (960, 600)):
+            with self.subTest(viewport=f"{width}x{height}"):
+                context = self.context(viewport={"width": width, "height": height})
+                context.add_init_script(
+                    "localStorage.setItem('inkyscib-yt-player', JSON.stringify({x: 0, y: 0, width: 900, height: 2000, lastUrl: ''}))"
+                )
+                page = self.open_page(context)
+                self.play(page)
+                measure = """() => {
+                  const floor = Math.max(0, ...[...document.querySelectorAll('.toolbar, .file-ribbon')]
+                    .map((e) => e.getBoundingClientRect())
+                    .filter((r) => r.height && r.top < innerHeight / 2).map((r) => r.bottom));
+                  const r = document.getElementById('ytPlayer').getBoundingClientRect();
+                  return { floor, top: r.top, bottom: r.bottom, vh: innerHeight };
+                }"""
+                states = {"open": page.evaluate(measure)}
+                page.evaluate("() => window.Inkyscib.YouTube.setNotesOpen(true)")
+                page.wait_for_timeout(450)
+                states["notes"] = page.evaluate(measure)
+                page.evaluate("() => window.Inkyscib.YouTube.setDocked(true)")
+                states["docked"] = page.evaluate(measure)
+                page.evaluate("() => window.Inkyscib.YouTube.setDocked(false)")
+                page.wait_for_timeout(450)
+                states["floating"] = page.evaluate(measure)
+                edge = page.locator(".yt-resize-n").bounding_box()
+                page.mouse.move(edge["x"] + edge["width"] / 2, edge["y"] + edge["height"] / 2)
+                page.mouse.down()
+                page.mouse.move(edge["x"] + edge["width"] / 2, 2, steps=6)
+                page.mouse.up()
+                page.wait_for_timeout(450)
+                states["resized"] = page.evaluate(measure)
+                for name, box in states.items():
+                    self.assertGreaterEqual(box["top"], box["floor"], f"{name}: {box}")
+                    self.assertLessEqual(box["bottom"], box["vh"], f"{name}: {box}")
+                self.assertEqual(self.errors, [])
+
     def test_shortcuts_work_only_while_the_pointer_is_over_the_player(self):
         page = self.open_page(self.context())
         self.play(page)
