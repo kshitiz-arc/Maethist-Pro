@@ -1042,6 +1042,14 @@
   function showFormError(message) {
     ui.formError.textContent = message;
     ui.formError.hidden = false;
+    // Tie the message to the field, so a screen reader says why it failed.
+    if (!ui.formError.id) ui.formError.id = 'plannerFormError';
+    ui.taskTitle.setAttribute('aria-invalid', 'true');
+    ui.taskTitle.setAttribute('aria-describedby', ui.formError.id);
+    ui.taskTitle.addEventListener('input', () => {
+      ui.taskTitle.removeAttribute('aria-invalid');
+      ui.formError.hidden = true;
+    }, { once: true });
   }
 
   function toggleTask(taskId, occurrenceDate) {

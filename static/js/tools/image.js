@@ -24,7 +24,9 @@
     return window.appState;
   }
 
-  function setStatus(message) {
+  function setStatus(message, tone) {
+    // The status line is in the side menu, off screen in the v2 chrome.
+    if (tone) window.Inkyscib?.notify?.(message, { tone });
     const element = document.getElementById("imageInsertStatus");
     if (element) element.textContent = message || "";
     if (message) window.setTimeout(() => {
@@ -138,7 +140,7 @@
   async function insertFile(file) {
     if (!file) return false;
     if (!/^image\//i.test(file.type)) {
-      setStatus("That file is not an image.");
+      setStatus("That file is not an image. Choose a PNG, JPEG, WebP or GIF.", "error");
       return false;
     }
 
@@ -149,12 +151,12 @@
       const image = await loadImage(await readAsDataUrl(file));
       compressed = compress(image);
     } catch (error) {
-      setStatus("That image could not be read.");
+      setStatus("That image could not be read. It may be damaged.", "error");
       return false;
     }
 
     if (!compressed) {
-      setStatus("That image is too large to store, even compressed.");
+      setStatus("That image is too large to store, even compressed.", "error");
       return false;
     }
 

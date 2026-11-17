@@ -123,7 +123,7 @@
 
   function syncDemoLabel() {
     if (!demoButton) return;
-    demoButton.textContent = spaceIsFree() ? "See it move  [space]" : "See it move";
+    demoButton.textContent = spaceIsFree() ? "Watch the demo  [space]" : "Watch the demo";
   }
 
   if (demoButton && svg) {

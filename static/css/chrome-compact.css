@@ -332,3 +332,42 @@ footer .footer-credit-link:focus-visible {
   background: #F3F7FB;
   vertical-align: -3px;
 }
+
+/* ---------- shared notice (static/js/notify.js) ----------
+   Bottom centre, above the footer and the page switcher. */
+.app-notice-host {
+  position: fixed;
+  left: 50%;
+  bottom: 52px;
+  z-index: 10030;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.app-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(460px, calc(100vw - 24px));
+  padding: 10px 14px;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 12px 30px var(--d-4);
+  font: 600 var(--t-2) / 1.4 var(--sans);
+  animation: ytFrameToastIn 0.2s ease forwards;
+}
+
+.app-notice svg.icon { width: 18px; height: 18px; flex: none; color: var(--accent); }
+.app-notice.is-error { border-left-color: var(--error); }
+.app-notice.is-error svg.icon { color: var(--error); }
+.app-notice.is-success svg.icon { color: var(--ok); }
+.app-notice.is-leaving { animation: ytFrameToastOut 0.2s ease forwards; }

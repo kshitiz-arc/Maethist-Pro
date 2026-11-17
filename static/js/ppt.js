@@ -56,7 +56,15 @@
     slide.paths = clonePaths(s.paths);
   }
 
+  // The side-menu status lines are not on screen in the v2 chrome, so
+  // outcomes a person must see also go to the shared notice (notify.js).
+  function announce(message, tone) {
+    if (!message) return;
+    if (tone === "error" || tone === "success") window.Inkyscib?.notify?.(message, { tone });
+  }
+
   function setStatus(message, tone = "muted") {
+    announce(message, tone);
     const status = document.getElementById("pptImportStatus");
     if (!status) return;
     status.textContent = message || "";
@@ -64,6 +72,7 @@
   }
 
   function setPdfStatus(message, tone = "muted") {
+    announce(message, tone);
     const status = document.getElementById("pdfImportStatus");
     if (!status) return;
     status.textContent = message || "";

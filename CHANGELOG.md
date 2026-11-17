@@ -1,5 +1,48 @@
 # Changelog
 
+## 2.2.0 — 2026-11-17
+
+Launch checklist. Items that were already in place (privacy and terms pages,
+meta titles and descriptions, social preview image, favicon, sitemap,
+robots.txt, alt text, custom 404, no secrets in front-end code) were audited
+and kept.
+
+### Added
+
+- **A visit counter you own.** Page loads per day, per page, by phone, tablet
+  or desktop, and the referring website's name. No cookies, no IP addresses,
+  nothing per visitor and nothing sent to anyone, so no consent banner is
+  needed. Read it at `/stats` with the `STATS_TOKEN` password.
+- **Request limits on every public API endpoint** (search, video frames,
+  imports, exports), so one visitor cannot flood the server. Visitors are told
+  to wait with a 429 and a retry time; the address is only ever held as a
+  scrambled code for one minute, in memory.
+- **`PRIVACY_CONTACT_EMAIL`** puts your contact address on the privacy and
+  terms pages; until it is set they keep the visible placeholder.
+
+### Changed
+
+- **One call to action**: "Start writing, free", on every page and in the
+  header. Second choices are quiet text links, not competing buttons.
+- **HTTPS is forced in production by default** (Render or
+  `INKYSCIB_ENV=production`); `FORCE_HTTPS=false` turns it off.
+- **Brand images compressed** from about 650 KB to 52 KB; the favicon from
+  432 KB to 7 KB.
+- **Form fields**: the planner marks an empty task name as invalid for screen
+  readers; size fields accept decimals without flagging them; the lecture
+  search has the server's 200-character limit.
+- The privacy policy describes the visit count and the request limits, with
+  their retention.
+
+### Fixed
+
+- **Import errors were invisible.** "Choose a .pdf file", "Could not open this
+  PDF" and the PowerPoint messages were written into side-menu status lines
+  the v2 chrome never shows, so a wrong file looked like a button that did
+  nothing. They now appear as an on-screen notice, as do image-insert errors.
+- The 404 page gained a description and a clearer title.
+- The EDPB link in the privacy policy pointed at a moved page.
+
 ## 2.1.0 — 2026-11-17
 
 ### Changed

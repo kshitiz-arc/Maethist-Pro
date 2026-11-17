@@ -73,15 +73,37 @@
           the identifying version never reaches a disk or a log service
           (<code>logging_filters.py</code>).
         </li>
+        <li>
+          <strong>A visit count</strong> — how many times each page was loaded
+          each day, split into phone, tablet and desktop, and which website a
+          visitor followed a link from (its name only, such as
+          <code>google.com</code>, never the full address). It is a tally, not
+          a record of visitors: there is no cookie, no identifier, no IP
+          address and nothing that tells one visit from another, so it cannot
+          be linked back to anyone.
+        </li>
       </ul>
 
-      <h3>No analytics, so no question to ask</h3>
+      <h3>No analytics, no tracking, so no cookie banner</h3>
 
       <p>
-        There is no analytics on this site: no Google Analytics, no tracking
-        pixel, no visitor counter and no cookie banner, because there is nothing
-        for a banner to ask about. Earlier versions offered Google Analytics as
-        an opt-in. Version 2 removed it altogether.
+        There is no analytics service on this site: no Google Analytics, no
+        tracking pixel and nothing that follows you between visits. The visit
+        count above is kept by this server itself and sent nowhere. Because
+        nothing here is stored on your device to measure you, there is nothing
+        for a cookie banner to ask about. Earlier versions offered Google
+        Analytics as an opt-in; version 2 removed it altogether.
+      </p>
+
+      <h3>Keeping the service up</h3>
+
+      <p>
+        To stop one visitor flooding the lecture search, video capture or file
+        conversion, the server counts each visitor's requests for one minute.
+        It does so with a scrambled code made from a shortened version of your
+        address (the last part is dropped first), held in memory for that
+        minute only. It is never written to disk or logged, and it changes
+        every time the server restarts.
       </p>
 
       <h2>Why we are allowed to</h2>
@@ -94,7 +116,8 @@
           the request.
         </li>
         <li>
-          <strong>Security and abuse logs: legitimate interests.</strong>
+          <strong>Security and abuse logs, request limits and the visit count:
+          legitimate interests.</strong>
           Art. 6(1)(f). The interest is keeping the site up; the balancing test
           is what the redaction filter is for, because the logs are stripped of
           identifiers before they are written.
@@ -178,6 +201,14 @@
             <tr>
               <td>Web server logs</td>
               <td>30 days, already stripped of identifiers</td>
+            </tr>
+            <tr>
+              <td>The daily visit count</td>
+              <td>400 days of totals, then the oldest day is dropped</td>
+            </tr>
+            <tr>
+              <td>Request-limit codes</td>
+              <td>One minute, in memory only</td>
             </tr>
           </tbody>
         </table>
@@ -312,7 +343,7 @@
         </li>
         <li>
           EU and EEA — your national supervisory authority, listed by the
-          <a href="https://www.edpb.europa.eu/about-edpb/about-edpb/members_en" rel="noopener noreferrer" target="_blank">European Data Protection Board</a>.
+          <a href="https://www.edpb.europa.eu/about-edpb/our-members_en" rel="noopener noreferrer" target="_blank">European Data Protection Board</a>.
         </li>
         <li>
           India — the Data Protection Board of India, once it is constituted
@@ -335,15 +366,23 @@
         DPDP Act requires one; if that changes, this section changes with it.
       </p>
 
+      {% if privacy_contact %}
+      <p>
+        <strong>Privacy contact:</strong>
+        <a href="mailto:{{ privacy_contact }}">{{ privacy_contact }}</a>, for
+        rights requests and any question about this policy. We answer rights
+        requests within 30 days.
+      </p>
+      {% else %}
       <p>
         <strong>Privacy contact: to be set before this page is published.</strong>
         A monitored address for rights requests and privacy questions is required
-        here, and the placeholder is deliberate rather than an oversight — see
-        <code>docs/legal/README.md</code>. Until it is filled in, the public
-        route is
+        here; set <code>PRIVACY_CONTACT_EMAIL</code> on the host and it appears
+        on this page and the terms. Until then, the public route is
         <a href="https://github.com/kshitiz-arc" rel="noopener noreferrer" target="_blank">github.com/kshitiz-arc</a>.
         We answer rights requests within 30 days.
       </p>
+      {% endif %}
 
       <h2>Changes to this policy</h2>
 

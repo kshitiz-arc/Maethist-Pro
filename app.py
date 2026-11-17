@@ -8,6 +8,8 @@ import io
 import json
 import logging
 import math
+import atexit
+import hmac
 import functools
 import hashlib
 import os
@@ -97,7 +99,15 @@ def site_url(path="/"):
 if os.environ.get("TRUST_PROXY_HEADERS", "").strip().lower() in {"1", "true", "yes"}:
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
-FORCE_HTTPS = os.environ.get("FORCE_HTTPS", "").strip().lower() in {"1", "true", "yes"}
+# On in production unless explicitly switched off; off for a local run, where
+# there is no certificate. Render and INKYSCIB_ENV=production both count.
+_PRODUCTION_HOST = (
+    os.environ.get("INKYSCIB_ENV", "").strip().lower() == "production"
+    or os.environ.get("RENDER", "").strip().lower() == "true"
+)
+FORCE_HTTPS = os.environ.get(
+    "FORCE_HTTPS", "true" if _PRODUCTION_HOST else ""
+).strip().lower() in {"1", "true", "yes"}
 
 # Everything served on a second hostname - www. as well as the apex, or the
 # hosting platform's default *.onrender.com alongside the custom domain - is
@@ -194,7 +204,7 @@ def add_static_version(endpoint, values):
     if token:
         values["v"] = token
 
-APP_VERSION = "2.1.0"
+APP_VERSION = "2.2.0"
 
 # Render sets RENDER=true on every service; INKYSCIB_ENV=production is the
 # switch for any other host. A random fallback is fine on a laptop, but under
@@ -1320,6 +1330,7 @@ def compress_response(response):
 
 @app.after_request
 def set_security_headers(response):
+    count_visit(response)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
@@ -1416,6 +1427,215 @@ def terms():
     )
 
 
+# ---------------------------------------------------------------------------
+# Abuse limits for the public API.
+#
+# There are no sign-up or comment forms to spam: the only things a stranger
+# can make this server do are search YouTube, cut a video frame, and convert
+# or build a document. Each is a short burst budget per visitor per minute.
+#
+# The visitor is identified by an HMAC of their address (keyed with the
+# per-process secret), with the last part of the address dropped first, held
+# in memory for the length of one window and never written anywhere. That is
+# the least identifying thing that still tells one flood from another.
+# Loopback is exempt: it is a developer's own machine, and the test suite.
+# ---------------------------------------------------------------------------
+
+RATE_LIMITS = {
+    # endpoint name: (requests, per seconds)
+    "youtube_search": (30, 60),
+    "youtube_storyboard": (60, 60),
+    "youtube_prepare": (20, 60),
+    "youtube_frame": (20, 60),
+    "import_ppt": (10, 60),
+    "import_pdf": (10, 60),
+    "export_pdf_onto_original": (20, 60),
+    "export_pdf": (20, 60),
+    "export_pptx": (20, 60),
+}
+_RATE_BUCKETS = {}
+_RATE_LOCK = threading.Lock()
+_RATE_MAX_KEYS = 10000
+RATE_LIMIT_LOOPBACK = os.environ.get("RATE_LIMIT_LOOPBACK", "").strip().lower() in {"1", "true", "yes"}
+
+
+def _visitor_key():
+    address = request.remote_addr or ""
+    if not RATE_LIMIT_LOOPBACK and address in ("127.0.0.1", "::1", "localhost"):
+        return None
+    # The same coarsening the log filter applies (logging_filters.py).
+    if ":" in address:
+        address = ":".join(address.split(":")[:3])
+    else:
+        address = ".".join(address.split(".")[:3])
+    digest = hmac.new(app.config["SECRET_KEY"].encode(), address.encode(), hashlib.sha256)
+    return digest.hexdigest()[:24]
+
+
+@app.before_request
+def apply_rate_limits():
+    limit = RATE_LIMITS.get(request.endpoint or "")
+    if not limit:
+        return None
+    key = _visitor_key()
+    if key is None:
+        return None
+    allowed, window = limit
+    now = time.monotonic()
+    bucket_key = (request.endpoint, key)
+    with _RATE_LOCK:
+        started, count = _RATE_BUCKETS.get(bucket_key, (now, 0))
+        if now - started >= window:
+            started, count = now, 0
+        count += 1
+        _RATE_BUCKETS[bucket_key] = (started, count)
+        if len(_RATE_BUCKETS) > _RATE_MAX_KEYS:
+            # Forget every window that has already closed.
+            for stale in [k for k, (t, _) in _RATE_BUCKETS.items() if now - t >= 60]:
+                _RATE_BUCKETS.pop(stale, None)
+    if count > allowed:
+        retry = max(1, int(window - (now - started)))
+        response = jsonify({"error": "Too many requests from here. Wait a moment and try again."})
+        response.status_code = 429
+        response.headers["Retry-After"] = str(retry)
+        return response
+    return None
+
+
+# ---------------------------------------------------------------------------
+# The visit counter: first-party, cookieless, aggregate.
+#
+# It counts page loads: per day, per page, by device type (phone, tablet,
+# desktop, read from the User-Agent and then discarded), and by referring
+# website (the host only, never the full address). No cookie, no identifier,
+# no IP address and nothing per visitor is stored, so a returning visitor is
+# indistinguishable from a new one -- this is a count, not tracking, and needs
+# no consent banner. Nothing is sent to any third party.
+#
+# Stored in VISITS_PATH (data/visits.json), flushed at most once a minute.
+# Read at /stats with HTTP Basic auth, password STATS_TOKEN; without a token
+# set, /stats does not exist.
+# ---------------------------------------------------------------------------
+
+VISITS_PATH = Path(os.environ.get("VISITS_PATH", Path(app.root_path) / "data" / "visits.json"))
+STATS_TOKEN = os.environ.get("STATS_TOKEN", "").strip()
+VISITS_KEEP_DAYS = 400
+_COUNTED_PAGES = {"/", "/write", "/features", "/about", "/legal/privacy", "/legal/cookies", "/legal/terms"}
+_BOT_UA = re.compile(
+    r"bot|crawl|spider|slurp|preview|headless|lighthouse|python|curl|wget|httpclient|"
+    r"facebookexternalhit|embedly|whatsapp|telegram|discord|skype|monitor|uptime|playwright",
+    re.I,
+)
+_VISITS_LOCK = threading.Lock()
+_VISITS = {"days": {}}
+_VISITS_DIRTY = [False, 0.0]
+
+
+def _load_visits():
+    try:
+        data = json.loads(VISITS_PATH.read_text(encoding="utf-8"))
+        if isinstance(data, dict) and isinstance(data.get("days"), dict):
+            _VISITS["days"] = data["days"]
+    except (OSError, ValueError):
+        pass
+
+
+def _flush_visits(force=False):
+    with _VISITS_LOCK:
+        dirty, last = _VISITS_DIRTY
+        if not dirty or (not force and time.monotonic() - last < 60):
+            return
+        days = sorted(_VISITS["days"])
+        for old in days[:-VISITS_KEEP_DAYS]:
+            _VISITS["days"].pop(old, None)
+        payload = json.dumps(_VISITS, separators=(",", ":"), sort_keys=True)
+        _VISITS_DIRTY[0], _VISITS_DIRTY[1] = False, time.monotonic()
+    try:
+        VISITS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        temp = VISITS_PATH.with_suffix(".tmp")
+        temp.write_text(payload, encoding="utf-8")
+        os.replace(temp, VISITS_PATH)
+    except OSError:
+        logger.info("Could not write the visit counter", exc_info=True)
+
+
+def _device_class(user_agent):
+    ua = user_agent.lower()
+    if "ipad" in ua or "tablet" in ua or ("android" in ua and "mobile" not in ua):
+        return "tablet"
+    if "mobi" in ua or "iphone" in ua or "android" in ua:
+        return "phone"
+    return "desktop"
+
+
+def count_visit(response):
+    if request.method != "GET" or response.status_code != 200:
+        return
+    if request.path not in _COUNTED_PAGES or response.mimetype != "text/html":
+        return
+    user_agent = request.headers.get("User-Agent", "")
+    if not user_agent or _BOT_UA.search(user_agent):
+        return
+    # Link prefetches and speculative loads are not visits.
+    purpose = (request.headers.get("Sec-Purpose", "") + request.headers.get("Purpose", "")).lower()
+    if "prefetch" in purpose or "prerender" in purpose:
+        return
+    referrer = urllib.parse.urlsplit(request.headers.get("Referer", "")).hostname or ""
+    own_host = request.host.split(":")[0]
+    if referrer == own_host or referrer.endswith("." + own_host) or (CANONICAL_HOST and referrer == CANONICAL_HOST.split(":")[0]):
+        referrer = ""
+    day = datetime.date.today().isoformat()
+    with _VISITS_LOCK:
+        bucket = _VISITS["days"].setdefault(day, {"views": 0, "pages": {}, "devices": {}, "referrers": {}})
+        bucket["views"] += 1
+        bucket["pages"][request.path] = bucket["pages"].get(request.path, 0) + 1
+        device = _device_class(user_agent)
+        bucket["devices"][device] = bucket["devices"].get(device, 0) + 1
+        if referrer:
+            referrer = referrer[:80]
+            if referrer in bucket["referrers"] or len(bucket["referrers"]) < 200:
+                bucket["referrers"][referrer] = bucket["referrers"].get(referrer, 0) + 1
+        _VISITS_DIRTY[0] = True
+    _flush_visits()
+
+
+_load_visits()
+atexit.register(_flush_visits, True)
+
+
+@app.route("/stats")
+def stats():
+    """The visit counter, for the owner. 404 unless STATS_TOKEN is set."""
+    if not STATS_TOKEN:
+        return not_found(None)
+    auth = request.authorization
+    supplied = (auth.password if auth else "") or ""
+    if not hmac.compare_digest(supplied.encode(), STATS_TOKEN.encode()):
+        response = Response("Sign in to see the visit counter.", 401)
+        response.headers["WWW-Authenticate"] = 'Basic realm="MAETHIST stats"'
+        return response
+    _flush_visits(force=True)
+    with _VISITS_LOCK:
+        days = json.loads(json.dumps(_VISITS["days"]))
+    recent = sorted(days)[-30:]
+    totals = {"views": 0, "pages": {}, "devices": {}, "referrers": {}}
+    for day in recent:
+        entry = days[day]
+        totals["views"] += entry.get("views", 0)
+        for field in ("pages", "devices", "referrers"):
+            for key, value in entry.get(field, {}).items():
+                totals[field][key] = totals[field].get(key, 0) + value
+    response = Response(render_template(
+        "stats.html",
+        days=[(day, days[day]) for day in reversed(recent)],
+        totals=totals,
+        ranked=lambda mapping, limit=15: sorted(mapping.items(), key=lambda item: -item[1])[:limit],
+    ))
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["X-Robots-Tag"] = "noindex"
+    return response
+
+
 @app.route("/healthz")
 def healthz():
     """What the host pings to decide the service is up."""
@@ -1505,6 +1725,18 @@ def icon(ref, class_name="", size=None):
 app.jinja_env.globals["icon"] = icon
 
 
+# The address published on the privacy and terms pages. Not hardcoded: it is
+# the owner's to choose, and an unset value keeps the visible placeholder.
+PRIVACY_CONTACT_EMAIL = os.environ.get("PRIVACY_CONTACT_EMAIL", "").strip()
+if PRIVACY_CONTACT_EMAIL and not re.fullmatch(r"[^@\s<>\"']+@[^@\s<>\"']+\.[A-Za-z]{2,}", PRIVACY_CONTACT_EMAIL):
+    raise RuntimeError("PRIVACY_CONTACT_EMAIL is not an email address.")
+
+
+@app.context_processor
+def inject_privacy_contact():
+    return {"privacy_contact": PRIVACY_CONTACT_EMAIL}
+
+
 @app.context_processor
 def inject_offline_shell():
     return {"offline_shell_enabled": OFFLINE_SHELL_ENABLED}
@@ -1546,6 +1778,7 @@ def robots_txt():
         "User-agent: *",
         "Allow: /",
         "Disallow: /api/",
+        "Disallow: /stats",
         "Disallow: /lab/",
         "",
         f"Sitemap: {site_url('/sitemap.xml')}",

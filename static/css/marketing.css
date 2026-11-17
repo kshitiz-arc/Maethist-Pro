@@ -771,3 +771,23 @@ h1, h2, h3,
   object-fit: contain;
 }
 .logo { letter-spacing: 0.04em; }
+
+/* ---------- one call to action ----------
+   Every page offers exactly one button, "Start writing, free". Anything else
+   beside it is a quiet text link, so the eye never has to choose. */
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--s2);
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font: 600 var(--t-3) / 1 var(--display);
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.text-link:hover, .text-link:focus-visible { color: var(--ink); text-decoration-color: var(--accent); }
+.cta, .page-cta { align-items: center; }

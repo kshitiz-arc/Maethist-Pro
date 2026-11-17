@@ -39,6 +39,14 @@ services:
       # if a release ever ships a broken service worker.
       - key: OFFLINE_SHELL
         value: "on"
+      # The address shown on the privacy and terms pages for rights requests.
+      # Required before launch; until it is set they show a placeholder.
+      - key: PRIVACY_CONTACT_EMAIL
+        sync: false
+      # Password for /stats, the visit counter (HTTP Basic; any username).
+      # Without it, /stats does not exist.
+      - key: STATS_TOKEN
+        sync: false
       # Optional: Google Search Console HTML-tag verification.
       - key: SEARCH_CONSOLE_TOKEN
         sync: false

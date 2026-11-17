@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Visit counter | MAETHIST</title>
+  <link rel="icon" href="{{ url_for('static', filename='logo.ico') }}" type="image/x-icon">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/fonts.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <style>
+    body { margin: 0; background: var(--paper); color: var(--ink); font: var(--t-3)/1.5 var(--sans); }
+    main { max-width: 64rem; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { font: 700 var(--t-6)/1.1 var(--display); margin: 0 0 4px; }
+    h2 { font: 600 var(--t-4)/1.2 var(--display); margin: 32px 0 10px; }
+    p { color: var(--ink-2); margin: 0; }
+    .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 20px; }
+    .tile { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); padding: 14px 16px; }
+    .tile b { display: block; font: 700 var(--t-6)/1 var(--mono); }
+    .tile span { color: var(--ink-2); font-size: var(--t-2); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--r-md); }
+    th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--rule-2); font-size: var(--t-2); }
+    th { color: var(--ink-2); font-weight: 600; }
+    td.n, th.n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+    .empty { color: var(--ink-3); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Visit counter</h1>
+  <p>Last 30 days. Page loads only: no cookies, no IP addresses, nothing per visitor. A returning visitor counts again.</p>
+
+  <div class="tiles">
+    <div class="tile"><b>{{ totals.views }}</b><span>page loads</span></div>
+    {% for device in ("phone", "tablet", "desktop") %}
+    <div class="tile"><b>{{ totals.devices.get(device, 0) }}</b><span>on {{ device }}s</span></div>
+    {% endfor %}
+  </div>
+
+  <div class="grid">
+    <section>
+      <h2>Pages</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Page</th><th class="n">Loads</th></tr></thead>
+        <tbody>
+        {% for page, count in ranked(totals.pages) %}<tr><td>{{ page }}</td><td class="n">{{ count }}</td></tr>
+        {% else %}<tr><td class="empty" colspan="2">Nothing yet.</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </section>
+    <section>
+      <h2>Came from</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Website</th><th class="n">Loads</th></tr></thead>
+        <tbody>
+        {% for host, count in ranked(totals.referrers) %}<tr><td>{{ host }}</td><td class="n">{{ count }}</td></tr>
+        {% else %}<tr><td class="empty" colspan="2">No referring websites yet.</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </section>
+  </div>
+
+  <h2>By day</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Day</th><th class="n">Loads</th><th class="n">Phone</th><th class="n">Tablet</th><th class="n">Desktop</th></tr></thead>
+    <tbody>
+    {% for day, entry in days %}
+      <tr><td>{{ day }}</td><td class="n">{{ entry.views }}</td>
+        <td class="n">{{ entry.devices.get("phone", 0) }}</td><td class="n">{{ entry.devices.get("tablet", 0) }}</td><td class="n">{{ entry.devices.get("desktop", 0) }}</td></tr>
+    {% else %}<tr><td class="empty" colspan="5">No visits counted yet.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</main>
+</body>
+</html>

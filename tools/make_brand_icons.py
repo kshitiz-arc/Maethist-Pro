@@ -3,8 +3,8 @@
     python tools/make_brand_icons.py path/to/maths.ico
 
 Writes:
-    static/logo.ico                       the favicon, every size the source has
-    static/img/maethist-mark.png          256px, transparent: the logo mark on pages
+    static/logo.ico                       the favicon at 16, 32 and 48px
+    static/img/maethist-mark.png          128px, transparent: the logo mark on pages
     static/icons/maethist-192.png         PWA icon, transparent ("any")
     static/icons/maethist-512.png         PWA icon, transparent ("any")
     static/icons/maethist-180.png         apple-touch-icon, on paper -- iOS fills
@@ -20,7 +20,6 @@ The source is 256px, so the 512px icons are upscaled (Lanczos). Replace the
 source with a 1024px PNG or an SVG for crisper large icons, and re-run this.
 """
 
-import shutil
 import sys
 from pathlib import Path
 
@@ -47,6 +46,13 @@ def fit(mark, size, scale=1.0, background=None):
     return canvas
 
 
+def save_png(image, path):
+    """Palette PNG: the mark is flat cartoon colour, so 256 colours lose
+    nothing visible and cut each file by roughly two thirds."""
+    quantized = image.quantize(colors=256, method=Image.Quantize.FASTOCTREE)
+    quantized.save(path, optimize=True)
+
+
 def main(source):
     source = Path(source)
     mark = load(source)
@@ -54,17 +60,17 @@ def main(source):
     img = ROOT / "static" / "img"
     img.mkdir(parents=True, exist_ok=True)
 
-    if source.suffix.lower() == ".ico":
-        shutil.copyfile(source, ROOT / "static" / "logo.ico")
-    else:
-        fit(mark, 256).save(ROOT / "static" / "logo.ico",
-                            sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
+    # Rebuilt rather than copied: the source ICO stores every size as an
+    # uncompressed bitmap (432 KB). Browsers only ever ask for 16-48px here;
+    # bigger sizes come from the PNG icons.
+    fit(mark, 48).save(ROOT / "static" / "logo.ico", sizes=[(16, 16), (32, 32), (48, 48)])
 
-    fit(mark, 256).save(img / "maethist-mark.png", optimize=True)
-    fit(mark, 192).save(icons / "maethist-192.png", optimize=True)
-    fit(mark, 512).save(icons / "maethist-512.png", optimize=True)
-    fit(mark, 180, scale=0.86, background=PAPER).save(icons / "maethist-180.png", optimize=True)
-    fit(mark, 512, scale=0.66, background=PAPER).save(icons / "maethist-maskable-512.png", optimize=True)
+    # Shown at 16-38px; 128px covers a 3x screen.
+    save_png(fit(mark, 128), img / "maethist-mark.png")
+    save_png(fit(mark, 192), icons / "maethist-192.png")
+    save_png(fit(mark, 512), icons / "maethist-512.png")
+    save_png(fit(mark, 180, scale=0.86, background=PAPER), icons / "maethist-180.png")
+    save_png(fit(mark, 512, scale=0.66, background=PAPER), icons / "maethist-maskable-512.png")
 
     badge = fit(mark, 96, scale=0.9)
     alpha = badge.getchannel("A")

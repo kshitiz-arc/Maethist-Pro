@@ -101,6 +101,12 @@ health-checks `/healthz`.
 | `YOUTUBE_FULL_FRAMES` | `false` to fall back to YouTube's low-resolution previews |
 | `MAX_IMPORT_UPLOAD_MB` | Server-side PDF and PowerPoint conversion limit, default `50` |
 | `OFFLINE_SHELL` | `off` to remotely remove the offline cache if a release misbehaves |
+| `PRIVACY_CONTACT_EMAIL` | The address shown on the privacy and terms pages. Set before launch |
+| `STATS_TOKEN` | Password for `/stats`, the built-in visit counter. Without it `/stats` does not exist |
+| `VISITS_PATH` | Where the visit counts are stored, default `data/visits.json` |
+
+Render's free plan has no persistent disk, so the visit counts reset on each
+deploy or restart. Attach a disk and point `VISITS_PATH` at it to keep them.
 
 A 4K video frame needs real CPU. On Render's free plan the first frame from a
 4K video can take a minute, so use a paid plan or lower

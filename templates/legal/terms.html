@@ -150,10 +150,14 @@
       <h2>How to reach us</h2>
 
       <p>
+        {% if privacy_contact %}
+        <strong>Contact:</strong>
+        <a href="mailto:{{ privacy_contact }}">{{ privacy_contact }}</a>.
+        {% else %}
         <strong>Contact address: to be set before this page is published.</strong>
-        The placeholder is deliberate — see <code>docs/legal/README.md</code> in
-        the source. Until it is filled in, the public route is
+        Set <code>PRIVACY_CONTACT_EMAIL</code> on the host. Until then, the public route is
         <a href="https://github.com/kshitiz-arc" rel="noopener noreferrer" target="_blank">github.com/kshitiz-arc</a>.
+        {% endif %}
         For anything about data, start with the
         <a href="{{ url_for('privacy') }}">privacy policy</a>, which names the
         30-day window for a rights request.

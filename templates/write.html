@@ -60,6 +60,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='icons/maethist-192.png') }}">
   <script src="{{ url_for('static', filename='js/icon-set.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/icons.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/notify.js') }}" defer></script>
   <script>
     try {
       // The editor's stylesheets key off an explicit data-theme, and the
@@ -648,7 +649,7 @@
           <span>Size</span>
           <div class="tool-size-controls">
             <input type="range" id="penSize" min="1" max="200" value="2">
-            <input type="number" id="penSizeInput" min="1" max="200" value="2">
+            <input type="number" id="penSizeInput" min="1" max="200" step="any" value="2">
           </div>
         </label>
       </div>
@@ -817,7 +818,7 @@
           <span>Size</span>
           <div class="tool-size-controls">
             <input type="range" id="eraserSize" min="1" max="200" value="20">
-            <input type="number" id="eraserSizeInput" min="1" max="200" value="20">
+            <input type="number" id="eraserSizeInput" min="1" max="200" step="any" value="20">
           </div>
         </label>
       </div>
@@ -842,7 +843,7 @@
           <span>Size</span>
           <div class="tool-size-controls">
             <input type="range" id="highlightSize" min="1" max="200" value="10">
-            <input type="number" id="highlightSizeInput" min="1" max="200" value="10">
+            <input type="number" id="highlightSizeInput" min="1" max="200" step="any" value="10">
           </div>
         </label>
       </div>
@@ -983,7 +984,7 @@
           <span>Size</span>
           <div class="tool-size-controls">
             <input type="range" id="shapeSize" min="1" max="50" value="3">
-            <input type="number" id="shapeSizeInput" min="1" max="50" value="3">
+            <input type="number" id="shapeSizeInput" min="1" max="50" step="any" value="3">
           </div>
         </label>
       </div>
@@ -1339,7 +1340,7 @@
           <span>Width</span>
           <div class="tool-size-controls">
             <input type="range" id="lineSize" min="1" max="200" value="2">
-            <input type="number" id="lineSizeInput" min="1" max="200" value="2">
+            <input type="number" id="lineSizeInput" min="1" max="200" step="any" value="2">
           </div>
         </label>
       </div>
@@ -1461,7 +1462,7 @@
       </div>
     </div>
     <div class="yt-search-bar">
-      <input type="text" id="ytSearchInput" placeholder="Paste a YouTube URL or Search..." autocomplete="off"
+      <input type="text" id="ytSearchInput" maxlength="200" enterkeyhint="search" aria-label="Search YouTube or paste a link" placeholder="Paste a YouTube URL or Search..." autocomplete="off"
         spellcheck="false" />
       <button id="ytSearchBtn" class="yt-search-submit" type="button" title="Play">
         {{ icon("lucide:play", "yt-search-play-icon") }}

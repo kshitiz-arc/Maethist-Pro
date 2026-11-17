@@ -91,7 +91,7 @@ class NoAnalyticsTests(unittest.TestCase):
 
     def test_the_legal_pages_say_so(self):
         privacy = self.client.get("/legal/privacy").get_data(as_text=True)
-        self.assertIn("There is no analytics on this site", privacy)
+        self.assertIn("There is no analytics service on this site", " ".join(privacy.split()))
         cookies = self.client.get("/legal/cookies").get_data(as_text=True)
         self.assertNotRegex(cookies, r"<code>_ga</code>")
         self.assertNotIn("inkyscib-consent", cookies)
