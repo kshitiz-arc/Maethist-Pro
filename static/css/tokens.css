@@ -144,3 +144,83 @@
 html {
   font-family: var(--sans);
 }
+
+/* ---------- v3 marketing surface: neo-brutal frost ----------
+   The marketing site, the welcome tour and the editor's floating chrome
+   share one vocabulary: thick ink outlines, hard offset shadows, frosted
+   panels over a field of soft colour, and the five colours of the MAETHIST
+   mark. Defined here, once, like every other token (CLAUDE.md). */
+:root {
+  /* the mark's colours, measured for black text on top of them */
+  --brand-yellow: #FFD23F;   /* 13.1 : 1 with #111 */
+  --brand-red:    #FF6B6B;   /*  6.8 : 1 with #111 */
+  --brand-purple: #A78BFA;   /*  6.9 : 1 with #111 */
+  --brand-blue:   #5CC8FF;   /* 10.0 : 1 with #111 */
+  --brand-green:  #8BE28B;   /* 12.0 : 1 with #111 */
+  --on-brand:     #111111;
+
+  --nb-bg:        #FFF6E5;   /* cream paper */
+  --nb-ink:       #111111;
+  --nb-ink-2:     #3C3A36;   /* 10.6 : 1 on --nb-bg */
+  --nb-line:      #111111;
+  --nb-shadow-c:  #111111;
+  --nb-border:    2px solid var(--nb-line);
+  --nb-shadow:    5px 5px 0 var(--nb-shadow-c);
+  --nb-shadow-sm: 3px 3px 0 var(--nb-shadow-c);
+  --nb-shadow-lg: 8px 8px 0 var(--nb-shadow-c);
+  --nb-radius:    16px;
+
+  --frost:        rgba(255, 255, 255, 0.58);
+  --frost-strong: rgba(255, 255, 255, 0.82);
+  --frost-blur:   blur(18px) saturate(150%);
+  --blob-a: rgba(255, 210, 63, 0.55);
+  --blob-b: rgba(167, 139, 250, 0.50);
+  --blob-c: rgba(92, 200, 255, 0.45);
+  --grid-line: rgba(17, 17, 17, 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --nb-bg:        #0E0F1A;
+    --nb-ink:       #F6F1E7;
+    --nb-ink-2:     #C9C2D6;  /* 11.0 : 1 on --nb-bg */
+    --nb-line:      #F6F1E7;
+    --nb-shadow-c:  #A78BFA;  /* a black shadow vanishes on a near-black page */
+    --frost:        rgba(30, 32, 54, 0.58);
+    --frost-strong: rgba(30, 32, 54, 0.86);
+    --blob-a: rgba(255, 210, 63, 0.20);
+    --blob-b: rgba(167, 139, 250, 0.30);
+    --blob-c: rgba(92, 200, 255, 0.22);
+    --grid-line: rgba(246, 241, 231, 0.05);
+  }
+}
+
+[data-theme="dark"] {
+  --nb-bg:        #0E0F1A;
+  --nb-ink:       #F6F1E7;
+  --nb-ink-2:     #C9C2D6;
+  --nb-line:      #F6F1E7;
+  --nb-shadow-c:  #A78BFA;
+  --frost:        rgba(30, 32, 54, 0.58);
+  --frost-strong: rgba(30, 32, 54, 0.86);
+  --blob-a: rgba(255, 210, 63, 0.20);
+  --blob-b: rgba(167, 139, 250, 0.30);
+  --blob-c: rgba(92, 200, 255, 0.22);
+  --grid-line: rgba(246, 241, 231, 0.05);
+}
+
+/* ---------- v3 motion ----------
+   One set of curves for every surface (DESIGN.md, Motion). --ease-out is an
+   expo-out: fast start, long soft landing, the feel of a premium UI.
+   --ease-spring overshoots a touch and is for marketing only; instruments in
+   the editor never bounce. */
+:root {
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --dur-1: 120ms;
+  --dur-2: 180ms;
+  --dur-3: 320ms;
+  --dur-4: 640ms;
+}

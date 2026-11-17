@@ -1,0 +1,70 @@
+/* MAETHIST v3 motion: the shared layer, loaded on every page after the
+ * page's own styles.
+ *
+ *   - Same-origin navigations cross-fade (the View Transitions API, where the
+ *     browser has it; elsewhere a plain navigation, which is the same result).
+ *   - The light/dark switch and the canvas presets wipe across from the
+ *     control that was pressed (static/js/motion.js), instead of snapping.
+ *   - Every press has a physical answer: buttons sink into their shadow.
+ *   - Dialogs and sheets arrive rather than appear.
+ *
+ * The ink is never animated. Everything here stops under reduced motion.
+ */
+
+/* ---------- page to page ---------- */
+
+@view-transition { navigation: auto; }
+
+::view-transition-old(root) { animation: mxPageOut var(--dur-2) var(--ease-in) both; }
+::view-transition-new(root) { animation: mxPageIn var(--dur-3) var(--ease-out) both; }
+
+@keyframes mxPageOut { to { opacity: 0; transform: translateY(-6px); } }
+@keyframes mxPageIn  { from { opacity: 0; transform: translateY(10px); } }
+
+/* The theme wipe: the new look grows out of the button as a circle.
+   motion.js sets --mx-x/--mx-y/--mx-r and marks <html> for the duration. */
+html.mx-theme-wipe::view-transition-old(root) { animation: none; }
+html.mx-theme-wipe::view-transition-new(root) {
+  animation: mxWipe 520ms var(--ease-in-out) both;
+}
+@keyframes mxWipe {
+  from { clip-path: circle(0 at var(--mx-x, 50%) var(--mx-y, 0)); }
+  to   { clip-path: circle(var(--mx-r, 150vmax) at var(--mx-x, 50%) var(--mx-y, 0)); }
+}
+
+/* ---------- presses ---------- */
+
+button, a, [role="button"], summary {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:not(:disabled), [role="button"] {
+  transition-timing-function: var(--ease-out);
+}
+
+/* ---------- surfaces arrive ---------- */
+/* Keyframes rather than transitions: these are shown by removing `hidden`
+   (display:none), and an animation plays from that, a transition cannot. */
+
+.canvas-theme-pop:not([hidden]),
+.tool-help-sheet:not([hidden]) .tool-help-sheet-panel,
+.clear-confirm:not([hidden]) .clear-confirm-card,
+.clear-confirm-dialog[open],
+.app-notice,
+.backup-reminder:not([hidden]) {
+  animation: mxSurfaceIn var(--dur-2) var(--ease-out) both;
+}
+
+@keyframes mxSurfaceIn {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+}
+
+/* The File sheet already fades on a class; give it the shared curve. */
+.file-backstage { transition-timing-function: var(--ease-out) !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  @view-transition { navigation: none; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
+  .canvas-theme-pop, .tool-help-sheet-panel, .clear-confirm-card, .clear-confirm-dialog,
+  .app-notice, .backup-reminder { animation: none !important; }
+}

@@ -1,0 +1,271 @@
+/* MAETHIST v3 in the editor: neo-brutal edges on every floating surface.
+ *
+ * Loaded last on /write. Three rules, all on the core tokens:
+ *
+ *   1. Everything that floats over the canvas has an ink outline and a hard
+ *      offset shadow, like the marketing site and the welcome tour.
+ *   2. The tool in your hand is a yellow block with an ink outline. Drawn with
+ *      inset box-shadow rather than a border, so no button changes size and
+ *      the 44px touch targets stay exact.
+ *   3. Frost costs a GPU pass every time the canvas under it repaints. Dialogs
+ *      and sheets (which sit over a still canvas) are frosted everywhere; the
+ *      bars that float over a canvas you are panning are frosted only on a
+ *      desktop pointer, and solid on a tablet.
+ */
+
+:root {
+  --ui-line: #111111;
+  --ui-shadow: 4px 4px 0 #111111;
+  --ui-shadow-sm: 3px 3px 0 #111111;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ui-line: rgba(246, 241, 231, 0.85);
+    --ui-shadow: 4px 4px 0 #000000;
+    --ui-shadow-sm: 3px 3px 0 #000000;
+  }
+}
+
+[data-theme="dark"] {
+  --ui-line: rgba(246, 241, 231, 0.85);
+  --ui-shadow: 4px 4px 0 #000000;
+  --ui-shadow-sm: 3px 3px 0 #000000;
+}
+
+/* ---------- 1. floating surfaces ---------- */
+
+.chrome-rail .toolbar.is-topbar,
+.chrome-rail .tool-rail,
+.chrome-rail .tool-dock.is-enabled .tool-dock-frame,
+.tool-panel-layer > .tool-options.is-floating,
+.file-ribbon,
+.ppt-slide-nav,
+.notebook-page-nav {
+  border: 2px solid var(--ui-line) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--ui-shadow) !important;
+}
+
+@media (max-width: 1179px) {
+  .toolbar {
+    border: 2px solid var(--ui-line) !important;
+    border-radius: 16px !important;
+    box-shadow: var(--ui-shadow) !important;
+  }
+}
+
+/* Sheets and dialogs: frosted, with the bigger shadow. */
+.file-backstage,
+.canvas-theme-pop,
+.pomo-panel,
+.planner-shell,
+.library-panel,
+.tool-help-sheet-panel,
+.clear-confirm-card,
+.clear-confirm-dialog,
+.yt-player {
+  border: 2px solid var(--ui-line) !important;
+  border-radius: 20px !important;
+  box-shadow: 6px 6px 0 var(--nb-shadow-c) !important;
+  background: var(--frost-strong) !important;
+  -webkit-backdrop-filter: var(--frost-blur) !important;
+  backdrop-filter: var(--frost-blur) !important;
+}
+
+/* A desktop with a fine pointer can afford frost on the bars too. */
+@media (hover: hover) and (pointer: fine) {
+  .chrome-rail .toolbar.is-topbar,
+  .chrome-rail .tool-rail,
+  .file-ribbon {
+    background: var(--frost-strong) !important;
+    -webkit-backdrop-filter: var(--frost-blur);
+    backdrop-filter: var(--frost-blur);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .file-backstage, .canvas-theme-pop, .pomo-panel, .planner-shell, .library-panel,
+  .tool-help-sheet-panel, .clear-confirm-card, .clear-confirm-dialog, .yt-player,
+  .chrome-rail .toolbar.is-topbar, .chrome-rail .tool-rail, .file-ribbon {
+    background: var(--surface) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* ---------- 2. the tool in your hand ---------- */
+
+.toolbar .tool.active,
+.chrome-rail .tool-rail .tool.active,
+.chrome-rail .toolbar.is-topbar .tool.active,
+.file-ribbon-tab[aria-expanded="true"],
+.file-ribbon-tab.is-active {
+  background: var(--brand-yellow) !important;
+  color: #111111 !important;
+  box-shadow: inset 0 0 0 2px #111111, 2px 2px 0 #111111 !important;
+  border-radius: 12px !important;
+}
+
+.toolbar .tool.active svg.icon,
+.chrome-rail .tool-rail .tool.active svg.icon { color: #111111; filter: none; }
+
+/* The old cyan side marker; the yellow block says it now. */
+.chrome-rail .tool-rail .tool.active::before { display: none; }
+
+.toolbar .tool:hover:not(.active),
+.chrome-rail .tool-rail .tool:hover:not(.active),
+.file-ribbon-tab:hover {
+  box-shadow: inset 0 0 0 2px var(--ui-line);
+  border-radius: 12px;
+}
+
+.tool-destructive:hover {
+  background: var(--brand-red) !important;
+  color: #111111 !important;
+  box-shadow: inset 0 0 0 2px #111111, 2px 2px 0 #111111 !important;
+}
+
+/* ---------- panels: the primary actions inside them ---------- */
+
+.file-command:hover {
+  box-shadow: inset 0 0 0 2px var(--ui-line), 3px 3px 0 var(--nb-shadow-c);
+  transform: translate(-1px, -1px);
+}
+
+.file-command-icon {
+  border: 2px solid #111111;
+  background: var(--brand-yellow) !important;
+  color: #111111 !important;
+  border-radius: 10px !important;
+}
+
+.file-command-icon svg.icon { color: #111111; }
+
+.library-action-primary,
+.pomo-main,
+.planner-add-btn,
+.planner-primary,
+.clear-confirm-danger,
+.backup-reminder-go {
+  border: 2px solid #111111 !important;
+  border-radius: 12px !important;
+  background: var(--brand-yellow) !important;
+  color: #111111 !important;
+  box-shadow: 3px 3px 0 #111111 !important;
+  font-family: var(--display) !important;
+  font-weight: 800 !important;
+}
+
+.clear-confirm-danger { background: var(--brand-red) !important; }
+
+.library-action-primary:hover,
+.pomo-main:hover,
+.planner-add-btn:hover,
+.backup-reminder-go:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #111111 !important; }
+
+/* ---------- the notices ---------- */
+
+.app-notice,
+.backup-reminder {
+  border: 2px solid var(--ui-line) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--ui-shadow) !important;
+}
+
+.app-notice.is-error { border-left-width: 2px !important; box-shadow: 4px 4px 0 var(--brand-red) !important; }
+.app-notice.is-success { box-shadow: 4px 4px 0 var(--brand-green) !important; }
+
+/* ---------- headings speak in the display face ---------- */
+
+.tool-dock-title,
+.file-backstage h2,
+.file-backstage h3,
+.library-panel h3,
+.pomo-title,
+.planner-shell h2 {
+  font-family: var(--display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .file-command:hover, .library-action-primary:hover, .pomo-main:hover,
+  .planner-add-btn:hover, .backup-reminder-go:hover { transform: none; }
+}
+
+/* On desktop the File tabs sit inside the top bar, which already has the
+   outline; a second one inside it read as a box in a box. */
+.chrome-rail .toolbar.is-topbar .file-ribbon {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* core.js places the docked panel under the old menu button, which v2 hides,
+   so the computed top was 0 and the panel's own title sat behind the top
+   bar. It lines up with the rail instead. */
+@media (min-width: 1180px) {
+  .chrome-rail .tool-dock.is-enabled { top: calc(var(--chrome-top) + 2px) !important; }
+}
+
+/* ---------- the way home ---------- */
+/* First thing in the File ribbon at every width: the brand mark on its paper
+   tile, linking to the homepage. */
+.file-ribbon-home {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  margin-right: 4px;
+  border: 2px solid #111111;
+  border-radius: 12px;
+  background: #F3F7FB;
+  box-shadow: 2px 2px 0 #111111;
+  transition: transform 120ms, box-shadow 120ms;
+}
+.file-ribbon-home img { width: 26px; height: 26px; display: block; }
+.file-ribbon-home:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 #111111; }
+.file-ribbon-home:active { transform: translate(2px, 2px); box-shadow: 0 0 0 #111111; }
+.file-ribbon-home:focus-visible { outline: 3px solid var(--brand-blue); outline-offset: 2px; }
+@media (max-width: 640px) {
+  .file-ribbon-home { width: 36px; height: 36px; margin-right: 2px; }
+  .file-ribbon-home img { width: 22px; height: 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .file-ribbon-home:hover, .file-ribbon-home:active { transform: none; }
+}
+
+/* ---------- v3.1: every control answers the hand ---------- */
+/* Fast and never bouncy: these are instruments (DESIGN.md, Motion). */
+.toolbar .tool,
+.chrome-rail .tool-rail .tool,
+.file-ribbon-tab,
+.file-command,
+.file-rail-btn,
+.canvas-theme-pop [data-canvas-preset] {
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    box-shadow var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out),
+    transform var(--dur-1) var(--ease-out) !important;
+}
+.toolbar .tool:active,
+.chrome-rail .tool-rail .tool:active,
+.file-ribbon-tab:active,
+.file-rail-btn:active,
+.canvas-theme-pop [data-canvas-preset]:active { transform: scale(0.94) !important; }
+.file-command:active { transform: translate(1px, 1px) !important; }
+
+/* The docked panel and the floating ones slide in from the rail. */
+.chrome-rail .tool-dock.is-enabled .tool-dock-frame { animation: mxDockIn var(--dur-2) var(--ease-out) both; }
+@keyframes mxDockIn { from { opacity: 0; transform: translateX(-8px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .toolbar .tool:active, .chrome-rail .tool-rail .tool:active, .file-ribbon-tab:active,
+  .file-rail-btn:active, .canvas-theme-pop [data-canvas-preset]:active, .file-command:active { transform: none !important; }
+  .chrome-rail .tool-dock.is-enabled .tool-dock-frame { animation: none; }
+}

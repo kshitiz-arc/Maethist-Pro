@@ -43,8 +43,9 @@ def referenced_icons():
     ribbon = scripts["file-ribbon.js"]
     block = ribbon[ribbon.index("const ICON_REFS = {"):ribbon.index("};", ribbon.index("const ICON_REFS = {"))]
     refs.update("lucide:" + name for name in re.findall(r':\s*"([a-z0-9-]+)"', block))
-    tour = scripts["onboarding.js"]
-    refs.update("phosphor:" + name for name in re.findall(r'phosphor\("([a-z0-9-]+)"\)', tour))
+    tour = scripts["tour.js"]
+    refs.update("phosphor:" + name for name in re.findall(r'icon: "([a-z0-9-]+)"', tour))
+    refs.update("phosphor:" + name for name in re.findall(r'\$\{icon\("([a-z0-9-]+)"\)\}', tour))
     icons_js = scripts["icons.js"]
     legacy = icons_js[icons_js.index("const LEGACY = {"):icons_js.index("const LEGACY_NAMES")]
     refs.update(f"{family}:{name}" for family, name in re.findall(r"(lucide|phosphor|remix): '([a-z0-9-]+)'", legacy))
@@ -168,6 +169,19 @@ class IconSurfaceBrowserTests(unittest.TestCase):
         page.wait_for_selector(".file-backstage.is-open .file-command svg.icon-lucide")
         self.assertEqual(page.evaluate(self.FAMILIES, ".file-backstage"), ["lucide"])
         self.assertEqual(self.warnings, [])
+
+    def test_the_editor_links_back_to_the_homepage_at_every_width(self):
+        for width, height in ((1440, 900), (960, 600), (375, 812)):
+            with self.subTest(width=width):
+                page = self.editor(width, height)
+                home = page.locator(".file-ribbon .file-ribbon-home")
+                self.assertEqual(home.get_attribute("href"), "/")
+                self.assertEqual(home.get_attribute("aria-label"), "MAETHIST home")
+                box = home.bounding_box()
+                self.assertIsNotNone(box)
+                self.assertGreaterEqual(box["x"], 0)
+                self.assertLessEqual(box["x"] + box["width"], width)
+                self.assertGreaterEqual(box["width"], 36)
 
     def test_planner_pomodoro_and_tour_are_phosphor(self):
         page = self.editor()

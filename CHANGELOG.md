@@ -1,5 +1,58 @@
 # Changelog
 
+## 2.3.0 — 2026-11-17
+
+### Changed
+
+- **New look: neo-brutal with frost.** Cream paper (deep ink at night), thick
+  ink outlines, hard offset shadows, a yellow / red / purple / blue / green
+  accent set, and frosted glass over soft colour blobs.
+- **The homepage is rebuilt.** A big "Maths you can touch." headline, a demo
+  window that draws its own construction on load, a tilted marquee, a bento
+  grid of features, a "Free means free" stats row, three steps and a closing
+  call to action. The same one action ("Start writing, free") appears twice.
+- **A new welcome tour.** Six short steps, each with its own colour, a drawn
+  illustration and a spotlight on the real control it describes. Keyboard,
+  clickable progress dots, and a bottom sheet on phones. Replaces the old
+  onboarding cards (`onboarding.js` and `onboarding.css` are gone; the stored
+  "seen" key is unchanged, so returning users are not shown it again).
+- **The editor matches.** Bars, rail and panels get ink outlines and hard
+  shadows; the tool in your hand is a yellow block; dialogs and sheets are
+  frosted. Bars are frosted only on a desktop pointer, to keep panning smooth
+  on a tablet.
+- **Everything moves like one product.** One set of curves and durations,
+  shared by every page. Moving between pages cross-fades; switching light and
+  dark, or picking a canvas, wipes the new look out of the button you
+  pressed. On the homepage, sections rise in as you scroll, the demo window
+  leans toward the pointer, a soft light follows the pointer across the
+  feature tiles, the header settles as you scroll, and a fine grain sits over
+  the colour. Editor buttons press in, and dialogs arrive rather than pop.
+  Under reduced motion all of it stands still.
+- **The focus timer is rebuilt, with a Sound studio.** Each mode has its own
+  hue on the clock (yellow focus, green break, blue long break), the clock
+  breathes while it runs, and everything you press has an ink outline and a
+  hard shadow. The new Sound studio adds white, pink and brown noise and a
+  Wind down bed that swells on a slow 4-in, 6-out breath, alongside rain,
+  deep sea and clock. It also has focus frequencies: delta 2 Hz, theta 6 Hz,
+  alpha 10 Hz, beta 16 Hz and gamma 40 Hz presets, or any rate from 1 to
+  45 Hz. They play as a binaural beat in headphones or as a soft pulse on a
+  speaker, with their own pitch and volume. A switch plays sound only while
+  you are focusing, fading it out for breaks. Everything is generated on the
+  device, nothing is downloaded, and the studio always opens silent.
+
+### Fixed
+
+- On phones the marketing header scrolls away with the page instead of
+  pinning three rows over it.
+
+- **The editor had no way back to the homepage.** The MAETHIST mark now
+  starts the File ribbon at every width and links home; notebooks save as
+  you write, so leaving loses nothing.
+- The docked tool panel on desktop started at the top of the window, so its
+  title sat hidden behind the top bar.
+- The homepage scrolled sideways by a pixel on phones.
+
+
 ## 2.2.1 — 2026-11-17
 
 ### Fixed

@@ -57,7 +57,10 @@
       current === "light" ? "Switch to dark interface" : "Switch to light interface"
     );
     themeButton.addEventListener("click", () => {
-      applyTheme(resolvedTheme() === "light" ? "dark" : "light");
+      const next = resolvedTheme() === "light" ? "dark" : "light";
+      const wipe = window.Inkyscib && window.Inkyscib.Motion && window.Inkyscib.Motion.themeWipe;
+      if (wipe) wipe(() => applyTheme(next), themeButton);
+      else applyTheme(next);
     });
   }
 
@@ -106,12 +109,17 @@
   const demoButton = document.getElementById("demoButton");
   let demoTimer = 0;
 
+  // The construction draws itself: circle, the three sides, the arc, the
+  // altitude, then the points (brutal.css: .is-drawing). Restarting means
+  // removing the class and forcing a style flush before adding it back.
   function runDemo() {
     if (!svg) return;
     if (reduceMotion.matches) return;
-    svg.style.transform = "scale(" + (zoom / 100) * 1.08 + ") rotate(2deg)";
     window.clearTimeout(demoTimer);
-    demoTimer = window.setTimeout(renderZoom, 1200);
+    svg.classList.remove("is-drawing");
+    void svg.getBoundingClientRect();
+    svg.classList.add("is-drawing");
+    demoTimer = window.setTimeout(() => svg.classList.remove("is-drawing"), 3400);
   }
 
   // Space is also the browser's page-down. It is only claimed on a page with
@@ -124,6 +132,11 @@
   function syncDemoLabel() {
     if (!demoButton) return;
     demoButton.textContent = spaceIsFree() ? "Watch the demo  [space]" : "Watch the demo";
+  }
+
+  if (svg && svg.querySelector(".draw") && !reduceMotion.matches) {
+    // Play once on arrival, after the first paint so it never delays it.
+    window.requestAnimationFrame(() => window.setTimeout(runDemo, 350));
   }
 
   if (demoButton && svg) {

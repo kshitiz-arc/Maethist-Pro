@@ -46,6 +46,7 @@
    unpinning the ribbon. The save beam goes on the state chip instead, which is
    static everywhere and is the thing that actually reports the save. */
 .hero .cta .primary,
+.nb-cta .primary,
 .page-cta .primary,
 .lost-copy .return-button,
 .file-ribbon-state {
@@ -53,6 +54,7 @@
 }
 
 .hero .cta .primary::after,
+.nb-cta .primary::after,
 .page-cta .primary::after,
 .lost-copy .return-button::after,
 .file-ribbon-state::after {
@@ -87,6 +89,7 @@
 /* Three laps on arrival, then gone. Long enough to be noticed on a page that
    has just loaded, short enough not to become the page's heartbeat. */
 .hero .cta .primary::after,
+.nb-cta .primary::after,
 .page-cta .primary::after {
   animation: beam-lap 2.8s linear 3;
 }
@@ -94,8 +97,10 @@
 /* And again on intent. Touch has no hover, so focus-visible carries it on the
    tablet this product is written for -- and keyboard users get the same cue. */
 .hero .cta .primary:hover::after,
+.nb-cta .primary:hover::after,
 .page-cta .primary:hover::after,
 .hero .cta .primary:focus-visible::after,
+.nb-cta .primary:focus-visible::after,
 .page-cta .primary:focus-visible::after {
   animation: beam-lap 2.8s linear infinite;
 }
@@ -104,6 +109,7 @@
    invisible. --on-accent is the token for exactly this position: what sits on
    top of an accent fill. */
 .hero .cta .primary,
+.nb-cta .primary,
 .page-cta .primary {
   --beam-color: var(--on-accent);
 }
@@ -299,6 +305,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .hero .cta .primary::after,
+.nb-cta .primary::after,
   .page-cta .primary::after,
   .lost-copy .return-button::after,
   .file-ribbon::after {
@@ -327,6 +334,7 @@
    leave the element exactly as it was designed. */
 @supports not (background: conic-gradient(from var(--beam-angle), red, blue)) {
   .hero .cta .primary::after,
+.nb-cta .primary::after,
   .page-cta .primary::after,
   .lost-copy .return-button::after,
   .file-ribbon::after {

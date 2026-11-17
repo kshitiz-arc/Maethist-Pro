@@ -295,7 +295,10 @@
     pop.addEventListener("click", (event) => {
       const tile = event.target.closest("[data-canvas-preset]");
       if (tile) {
-        set(tile.dataset.canvasPreset);
+        // The new canvas grows out of the tile that was picked (motion.js).
+        const wipe = window.Inkyscib && window.Inkyscib.Motion && window.Inkyscib.Motion.themeWipe;
+        if (wipe && tile.getAttribute("aria-checked") !== "true") wipe(() => set(tile.dataset.canvasPreset), tile);
+        else set(tile.dataset.canvasPreset);
         return;
       }
       const option = event.target.closest(".pattern-option");

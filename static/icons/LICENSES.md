@@ -1,6 +1,6 @@
 # Icon licences
 
-Inkyscib's own code is MIT. The icons below are not: each set keeps its
+MAETHIST's own code is MIT. The icons below are not: each set keeps its
 own licence, reproduced verbatim. Written by tools/vendor_icons.py.
 
 ## lucide -- lucide-icons/lucide 1.66.0 (ISC)

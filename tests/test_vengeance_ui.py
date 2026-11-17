@@ -86,7 +86,7 @@ class SourceTests(unittest.TestCase):
         `position: fixed` below it, which unpins the ribbon on the 960px
         tablet. The beam belongs on the state chip."""
         block = re.search(
-            r"\.hero \.cta \.primary,\s*\.page-cta \.primary,\s*"
+            r"\.hero \.cta \.primary,\s*\.nb-cta \.primary,\s*\.page-cta \.primary,\s*"
             r"\.lost-copy \.return-button,\s*([^{]+)\{\s*position: relative",
             self.css,
         )
@@ -134,7 +134,7 @@ class EffectTests(unittest.TestCase):
             page.goto(f"{self.base_url}/", wait_until="load")
             beam = page.evaluate(
                 "() => { const s = getComputedStyle("
-                "document.querySelector('.hero .cta .primary'), '::after');"
+                "document.querySelector('.nb-cta .primary'), '::after');"
                 " return { name: s.animationName, iter: s.animationIterationCount }; }"
             )
         finally:
@@ -150,7 +150,7 @@ class EffectTests(unittest.TestCase):
             page.goto(f"{self.base_url}/", wait_until="load")
             beam = page.evaluate(
                 "() => getComputedStyle(document.querySelector("
-                "'.hero .cta .primary'), '::after').animationName"
+                "'.nb-cta .primary'), '::after').animationName"
             )
             underline = page.evaluate(
                 "() => getComputedStyle(document.querySelector('.nav a'),"

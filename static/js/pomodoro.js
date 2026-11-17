@@ -35,6 +35,34 @@
         { id: 'clock', label: 'Clock', icon: 'fa-clock' }
     ];
 
+    // The Sound studio's beds. The first three are the quick row's own; the
+    // rest live in the studio. Each note says what it is for, plainly.
+    const BEDS = [
+        { id: 'rain', label: 'Rain', note: 'Thousands of drops. Masks chatter.' },
+        { id: 'deep', label: 'Deep sea', note: 'Slow swells, steady and calm.' },
+        { id: 'clock', label: 'Clock', note: 'A quiet tick to pace you.' },
+        { id: 'white', label: 'White noise', note: 'Bright, even hiss. Best at hiding speech.' },
+        { id: 'pink', label: 'Pink noise', note: 'Softer than white. Easy for hours.' },
+        { id: 'brown', label: 'Brown noise', note: 'A deep rumble. Best in headphones.' },
+        { id: 'winddown', label: 'Wind down', note: 'Breathe with the swell: 4 in, 6 out.' }
+    ];
+    const BED_IDS = BEDS.map((bed) => bed.id);
+
+    // Beat frequencies. A binaural beat is two pure tones, one per ear, a few
+    // hertz apart; the brain hears the difference as a slow pulse. It needs
+    // headphones. "Speaker" plays the same rate as a soft pulse instead, which
+    // works on any speaker. These are listening aids, not treatments, and the
+    // studio says so.
+    const TONES = [
+        { id: 'off', label: 'Off', use: 'No tone' },
+        { id: 'delta', label: 'Delta', hz: 2, use: 'Sleep and recovery' },
+        { id: 'theta', label: 'Theta', hz: 6, use: 'Calm, unwinding' },
+        { id: 'alpha', label: 'Alpha', hz: 10, use: 'Relaxed focus, reading' },
+        { id: 'beta', label: 'Beta', hz: 16, use: 'Active study, problem sets' },
+        { id: 'gamma', label: 'Gamma', hz: 40, use: 'Deep concentration' },
+        { id: 'custom', label: 'Custom', use: 'Your own rate' }
+    ];
+
     const FOCUS_DONE_LINES = [
         'Focus session done. Take your break.',
         'Another session in the bank. Stretch your legs.',
@@ -352,6 +380,86 @@
 
     const builtSounds = new Map();
 
+    // Brown noise has almost nothing a small speaker can play, so levelling it
+    // through the speaker stand-in would boost it into the limiter. It is
+    // levelled on its full band instead, and the studio says headphones.
+    function levelFull(channels, targetDb) {
+        let sum = 0;
+        let count = 0;
+        channels.forEach((data) => {
+            for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+            count += data.length;
+        });
+        const gain = Math.pow(10, targetDb / 20) / (Math.sqrt(sum / Math.max(1, count)) || 1e-9);
+        channels.forEach((data) => {
+            for (let i = 0; i < data.length; i++) {
+                const x = data[i] * gain;
+                const size = Math.abs(x);
+                data[i] = size <= 0.8 ? x : Math.sign(x) * (0.8 + 0.19 * Math.tanh((size - 0.8) / 0.19));
+            }
+        });
+        return channels;
+    }
+
+    // White, pink and brown noise: ten seconds, a separate stream per ear so
+    // the sound is wide rather than a point between the speakers.
+    async function buildNoise(colour, rate) {
+        const loop = Math.round(rate * 10);
+        const fade = Math.round(rate * 0.5);
+        const length = loop + fade;
+        const seed = { white: 11, pink: 23, brown: 37 }[colour] || 5;
+        const channels = [new Float32Array(length), new Float32Array(length)];
+        for (let c = 0; c < channels.length; c++) {
+            const random = seededRandom(seed * 101 + c * 7919);
+            const state = { b0: 0, b1: 0, b2: 0 };
+            const data = channels[c];
+            let last = 0;
+            for (let i = 0; i < length; i++) {
+                if (i && i % rate === 0) await nextTask();
+                const white = random() * 2 - 1;
+                if (colour === 'white') {
+                    data[i] = white;
+                } else if (colour === 'pink') {
+                    data[i] = pinkNoise(state, white);
+                } else {
+                    last = (last + 0.02 * white) / 1.02;
+                    data[i] = last * 3.5;
+                }
+            }
+        }
+        const folded = foldLoop(channels, loop, fade);
+        return colour === 'brown' ? levelFull(folded, -17) : levelChannels(folded, rate);
+    }
+
+    // Wind down: warm pink noise that swells on a 10-second breath, 4 seconds
+    // up and 6 down, about six breaths a minute. Slow, even breathing like
+    // this is what settles people; the sound only gives it a pace to follow.
+    async function buildWindDown(rate) {
+        const BREATH = 10;
+        const IN = 4;
+        const loop = Math.round(rate * BREATH * 2);
+        const fade = Math.round(rate * 0.5);
+        const length = loop + fade;
+        const smooth = 1 - Math.exp(-2 * Math.PI * 1400 / rate);
+        const channels = [new Float32Array(length), new Float32Array(length)];
+        for (let c = 0; c < channels.length; c++) {
+            const random = seededRandom(4242 + c * 131);
+            const state = { b0: 0, b1: 0, b2: 0 };
+            const data = channels[c];
+            let warm = 0;
+            for (let i = 0; i < length; i++) {
+                if (i && i % rate === 0) await nextTask();
+                warm += smooth * (pinkNoise(state, random() * 2 - 1) - warm);
+                const phase = (i / rate) % BREATH;
+                const swell = phase < IN
+                    ? 0.5 - 0.5 * Math.cos(Math.PI * phase / IN)
+                    : 0.5 + 0.5 * Math.cos(Math.PI * (phase - IN) / (BREATH - IN));
+                data[i] = warm * (0.22 + 0.78 * swell);
+            }
+        }
+        return levelChannels(foldLoop(channels, loop, fade), rate);
+    }
+
     function soundChannels(type, rate) {
         const key = type + '@' + rate;
         if (!builtSounds.has(key)) {
@@ -359,7 +467,11 @@
                 ? buildRain(rate)
                 : type === 'deep'
                     ? buildDeepSea(rate)
-                    : Promise.resolve(buildClock(rate));
+                    : type === 'clock'
+                        ? Promise.resolve(buildClock(rate))
+                        : type === 'winddown'
+                            ? buildWindDown(rate)
+                            : buildNoise(type, rate);
             builtSounds.set(key, build.catch((error) => {
                 builtSounds.delete(key);
                 throw error;
@@ -377,7 +489,7 @@
     // Renders `seconds` of a looping focus sound at `volume`, exactly as
     // playback would. Used by the tests to measure what a listener hears.
     async function renderAmbient(type, options) {
-        if (!['rain', 'deep', 'clock'].includes(type)) throw new Error('Unknown focus sound: ' + type);
+        if (!BED_IDS.includes(type)) throw new Error('Unknown focus sound: ' + type);
         const opts = options || {};
         const sampleRate = opts.sampleRate || 44100;
         const seconds = opts.seconds || 6;
@@ -452,6 +564,21 @@
             viewMain: q('.pomo-view-main'),
             viewSettings: q('.pomo-view-settings'),
             back: q('.pomo-back'),
+            title: q('.pomo-title'),
+            viewSounds: q('.pomo-view-sounds'),
+            soundsBtn: q('.pomo-sounds-open'),
+            soundSummary: q('.pomo-sound-summary'),
+            beds: overlay.querySelectorAll('.pomo-bed'),
+            bedVolume: q('.pomo-bed-volume'),
+            tones: overlay.querySelectorAll('.pomo-tone'),
+            toneHz: q('#pomoToneHz'),
+            toneHzOut: q('.pomo-tone-hz-value'),
+            toneCarrier: q('#pomoToneCarrier'),
+            toneCarrierOut: q('.pomo-tone-carrier-value'),
+            toneModes: overlay.querySelectorAll('.pomo-tone-mode'),
+            toneVolume: q('.pomo-tone-volume'),
+            toneHint: q('.pomo-tone-hint'),
+            inFocusOnly: q('#pomoFocusOnly'),
             settingsBtn: q('.pomo-settings-toggle'),
             closeBtn: q('.pomo-close'),
             tabs: overlay.querySelectorAll('.pomo-tab'),
@@ -586,7 +713,7 @@
             source.loop = true;
             const gain = ctx.createGain();
             gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-            gain.gain.linearRampToValueAtTime(settings.volume, ctx.currentTime + 0.4);
+            gain.gain.linearRampToValueAtTime(Math.max(0.0001, bedLevel()), ctx.currentTime + 0.4);
             source.connect(gain);
             gain.connect(ctx.destination);
             source.start();
@@ -597,6 +724,180 @@
             ui.soundOptions.forEach((option) => {
                 option.setAttribute('aria-pressed', String(option.dataset.sound === ambient.type));
             });
+            ui.beds.forEach((bed) => {
+                bed.setAttribute('aria-pressed', String(bed.dataset.sound === ambient.type));
+            });
+            syncSummary();
+        }
+
+        // ---------- the gate: sounds can follow the timer ----------
+        // With "only during focus" on, beds and tones fade out on a pause or a
+        // break and back in when focus resumes. They keep running underneath,
+        // so coming back is a fade rather than a fresh start.
+        function gateOpen() {
+            return !settings.focusOnly || (running && mode === 'focus');
+        }
+
+        function bedLevel() {
+            return gateOpen() ? settings.volume : 0;
+        }
+
+        // A pure sine is far louder than noise at the same gain; 0.16 puts a
+        // full-volume tone just under a full-volume bed.
+        function toneLevel() {
+            return gateOpen() ? settings.toneVolume * 0.16 : 0;
+        }
+
+        function levelBed() {
+            if (!ambient.gain || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            ambient.gain.gain.cancelScheduledValues(now);
+            ambient.gain.gain.setTargetAtTime(Math.max(0.0001, bedLevel()), now, 0.15);
+        }
+
+        let lastGate = null;
+        function applySoundGate() {
+            const open = gateOpen();
+            if (open === lastGate) return;
+            lastGate = open;
+            levelBed();
+            levelTone();
+        }
+
+        // ---------- beat frequencies, synthesised live ----------
+        let tone = { id: 'off', nodes: null };
+
+        function toneHz() {
+            const preset = TONES.find((t) => t.id === tone.id);
+            return preset && preset.hz ? preset.hz : settings.toneHz;
+        }
+
+        function buildTone(ctx) {
+            const hz = toneHz();
+            const carrier = settings.toneCarrier;
+            const master = ctx.createGain();
+            master.gain.setValueAtTime(0.0001, ctx.currentTime);
+            master.connect(ctx.destination);
+            if (settings.toneMode === 'pulse') {
+                // One tone whose loudness rises and falls `hz` times a second.
+                const osc = ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = carrier;
+                const am = ctx.createGain();
+                am.gain.value = 0.5;
+                const lfo = ctx.createOscillator();
+                lfo.type = 'sine';
+                lfo.frequency.value = hz;
+                const depth = ctx.createGain();
+                depth.gain.value = 0.5;
+                lfo.connect(depth);
+                depth.connect(am.gain);
+                osc.connect(am);
+                am.connect(master);
+                return { mode: 'pulse', master, oscs: [osc, lfo], carrierOsc: osc, lfo };
+            }
+            // Binaural: carrier - hz/2 in the left ear, carrier + hz/2 in the right.
+            const merger = ctx.createChannelMerger(2);
+            const left = ctx.createOscillator();
+            const right = ctx.createOscillator();
+            left.type = 'sine';
+            right.type = 'sine';
+            left.frequency.value = carrier - hz / 2;
+            right.frequency.value = carrier + hz / 2;
+            left.connect(merger, 0, 0);
+            right.connect(merger, 0, 1);
+            merger.connect(master);
+            return { mode: 'binaural', master, oscs: [left, right], left, right };
+        }
+
+        function stopTone() {
+            const nodes = tone.nodes;
+            tone.nodes = null;
+            if (!nodes || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            try {
+                nodes.master.gain.cancelScheduledValues(now);
+                nodes.master.gain.setValueAtTime(nodes.master.gain.value, now);
+                nodes.master.gain.linearRampToValueAtTime(0.0001, now + 0.6);
+                nodes.oscs.forEach((osc) => osc.stop(now + 0.7));
+            } catch (e) {
+                nodes.oscs.forEach((osc) => { try { osc.stop(); } catch (_) { /* stopped */ } });
+            }
+        }
+
+        function playTone(id) {
+            stopTone();
+            tone.id = TONES.some((t) => t.id === id) ? id : 'off';
+            syncToneUI();
+            if (tone.id === 'off') return;
+            const ctx = ensureAudio();
+            if (!ctx) {
+                tone.id = 'off';
+                syncToneUI();
+                toast('Sound is not available in this browser');
+                return;
+            }
+            const nodes = buildTone(ctx);
+            nodes.oscs.forEach((osc) => osc.start());
+            // A long fade in: a tone that snaps on is a jolt, not a focus aid.
+            nodes.master.gain.linearRampToValueAtTime(Math.max(0.0001, toneLevel()), ctx.currentTime + 1.5);
+            tone.nodes = nodes;
+        }
+
+        function retuneTone() {
+            const nodes = tone.nodes;
+            if (!nodes || !audioCtx) return;
+            if (nodes.mode !== settings.toneMode) {
+                playTone(tone.id);
+                return;
+            }
+            const now = audioCtx.currentTime;
+            const hz = toneHz();
+            const carrier = settings.toneCarrier;
+            if (nodes.mode === 'pulse') {
+                nodes.carrierOsc.frequency.setTargetAtTime(carrier, now, 0.08);
+                nodes.lfo.frequency.setTargetAtTime(hz, now, 0.08);
+            } else {
+                nodes.left.frequency.setTargetAtTime(carrier - hz / 2, now, 0.08);
+                nodes.right.frequency.setTargetAtTime(carrier + hz / 2, now, 0.08);
+            }
+        }
+
+        function levelTone() {
+            if (!tone.nodes || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            tone.nodes.master.gain.cancelScheduledValues(now);
+            tone.nodes.master.gain.setTargetAtTime(Math.max(0.0001, toneLevel()), now, 0.15);
+        }
+
+        function syncToneUI() {
+            ui.tones.forEach((button) => {
+                button.setAttribute('aria-pressed', String(button.dataset.tone === tone.id));
+            });
+            const hz = toneHz();
+            ui.toneHz.value = hz;
+            ui.toneHzOut.textContent = (Math.round(hz * 10) / 10) + ' Hz';
+            ui.toneCarrier.value = settings.toneCarrier;
+            ui.toneCarrierOut.textContent = Math.round(settings.toneCarrier) + ' Hz';
+            ui.toneVolume.value = settings.toneVolume;
+            ui.toneModes.forEach((button) => {
+                button.setAttribute('aria-pressed', String(button.dataset.toneMode === settings.toneMode));
+            });
+            ui.toneHint.textContent = settings.toneMode === 'pulse'
+                ? 'Speaker: a soft pulse at the same rate. Works on any speaker.'
+                : 'Headphones: a different tone in each ear. Needs headphones to work.';
+            syncSummary();
+        }
+
+        function syncSummary() {
+            if (!ui.soundSummary) return;
+            const bed = BEDS.find((b) => b.id === ambient.type);
+            const preset = TONES.find((t) => t.id === tone.id);
+            const parts = [];
+            if (bed) parts.push(bed.label);
+            if (preset && preset.id !== 'off') parts.push(preset.label + ' ' + (Math.round(toneHz() * 10) / 10) + ' Hz');
+            ui.soundSummary.textContent = parts.length ? parts.join(' + ') : 'Noise, nature and focus frequencies';
+            overlay.classList.toggle('is-sounding', parts.length > 0);
         }
 
         // -----------------------------------------------------------------
@@ -757,6 +1058,7 @@
             ui.pillBar.style.transform = 'scaleX(' + progress.toFixed(4) + ')';
 
             overlay.dataset.mode = mode;
+            overlay.dataset.running = String(running);
             pill.dataset.mode = mode;
             ui.tabs.forEach((tab) => {
                 const active = tab.dataset.mode === mode;
@@ -773,6 +1075,8 @@
             ui.pillTask.style.display = currentTask ? '' : 'none';
 
             renderDots();
+
+            applySoundGate();
 
             const dirty = rem !== total;
             trigger.classList.toggle('timer-running', running);
@@ -814,6 +1118,8 @@
             ui.inAutoFocus.checked = settings.autoFocus;
             ui.inChime.checked = settings.sound;
             ui.volume.value = settings.volume;
+            ui.bedVolume.value = settings.volume;
+            ui.inFocusOnly.checked = settings.focusOnly;
             ui.presets.forEach((button) => {
                 const preset = PRESETS[button.dataset.preset];
                 const active = !!preset && preset.focus === settings.focus &&
@@ -826,15 +1132,23 @@
         // -----------------------------------------------------------------
         // Views, open/close and the floating pill
         // -----------------------------------------------------------------
-        function showView(view) {
-            const settingsView = view === 'settings';
-            overlay.dataset.view = settingsView ? 'settings' : 'main';
-            ui.viewMain.hidden = settingsView;
-            ui.viewSettings.hidden = !settingsView;
-            ui.back.hidden = !settingsView;
-            ui.settingsBtn.hidden = settingsView;
-            ui.settingsBtn.setAttribute('aria-expanded', String(settingsView));
-            (settingsView ? ui.back : ui.settingsBtn).focus({ preventScroll: true });
+        const VIEW_TITLES = { main: 'Focus timer', settings: 'Settings', sounds: 'Sound studio' };
+
+        function showView(view, opts) {
+            const next = VIEW_TITLES[view] ? view : 'main';
+            const from = overlay.dataset.view;
+            overlay.dataset.view = next;
+            ui.viewMain.hidden = next !== 'main';
+            ui.viewSettings.hidden = next !== 'settings';
+            ui.viewSounds.hidden = next !== 'sounds';
+            ui.back.hidden = next === 'main';
+            ui.settingsBtn.hidden = next !== 'main';
+            ui.settingsBtn.setAttribute('aria-expanded', String(next === 'settings'));
+            ui.soundsBtn.setAttribute('aria-expanded', String(next === 'sounds'));
+            ui.title.textContent = VIEW_TITLES[next];
+            if (opts && opts.focus === false) return;
+            if (next !== 'main') ui.back.focus({ preventScroll: true });
+            else (from === 'sounds' ? ui.soundsBtn : ui.settingsBtn).focus({ preventScroll: true });
         }
 
         function openModal() {
@@ -845,14 +1159,7 @@
 
         function closeModal() {
             overlay.classList.remove('active');
-            if (overlay.dataset.view === 'settings') {
-                overlay.dataset.view = 'main';
-                ui.viewMain.hidden = false;
-                ui.viewSettings.hidden = true;
-                ui.back.hidden = true;
-                ui.settingsBtn.hidden = false;
-                ui.settingsBtn.setAttribute('aria-expanded', 'false');
-            }
+            if (overlay.dataset.view !== 'main') showView('main', { focus: false });
             if (running || remaining() !== currentDurationMs()) showPill();
         }
 
@@ -955,7 +1262,11 @@
                 settings: {
                     focus: 25, short: 5, long: 15, cycle: 4,
                     autoBreaks: true, autoFocus: false,
-                    sound: true, volume: 0.7
+                    sound: true, volume: 0.7,
+                    // Sound studio. What is playing is never stored: a page
+                    // cannot start sound on load, so it always opens silent.
+                    toneHz: 10, toneCarrier: 220, toneMode: 'binaural', toneVolume: 0.5,
+                    focusOnly: false
                 },
                 stats: {},
                 tasks: [],
@@ -1074,12 +1385,67 @@
             option.addEventListener('click', () => playAmbient(option.dataset.sound));
         });
 
-        ui.volume.addEventListener('input', () => {
-            settings.volume = clampNumber(parseFloat(ui.volume.value), 0, 1, 0.7);
-            if (ambient.gain && audioCtx) {
-                ambient.gain.gain.cancelScheduledValues(audioCtx.currentTime);
-                ambient.gain.gain.setTargetAtTime(settings.volume, audioCtx.currentTime, 0.05);
-            }
+        [ui.volume, ui.bedVolume].forEach((input) => {
+            input.addEventListener('input', () => {
+                settings.volume = clampNumber(parseFloat(input.value), 0, 1, 0.7);
+                ui.volume.value = settings.volume;
+                ui.bedVolume.value = settings.volume;
+                levelBed();
+                persist();
+            });
+        });
+
+        ui.soundsBtn.addEventListener('click', () => showView('sounds'));
+
+        ui.beds.forEach((bed) => {
+            bed.addEventListener('click', () => {
+                playAmbient(bed.dataset.sound === ambient.type ? 'off' : bed.dataset.sound);
+            });
+        });
+
+        ui.tones.forEach((button) => {
+            button.addEventListener('click', () => {
+                const id = button.dataset.tone;
+                playTone(id === tone.id && id !== 'off' ? 'off' : id);
+            });
+        });
+
+        // Dragging the rate picks Custom, and plays it.
+        ui.toneHz.addEventListener('input', () => {
+            settings.toneHz = clampNumber(parseFloat(ui.toneHz.value), 1, 45, 10);
+            if (tone.id !== 'custom') playTone('custom');
+            else retuneTone();
+            syncToneUI();
+            persist();
+        });
+
+        ui.toneCarrier.addEventListener('input', () => {
+            settings.toneCarrier = clampNumber(parseFloat(ui.toneCarrier.value), 100, 500, 220);
+            retuneTone();
+            syncToneUI();
+            persist();
+        });
+
+        ui.toneVolume.addEventListener('input', () => {
+            settings.toneVolume = clampNumber(parseFloat(ui.toneVolume.value), 0, 1, 0.5);
+            levelTone();
+            persist();
+        });
+
+        ui.toneModes.forEach((button) => {
+            button.addEventListener('click', () => {
+                if (settings.toneMode === button.dataset.toneMode) return;
+                settings.toneMode = button.dataset.toneMode === 'pulse' ? 'pulse' : 'binaural';
+                retuneTone();
+                syncToneUI();
+                persist();
+            });
+        });
+
+        ui.inFocusOnly.addEventListener('change', () => {
+            settings.focusOnly = ui.inFocusOnly.checked;
+            lastGate = null;
+            applySoundGate();
             persist();
         });
 
@@ -1135,11 +1501,11 @@
             const typing = tag === 'INPUT' && e.target.type !== 'range' && e.target.type !== 'checkbox';
             if (e.key === 'Escape') {
                 e.stopPropagation();
-                if (overlay.dataset.view === 'settings') showView('main');
+                if (overlay.dataset.view !== 'main') showView('main');
                 else closeModal();
                 return;
             }
-            if (typing || tag === 'TEXTAREA' || overlay.dataset.view === 'settings') return;
+            if (typing || tag === 'TEXTAREA' || overlay.dataset.view !== 'main') return;
             if (e.key === ' ') {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1155,6 +1521,7 @@
 
         syncSettingsInputs();
         syncSoundOptions();
+        syncToneUI();
         renderStats();
         render();
         persist();
@@ -1170,7 +1537,20 @@
             open: openModal,
             close: closeModal,
             renderAmbient,
-            SOUNDS: SOUNDS.map((sound) => sound.id)
+            SOUNDS: SOUNDS.map((sound) => sound.id),
+            BEDS: BED_IDS.slice(),
+            TONES: TONES.map((t) => ({ id: t.id, hz: t.hz || null })),
+            playBed: playAmbient,
+            playTone,
+            soundState: () => ({
+                bed: ambient.type,
+                tone: tone.id,
+                hz: toneHz(),
+                carrier: settings.toneCarrier,
+                mode: settings.toneMode,
+                toneNodes: tone.nodes ? tone.nodes.oscs.length : 0,
+                gateOpen: gateOpen()
+            })
         };
     }
 
@@ -1236,9 +1616,55 @@
                         '<span class="pomo-visually-hidden">Volume</span>' +
                         '<input class="pomo-volume" type="range" min="0" max="1" step="0.05">' +
                     '</label>' +
+                    '<button class="pomo-sounds-open" type="button" aria-expanded="false">' +
+                        '<span class="pomo-sounds-open-icon" aria-hidden="true">' + phosphor('phosphor:sliders-horizontal') + '</span>' +
+                        '<span class="pomo-sounds-open-text"><b>Sound studio</b><small class="pomo-sound-summary">Noise, nature and focus frequencies</small></span>' +
+                        '<span class="pomo-sounds-open-go" aria-hidden="true">' + phosphor('phosphor:caret-right') + '</span>' +
+                    '</button>' +
                 '</div>' +
 
                 '<p class="pomo-stats-line"></p>' +
+            '</div>' +
+
+            '<div class="pomo-view pomo-view-sounds" hidden>' +
+                '<section class="pomo-studio-block" aria-labelledby="pomoBedsTitle">' +
+                    '<p class="pomo-settings-heading" id="pomoBedsTitle">' + phosphor('phosphor:waves') + 'Ambience</p>' +
+                    '<div class="pomo-beds" role="group" aria-labelledby="pomoBedsTitle">' +
+                        BEDS.map((bed) =>
+                            '<button class="pomo-bed" type="button" data-sound="' + bed.id + '" aria-pressed="false">' +
+                                '<span class="pomo-bed-eq" aria-hidden="true"><i></i><i></i><i></i></span>' +
+                                '<b>' + bed.label + '</b><small>' + bed.note + '</small>' +
+                            '</button>'
+                        ).join('') +
+                    '</div>' +
+                    '<label class="pomo-range-row"><span>Ambience volume</span>' +
+                        '<input class="pomo-bed-volume" type="range" min="0" max="1" step="0.05"></label>' +
+                '</section>' +
+                '<section class="pomo-studio-block" aria-labelledby="pomoTonesTitle">' +
+                    '<p class="pomo-settings-heading" id="pomoTonesTitle">' + phosphor('phosphor:sparkle') + 'Focus frequencies</p>' +
+                    '<div class="pomo-tones" role="group" aria-labelledby="pomoTonesTitle">' +
+                        TONES.map((t) =>
+                            '<button class="pomo-tone" type="button" data-tone="' + t.id + '" aria-pressed="false">' +
+                                '<b>' + t.label + '</b>' +
+                                (t.hz ? '<em>' + t.hz + ' Hz</em>' : '') +
+                                '<small>' + t.use + '</small>' +
+                            '</button>'
+                        ).join('') +
+                    '</div>' +
+                    '<div class="pomo-tone-modes" role="group" aria-label="How the tone plays">' +
+                        '<button class="pomo-tone-mode" type="button" data-tone-mode="binaural" aria-pressed="true">Headphones</button>' +
+                        '<button class="pomo-tone-mode" type="button" data-tone-mode="pulse" aria-pressed="false">Speaker</button>' +
+                    '</div>' +
+                    '<p class="pomo-tone-hint"></p>' +
+                    '<label class="pomo-range-row"><span>Beat rate <output class="pomo-tone-hz-value">10 Hz</output></span>' +
+                        '<input id="pomoToneHz" type="range" min="1" max="45" step="0.5"></label>' +
+                    '<label class="pomo-range-row"><span>Tone pitch <output class="pomo-tone-carrier-value">220 Hz</output></span>' +
+                        '<input id="pomoToneCarrier" type="range" min="100" max="500" step="1"></label>' +
+                    '<label class="pomo-range-row"><span>Tone volume</span>' +
+                        '<input class="pomo-tone-volume" type="range" min="0" max="1" step="0.05"></label>' +
+                '</section>' +
+                '<label class="pomo-switch"><input id="pomoFocusOnly" type="checkbox"><span class="pomo-switch-track" aria-hidden="true"></span><span>Play sounds only while focusing</span></label>' +
+                '<p class="pomo-studio-note">Frequencies are a listening aid for focus and calm, not a treatment. Keep the volume low, and skip them if you have epilepsy or a seizure history.</p>' +
             '</div>' +
 
             '<div class="pomo-view pomo-view-settings" hidden>' +
@@ -1264,6 +1690,11 @@
                 '<label class="pomo-switch"><input id="pomoChime" type="checkbox"><span class="pomo-switch-track" aria-hidden="true"></span><span>Chime when a session ends</span></label>' +
             '</div>' +
         '</div>';
+    }
+
+    function phosphor(ref) {
+        const Icon = window.Inkyscib && window.Inkyscib.Icon;
+        return Icon && Icon.svg ? Icon.svg(ref) : '';
     }
 
     function buildPillHTML() {

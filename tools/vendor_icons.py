@@ -122,7 +122,8 @@ ICONS = {
         "arrow-right-line", "arrow-left-line", "github-line", "linkedin-box-line",
         "home-4-line", "compass-3-line", "shapes-line", "file-pdf-2-line", "wifi-off-line",
         "shield-check-line", "download-2-line", "delete-bin-line", "play-circle-line",
-        "add-line", "subtract-line",
+        "add-line", "subtract-line", "timer-line", "calendar-check-line", "check-line",
+        "tablet-line", "sparkling-2-line", "book-open-line", "lock-line", "quill-pen-line",
     ],
 }
 

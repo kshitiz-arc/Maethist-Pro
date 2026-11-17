@@ -986,6 +986,10 @@
     root.setAttribute("aria-label", "File commands");
 
     root.innerHTML =
+      // The way back to the homepage. Notebooks save as you write, so leaving
+      // loses nothing; the mark is the same one the homepage header carries.
+      '<a class="file-ribbon-home" href="/" title="MAETHIST home" aria-label="MAETHIST home">' +
+      '<img src="/static/img/maethist-mark.png" alt="" width="24" height="24" decoding="async"></a>' +
       ["file", "insert", "export", "tools"]
         .map(
           (tab) =>

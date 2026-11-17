@@ -308,13 +308,15 @@ class PomodoroTests(unittest.TestCase):
         self.assertEqual(self.errors, [])
 
     def test_one_accent_in_every_mode(self):
-        """Break and long break used to repaint the panel green and amber."""
+        """Break and long break used to repaint the panel green and amber.
+        In v3 the mode's own hue lives on the clock only; what you press stays
+        the one brand yellow in every mode."""
         page = self.open_page()
         self.open_timer(page)
         colours = page.evaluate(
             """() => {
               const probe = document.createElement('span');
-              probe.style.color = 'var(--accent)';
+              probe.style.color = 'var(--brand-yellow)';
               document.body.appendChild(probe);
               const accent = getComputedStyle(probe).color;
               probe.remove();
@@ -357,6 +359,127 @@ class PomodoroTests(unittest.TestCase):
         self.assertEqual(reset["time"], "25:00")
         self.assertEqual(skipped["mode"], "short")
         self.assertEqual(self.errors, [])
+
+
+    # ---------- the Sound studio ----------
+
+    def test_the_studio_offers_noise_wind_down_and_focus_frequencies(self):
+        page = self.open_page()
+        self.open_timer(page)
+        page.click("#pomodoroModal .pomo-sounds-open")
+        page.wait_for_selector("#pomodoroModal .pomo-view-sounds:not([hidden])")
+        found = page.evaluate(
+            """() => ({
+              beds: [...document.querySelectorAll('#pomodoroModal .pomo-bed')].map(b => b.dataset.sound),
+              tones: [...document.querySelectorAll('#pomodoroModal .pomo-tone')].map(b => b.dataset.tone),
+              title: document.querySelector('#pomodoroModal .pomo-title').textContent,
+              note: document.querySelector('#pomodoroModal .pomo-studio-note').textContent,
+              mainHidden: document.querySelector('#pomodoroModal .pomo-view-main').hidden
+            })"""
+        )
+        self.assertEqual(found["beds"], ["rain", "deep", "clock", "white", "pink", "brown", "winddown"])
+        self.assertEqual(found["tones"], ["off", "delta", "theta", "alpha", "beta", "gamma", "custom"])
+        self.assertEqual(found["title"], "Sound studio")
+        self.assertIn("not a treatment", found["note"])
+        self.assertTrue(found["mainHidden"])
+        page.keyboard.press("Escape")
+        self.assertFalse(page.evaluate("() => document.querySelector('#pomodoroModal .pomo-view-main').hidden"))
+        self.assertEqual(self.errors, [])
+
+    def test_every_studio_control_is_a_real_touch_target(self):
+        for width, height in ((960, 720), (375, 812)):
+            with self.subTest(width=width):
+                page = self.open_page({"width": width, "height": height})
+                self.open_timer(page)
+                page.click("#pomodoroModal .pomo-sounds-open")
+                small = page.evaluate(
+                    """() => [...document.querySelectorAll(
+                          '#pomodoroModal .pomo-view-sounds button, #pomodoroModal .pomo-view-sounds input:not([type=checkbox]), #pomodoroModal .pomo-view-sounds label.pomo-switch')]
+                        .map(el => ({ what: el.className || el.id, b: el.getBoundingClientRect() }))
+                        .filter(({ b }) => b.width > 0 && (b.width < 44 || b.height < 44))
+                        .map(({ what, b }) => what + ' ' + Math.round(b.width) + 'x' + Math.round(b.height))"""
+                )
+                self.assertEqual(small, [])
+                self.assertLessEqual(page.evaluate("() => document.documentElement.scrollWidth"), width)
+
+    def test_new_beds_are_levelled_like_the_old_ones_and_never_clip(self):
+        page = self.open_page()
+        levels = page.evaluate(
+            """async () => {
+              const out = {};
+              for (const id of ['rain', 'white', 'pink', 'brown', 'winddown']) {
+                const buffer = await window.Inkyscib.Pomodoro.renderAmbient(id, { seconds: 4, volume: 0.7 });
+                let peak = 0, sum = 0, n = 0;
+                for (let c = 0; c < buffer.numberOfChannels; c++) {
+                  const d = buffer.getChannelData(c);
+                  for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); if (a > peak) peak = a; sum += d[i] * d[i]; n++; }
+                }
+                out[id] = { peak, db: 20 * Math.log10(Math.sqrt(sum / n)) };
+              }
+              return out;
+            }"""
+        )
+        for bed in ("white", "pink", "brown", "winddown"):
+            with self.subTest(bed=bed):
+                self.assertLess(levels[bed]["peak"], 0.95, levels)
+                self.assertGreater(levels[bed]["db"], -30, levels)
+                self.assertLess(levels[bed]["db"], -12, levels)
+
+    def test_wind_down_swells_on_a_ten_second_breath(self):
+        page = self.open_page()
+        swing = page.evaluate(
+            """async () => {
+              const buffer = await window.Inkyscib.Pomodoro.renderAmbient('winddown', { seconds: 10 });
+              const d = buffer.getChannelData(0), win = Math.round(buffer.sampleRate * 0.5);
+              const rms = [];
+              for (let i = 0; i + win <= d.length; i += win) {
+                let s = 0; for (let j = i; j < i + win; j++) s += d[j] * d[j];
+                rms.push(Math.sqrt(s / win));
+              }
+              const peakAt = rms.indexOf(Math.max(...rms)) * 0.5;
+              return { ratio: Math.max(...rms) / Math.min(...rms), peakAt };
+            }"""
+        )
+        self.assertGreater(swing["ratio"], 2.5, swing)
+        self.assertGreaterEqual(swing["peakAt"], 3.0, swing)
+        self.assertLessEqual(swing["peakAt"], 5.0, swing)
+
+    def test_frequencies_play_binaural_or_as_a_pulse_and_follow_the_timer(self):
+        page = self.open_page()
+        self.open_timer(page)
+        page.click("#pomodoroModal .pomo-sounds-open")
+        page.click('#pomodoroModal .pomo-tone[data-tone="gamma"]')
+        gamma = page.evaluate("() => window.Inkyscib.Pomodoro.soundState()")
+        page.click('#pomodoroModal .pomo-tone-mode[data-tone-mode="pulse"]')
+        pulse = page.evaluate("() => window.Inkyscib.Pomodoro.soundState()")
+        page.evaluate(
+            """() => { const r = document.getElementById('pomoToneHz'); r.value = '7.5';
+                       r.dispatchEvent(new Event('input', { bubbles: true })); }"""
+        )
+        custom = page.evaluate("() => window.Inkyscib.Pomodoro.soundState()")
+        page.click("#pomodoroModal label.pomo-switch:has(#pomoFocusOnly)")
+        gated = page.evaluate("() => window.Inkyscib.Pomodoro.soundState().gateOpen")
+        page.click("#pomodoroModal .pomo-back")
+        page.click("#pomodoroModal .pomo-main")
+        focusing = page.evaluate("() => window.Inkyscib.Pomodoro.soundState().gateOpen")
+        page.click('#pomodoroModal .pomo-tab[data-mode="short"]')
+        on_break = page.evaluate("() => window.Inkyscib.Pomodoro.soundState().gateOpen")
+        page.evaluate("() => window.Inkyscib.Pomodoro.playTone('off')")
+
+        self.assertEqual((gamma["tone"], gamma["hz"], gamma["mode"], gamma["toneNodes"]), ("gamma", 40, "binaural", 2))
+        self.assertEqual((pulse["mode"], pulse["toneNodes"]), ("pulse", 2))
+        self.assertEqual((custom["tone"], custom["hz"]), ("custom", 7.5))
+        self.assertFalse(gated, "only-while-focusing should hold sound while the timer is idle")
+        self.assertTrue(focusing)
+        self.assertFalse(on_break)
+        self.assertEqual(self.errors, [])
+
+    def test_nothing_plays_on_load(self):
+        """A page may not start sound by itself, and a stored choice must not
+        try: the studio always opens silent."""
+        page = self.open_page()
+        state = page.evaluate("() => window.Inkyscib.Pomodoro.soundState()")
+        self.assertEqual((state["bed"], state["tone"], state["toneNodes"]), ("off", "off", 0))
 
 
 if __name__ == "__main__":

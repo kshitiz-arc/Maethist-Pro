@@ -36,100 +36,190 @@
 {% endblock %}
 
 {% block content %}
-    <main class="hero">
+    <main>
 
-      <section class="hero-copy">
+      <section class="nb-hero" aria-labelledby="heroTitle">
+        <div class="nb-hero-copy">
+          <div class="nb-badges" aria-label="What it costs">
+            <span class="nb-sticker">{{ icon("remix:check-line") }} Free forever</span>
+            <span class="nb-sticker is-blue">{{ icon("remix:wifi-off-line") }} Works offline</span>
+            <span class="nb-sticker is-green">{{ icon("remix:lock-line") }} No account</span>
+          </div>
 
-        {# What it costs, first. That is the thing the person who got priced
-           out of GoodNotes needs to know before anything else. #}
-        <p class="system-label">Free &middot; offline &middot; no account</p>
+          <h1 id="heroTitle">
+            <span class="hero-brand">MAETHIST</span>
+            <span class="hero-line">Maths you can <mark>touch</mark>.</span>
+          </h1>
 
-        <h1>MAETHIST</h1>
+          <p class="nb-lede">
+            Write on your own textbook, build ruler-and-compass geometry that
+            <strong>stays live</strong> when you drag it, and keep studying with no
+            connection, on the tablet you already have. No iPad, no app store,
+            nothing to pay.
+          </p>
 
-        <h2 class="tagline">The <em>geometry is real</em>.</h2>
+          <div class="nb-cta">
+            <a class="primary is-big" href="{{ url_for('write') }}">Start writing, free {{ icon("remix:arrow-right-line") }}</a>
+            <button class="text-link" id="demoButton" type="button">Watch the demo</button>
+          </div>
 
-        <p class="description">
-          Set a compass, sweep an arc, cross it with another. The point where
-          they meet <strong>stays live</strong>: hang a line off it an hour
-          later and it still holds when you drag the circle. Write on your own
-          textbook. Drag algebra tiles that know your variables. Export clean
-          vector PDF.
-        </p>
-
-        <div class="cta">
-          {# routes straight into the real editor, not a scroll to a mockup #}
-          <a class="primary" href="{{ url_for('write') }}">Start writing, free</a>
-          <button class="text-link" id="demoButton" type="button">Watch the demo</button>
+          <ul class="nb-proof" aria-label="Good to know">
+            <li>{{ icon("remix:tablet-line") }} Built for budget Android tablets</li>
+            <li>{{ icon("remix:shield-check-line") }} Notes never leave your device</li>
+          </ul>
         </div>
 
-        <p class="system-label feature-grid-label">What it does</p>
-        <div class="feature-grid">
-          <a class="feature" href="{{ url_for('features') }}#geometry">{{ icon("remix:arrow-right-line", "feature-arrow") }} Live geometry constructions</a>
-          <a class="feature" href="{{ url_for('features') }}#geometry">{{ icon("remix:arrow-right-line", "feature-arrow") }} Algebra tiles</a>
-          <a class="feature" href="{{ url_for('features') }}#material">{{ icon("remix:arrow-right-line", "feature-arrow") }} Write on your PDFs and slides</a>
-          <a class="feature" href="{{ url_for('features') }}#material">{{ icon("remix:arrow-right-line", "feature-arrow") }} Clean vector export</a>
-          <a class="feature" href="{{ url_for('features') }}#focus">{{ icon("remix:arrow-right-line", "feature-arrow") }} Notebook mode and library</a>
-          <a class="feature" href="{{ url_for('features') }}#focus">{{ icon("remix:arrow-right-line", "feature-arrow") }} Works offline, on a cheap tablet</a>
-        </div>
+        <div class="nb-stage">
+          <div class="nb-window">
+            <div class="nb-window-bar" aria-hidden="true">
+              <span class="nb-window-dots"><i></i><i></i><i></i></span>
+              <span class="nb-window-title">geometry.inkydoc</span>
+            </div>
 
+            <div class="toolbar" role="group" aria-label="Preview tools">
+              <button class="tool selected" data-tool="select" type="button" title="Select" aria-label="Select" aria-pressed="true">{{ icon("remix:cursor-line") }}</button>
+              <button class="tool" data-tool="pen" type="button" title="Pen" aria-label="Pen" aria-pressed="false">{{ icon("remix:pencil-line") }}</button>
+              <button class="tool" data-tool="circle" type="button" title="Circle" aria-label="Circle" aria-pressed="false">{{ icon("remix:checkbox-blank-circle-line") }}</button>
+              <button class="tool" data-tool="line" type="button" title="Line" aria-label="Line" aria-pressed="false">{{ icon("remix:subtract-line", "icon-diagonal") }}</button>
+              <button class="tool" data-tool="triangle" type="button" title="Triangle" aria-label="Triangle" aria-pressed="false">{{ icon("remix:triangle-line") }}</button>
+            </div>
+
+            {# The drawing is the hero asset: the one thing on the page the
+               product actually made. Every stroke has pathLength="1" so it
+               can draw itself (brutal.css, marketing.js). #}
+            <div class="nb-paper">
+              <div class="geometry">
+                <svg viewBox="0 0 500 420" id="geometrySvg" role="img"
+                  aria-label="A triangle inscribed in a circle, with its altitude and right angle marked">
+                  <circle class="geo circle draw" pathLength="1" cx="250" cy="210" r="145" />
+                  <line class="geo draw d2" pathLength="1" x1="250" y1="65" x2="120" y2="285" />
+                  <line class="geo draw d3" pathLength="1" x1="250" y1="65" x2="380" y2="285" />
+                  <line class="geo draw d4" pathLength="1" x1="120" y1="285" x2="380" y2="285" />
+                  <path class="geo arc draw d5" pathLength="1" d="M120 285 Q250 105 380 285" />
+                  <line class="geo dash draw d6" pathLength="1" x1="250" y1="65" x2="250" y2="285" />
+                  <path class="geo" d="M250 262 L272 262 L272 285" />
+                  <circle class="point" cx="250" cy="65" r="8" />
+                  <circle class="point" cx="120" cy="285" r="8" />
+                  <circle class="point" cx="380" cy="285" r="8" />
+                  <text class="label" x="242" y="44">A</text>
+                  <text class="label" x="94" y="312">B</text>
+                  <text class="label" x="388" y="312">C</text>
+                </svg>
+              </div>
+            </div>
+
+            <div class="zoom">
+              <button type="button" id="zoomOut" aria-label="Zoom out">{{ icon("remix:subtract-line") }}</button>
+              <span id="zoomValue" aria-live="polite">100%</span>
+              <button type="button" id="zoomIn" aria-label="Zoom in">{{ icon("remix:add-line") }}</button>
+            </div>
+          </div>
+
+          <div class="nb-float f1" aria-hidden="true">Points stay live<small>drag the circle, the line follows</small></div>
+          <div class="nb-float f2" aria-hidden="true">On your own PDF<small>write straight on the page</small></div>
+          <div class="nb-float f3" aria-hidden="true">Vector export</div>
+        </div>
       </section>
 
-
-      <section class="canvas-container">
-        <div class="canvas">
-
-          <div class="canvas-grid" aria-hidden="true"></div>
-
-          <div class="toolbar" role="group" aria-label="Preview tools">
-            <button class="tool selected" data-tool="select" type="button" title="Select" aria-pressed="true">{{ icon("remix:cursor-line") }}</button>
-            <button class="tool" data-tool="pen" type="button" title="Pen" aria-pressed="false">{{ icon("remix:pencil-line") }}</button>
-            <button class="tool" data-tool="circle" type="button" title="Circle" aria-pressed="false">{{ icon("remix:checkbox-blank-circle-line") }}</button>
-            <button class="tool" data-tool="line" type="button" title="Line" aria-pressed="false">{{ icon("remix:subtract-line", "icon-diagonal") }}</button>
-            <button class="tool" data-tool="triangle" type="button" title="Triangle" aria-pressed="false">{{ icon("remix:triangle-line") }}</button>
-            <button class="tool" data-tool="rectangle" type="button" title="Rectangle" aria-pressed="false">{{ icon("remix:checkbox-blank-line") }}</button>
-          </div>
-
-          {# The drawing is the hero asset: it is the one thing on the page
-             the product actually made. Everything around it stays grey. #}
-          <div class="geometry">
-            <svg viewBox="0 0 500 420" id="geometrySvg" role="img"
-              aria-label="A triangle inscribed in a circle with its altitude and right angle marked">
-
-              <circle class="geo circle" cx="250" cy="210" r="145" />
-
-              <line class="geo" x1="250" y1="65" x2="120" y2="285" />
-              <line class="geo" x1="250" y1="65" x2="380" y2="285" />
-              <line class="geo" x1="120" y1="285" x2="380" y2="285" />
-
-              <line class="geo dash" x1="250" y1="65" x2="250" y2="285" />
-
-              <path class="geo circle" d="M120 285 Q250 105 380 285" />
-
-              <path class="geo" d="M250 260 L270 260 L270 285" />
-
-              <circle class="point" cx="250" cy="65" r="6" />
-              <circle class="point" cx="120" cy="285" r="6" />
-              <circle class="point" cx="380" cy="285" r="6" />
-
-              <text class="label" x="243" y="42">A</text>
-              <text class="label" x="96" y="308">B</text>
-              <text class="label" x="385" y="308">C</text>
-
-            </svg>
-          </div>
-
-          <div class="zoom">
-            <button type="button" id="zoomOut" aria-label="Zoom out">{{ icon("remix:subtract-line") }}</button>
-            <span id="zoomValue" aria-live="polite">100%</span>
-            <button type="button" id="zoomIn" aria-label="Zoom in">{{ icon("remix:add-line") }}</button>
-          </div>
-
+      <div class="nb-marquee" aria-hidden="true">
+        <div class="nb-marquee-track">
+          {% for _ in range(2) %}
+          <span>Live geometry</span><span>Write on PDFs</span><span>Algebra tiles</span><span>Offline first</span><span>4K lecture frames</span><span>Vector PDF export</span><span>Notebook library</span><span>Focus timer</span>
+          {% endfor %}
         </div>
+      </div>
+
+      <section class="nb-section" aria-labelledby="whatTitle">
+        <div class="nb-section-head">
+          <span class="nb-kicker">What it does</span>
+          <h2 id="whatTitle">Everything a maths student reaches for, in one tab.</h2>
+          <p>Your books, your constructions, your lectures and your notes, together, on any device, with nothing uploaded.</p>
+        </div>
+
+        <div class="nb-bento">
+          <a class="nb-tile span-4 is-slab" href="{{ url_for('features') }}#geometry">
+            <span class="nb-tile-icon is-yellow">{{ icon("remix:compass-3-line") }}</span>
+            <h3>Live geometry constructions</h3>
+            <p>Set a compass, sweep an arc, cross it with another. The point where they meet stays live, an hour later, when you drag the circle.</p>
+            <span class="nb-tile-more">See how it works {{ icon("remix:arrow-right-line") }}</span>
+            <svg class="nb-tile-art" viewBox="0 0 200 160" aria-hidden="true">
+              <circle class="a-stroke" cx="80" cy="90" r="56" />
+              <circle class="a-stroke" cx="130" cy="90" r="56" />
+              <circle class="a-fill" cx="105" cy="41" r="8" />
+              <circle class="a-fill" cx="105" cy="139" r="8" />
+            </svg>
+          </a>
+          <a class="nb-tile span-2" href="{{ url_for('features') }}#material">
+            <span class="nb-tile-icon is-red">{{ icon("remix:file-pdf-2-line") }}</span>
+            <h3>Write on your PDFs</h3>
+            <p>Open a textbook, worksheet or slide deck and write straight on the page.</p>
+            <span class="nb-tile-more">Import a file {{ icon("remix:arrow-right-line") }}</span>
+          </a>
+          <a class="nb-tile span-2" href="{{ url_for('features') }}#geometry">
+            <span class="nb-tile-icon is-green">{{ icon("remix:shapes-line") }}</span>
+            <h3>Algebra tiles</h3>
+            <p>Drag tiles that know your variables, and watch the expression update.</p>
+            <span class="nb-tile-more">Try the tiles {{ icon("remix:arrow-right-line") }}</span>
+          </a>
+          <a class="nb-tile span-2" href="{{ url_for('features') }}#focus">
+            <span class="nb-tile-icon is-blue">{{ icon("remix:wifi-off-line") }}</span>
+            <h3>Offline, on a cheap tablet</h3>
+            <p>Opens with no connection after your first visit. Built for a budget Android tablet.</p>
+            <span class="nb-tile-more">How offline works {{ icon("remix:arrow-right-line") }}</span>
+          </a>
+          <a class="nb-tile span-2" href="{{ url_for('features') }}#material">
+            <span class="nb-tile-icon is-purple">{{ icon("remix:play-circle-line") }}</span>
+            <h3>Lectures beside notes</h3>
+            <p>Watch a YouTube lecture in a floating player and save any moment onto the page, at up to 4K.</p>
+            <span class="nb-tile-more">See the player {{ icon("remix:arrow-right-line") }}</span>
+          </a>
+          <a class="nb-tile span-3" href="{{ url_for('features') }}#focus">
+            <span class="nb-tile-icon is-yellow">{{ icon("remix:book-open-line") }}</span>
+            <h3>A notebook for every subject</h3>
+            <p>Canvas or A4 pages, a library of notebooks, and one-tap backup to a file you keep.</p>
+            <span class="nb-tile-more">Notebooks and backup {{ icon("remix:arrow-right-line") }}</span>
+          </a>
+          <a class="nb-tile span-3" href="{{ url_for('features') }}#focus">
+            <span class="nb-tile-icon is-green">{{ icon("remix:timer-line") }}</span>
+            <h3>Focus timer and day planner</h3>
+            <p>Pomodoro sessions and a planner with reminders, built in, with nothing pulling your attention away.</p>
+            <span class="nb-tile-more">Plan your day {{ icon("remix:arrow-right-line") }}</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="nb-section" aria-labelledby="numbersTitle">
+        <div class="nb-section-head">
+          <span class="nb-kicker">The deal</span>
+          <h2 id="numbersTitle">Free means free.</h2>
+        </div>
+        <div class="nb-stats">
+          <div class="nb-stat"><b>₹0</b><span>to use, forever. No trial, no upgrade.</span></div>
+          <div class="nb-stat"><b>0</b><span>accounts, emails or passwords.</span></div>
+          <div class="nb-stat"><b>0</b><span>ads, trackers or cookies following you.</span></div>
+          <div class="nb-stat"><b>1</b><span>browser tab for books, lectures and notes.</span></div>
+        </div>
+      </section>
+
+      <section class="nb-section" aria-labelledby="stepsTitle">
+        <div class="nb-section-head">
+          <span class="nb-kicker">How it works</span>
+          <h2 id="stepsTitle">Three steps, no sign-up.</h2>
+        </div>
+        <ol class="nb-steps">
+          <li class="nb-step"><h3>Open the canvas</h3><p>Tap Start writing. It opens in your browser, on a tablet, phone or laptop.</p></li>
+          <li class="nb-step"><h3>Bring your material</h3><p>Import a PDF or PowerPoint, or start on a blank page or graph paper.</p></li>
+          <li class="nb-step"><h3>Write, build, keep</h3><p>Write by hand, construct geometry, then export a clean PDF or back up your notebooks.</p></li>
+        </ol>
+      </section>
+
+      <section class="nb-final" aria-labelledby="finalTitle">
+        <div>
+          <h2 id="finalTitle">Your next page is one tap away.</h2>
+          <p>No download, no account, no ads. Just open it and start.</p>
+        </div>
+        <a class="primary is-big" href="{{ url_for('write') }}">Start writing, free {{ icon("remix:arrow-right-line") }}</a>
       </section>
 
     </main>
 {% endblock %}
-
-{# The hero is exactly one screen; a footer below it would only be reachable
-   by scrolling past nothing. #}
-{% block footer %}{% endblock %}

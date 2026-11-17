@@ -9,6 +9,7 @@ import base64
 import importlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -165,7 +166,15 @@ class PageTests(unittest.TestCase):
             with self.subTest(path=path):
                 html = self.client.get(path).get_data(as_text=True)
                 main = html.split("<main", 1)[1] if "<main" in html else html
-                self.assertEqual(main.count('class="primary"'), 1)
+                # One call to action. The homepage repeats it at the foot of
+                # the page, so every primary button must be that same action.
+                primaries = re.findall(r'<a class="primary[^"]*" href="([^"]+)"[^>]*>(.*?)</a>', main, re.S)
+                self.assertGreaterEqual(len(primaries), 1)
+                self.assertLessEqual(len(primaries), 2)
+                self.assertEqual(main.count('class="primary'), len(primaries))
+                for href, label in primaries:
+                    self.assertEqual(href, "/write")
+                    self.assertIn("Start writing, free", label)
                 self.assertNotIn('class="secondary"', main)
                 self.assertIn("Start writing, free", main)
         header = self.client.get("/").get_data(as_text=True)

@@ -228,9 +228,19 @@ in an inline hint under the island and in the help sheet, never only in one of t
 
 ## Motion
 
-- **Approach:** minimal-functional. Instruments do not bounce.
-- **Duration:** 120–180ms. Nothing over 200ms except a navigation transition (see below).
-- **Easing:** `ease-out` entering, `ease-in` leaving, `ease-in-out` moving.
+- **Approach (editor):** minimal-functional. Instruments do not bounce.
+- **Approach (marketing, v3.1):** expressive but quiet. Blocks rise in as they
+  scroll into view, the demo window leans toward the pointer, a light follows
+  the pointer across tiles, and the theme switch wipes out of the button.
+  Nothing on the first screen ever waits on a script.
+- **Tokens:** `--ease-out` (expo-out), `--ease-in`, `--ease-in-out`,
+  `--ease-spring` (marketing only), and `--dur-1..4` (120 / 180 / 320 / 640ms)
+  in `tokens.css`. Use these; do not write a new curve.
+- **Duration:** editor 120–180ms, nothing over 200ms except a navigation or
+  theme transition. Marketing reveals may run to 640ms.
+- **Shared layer:** `static/css/motion.css` and `static/js/motion.js` on every
+  page: cross-document view transitions, the theme wipe
+  (`Inkyscib.Motion.themeWipe(change, fromElement)`), and dialog entrances.
 - **Never animate:** the ink. It must feel immediate, and it currently does.
 - Respect `prefers-reduced-motion: reduce` everywhere.
 
@@ -364,4 +374,7 @@ says so in the filename chip at `--ink-3` rather than behind an overlay.
 | 2026-11-15 | The tour, the File sheet, the planner and My Notebooks read the core tokens | Each had its own palette (indigo, teal, lavender), so four dialogs were four different products. Their `--tour-*`, `--ribbon-*` and `--planner-*` names survive only as aliases |
 | 2026-11-15 | The footer credit is a plain readable link, not an animated signature | Owner request: "Created by @kshitizarc", linked to LinkedIn. It rested at 40% opacity, under 3:1 |
 | 2026-11-17 | Icons from Lucide (editor), Phosphor (Planner, Pomodoro, tour), Remix Icon (marketing, legal) | Owner request to use all three. One family per surface, chosen by `data-icon-set` on the surface root, so stroke and filled styles never share a row. Content drawings (shapes, nibs, line styles) stay hand-drawn. `tools/vendor_icons.py`, `static/icons/LICENSES.md` |
+| 2026-11-17 | The focus timer gets per-mode hues on the clock and a Sound studio | Owner request. Supersedes the 2026-09-15 one-accent rule for the clock only: the Start button stays the one brand yellow in every mode. Beds are rendered and levelled like rain; beat frequencies are live oscillators (binaural or amplitude pulse). Labelled as a listening aid, not a treatment, with a seizure caution. `static/js/pomodoro.js`, `static/css/pomodoro.css` |
+| 2026-11-17 | v3.1: one motion system | Owner request for a more premium, smoother feel. Shared curves and durations in `tokens.css`; page and theme changes run as view transitions; marketing blocks reveal on scroll, but only those below the fold at load, so LCP is untouched. The phone header scrolls away rather than pinning three rows over the page. `static/css/motion.css`, `static/js/motion.js` |
+| 2026-11-17 | v3: neo-brutal with frost, on the marketing pages, the tour and the editor chrome | Owner request for a bolder, more modern look. Outlines and hard shadows are `--nb-*` and `--ui-*` core tokens in `tokens.css`; frost is `--frost*`. Dialogs are frosted everywhere, floating bars only on a fine pointer (frost costs a GPU pass per canvas repaint). The active tool is an inset box-shadow, so 44px targets do not change size. `static/css/brutal.css`, `chrome-brutal.css`, `tour.css` |
 | 2026-11-17 | Renamed to MAETHIST; new maths-symbols mark | Owner request. The mark is full colour with black outlines, so it always sits on a paper tile (`#F3F7FB`) rather than directly on the dark sheet. Internal identifiers keep the old name so stored work survives. `tools/make_brand_icons.py` |
