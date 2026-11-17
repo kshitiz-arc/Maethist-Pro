@@ -11,11 +11,13 @@ import re
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import logging_filters
+import app as app_module
 from app import app
 
 class LogRedactionTests(unittest.TestCase):
@@ -69,13 +71,36 @@ class UploadLifetimeTests(unittest.TestCase):
         self.client = app.test_client()
 
     def test_a_failed_import_also_leaves_nothing_on_disk(self):
+        """A damaged PDF used to be opened from a temporary file, which
+        PyMuPDF kept locked on Windows: the cleanup failed, the request died
+        with an HTML 500 and the upload stayed on disk. PDFs are now read in
+        memory. (The earlier version of this test posted the wrong field name,
+        so it never reached the code that failed.)"""
         before = set(Path(tempfile.gettempdir()).glob("inkyscib_*"))
-        self.client.post(
+        response = self.client.post(
             "/api/pdf/import",
-            data={"file": (io.BytesIO(b"not a pdf"), "x.pdf")},
+            data={"pdf": (io.BytesIO(b"not a pdf"), "x.pdf")},
+            content_type="multipart/form-data",
         )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Could not open this PDF", response.get_json()["error"])
         after = set(Path(tempfile.gettempdir()).glob("inkyscib_*"))
         self.assertEqual(after - before, set())
+
+    def test_an_unexpected_api_failure_still_answers_in_json(self):
+        # Other modules turn on testing mode, which re-raises errors instead of
+        # handing them to the 500 handler; production never does.
+        with unittest.mock.patch.dict(app.config, {"TESTING": False, "PROPAGATE_EXCEPTIONS": False}),                 unittest.mock.patch.object(app_module, "_pymupdf") as broken:
+            broken.open.side_effect = None
+            broken.open.return_value = None   # page_count on None raises
+            response = self.client.post(
+                "/api/pdf/import",
+                data={"pdf": (io.BytesIO(b"%PDF-1.4"), "x.pdf")},
+                content_type="multipart/form-data",
+            )
+        self.assertEqual(response.status_code, 500)
+        self.assertTrue(response.is_json)
+        self.assertIn("Something went wrong", response.get_json()["error"])
 
     def test_the_app_never_writes_an_uploaded_file_outside_a_temp_directory(self):
         """A source check, because the failure this guards against is a future

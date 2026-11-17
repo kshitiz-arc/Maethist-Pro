@@ -37,10 +37,13 @@
 
       <ul>
         <li>
-          <strong>A PDF or PowerPoint file you import.</strong> It is sent to
-          the server, converted to page images, and returned to your browser.
-          The upload is written into a temporary directory that is deleted when
-          the request ends, whether the conversion succeeded or failed
+          <strong>A PDF or PowerPoint file you import.</strong> PDFs and
+          <code>.pptx</code> files are normally converted in your own browser
+          and never reach the server. When the server does convert one, it
+          turns it into page images and returns them to your browser. A PDF is
+          read in memory and never written to disk; a PowerPoint file is
+          written into a temporary directory that is deleted when the request
+          ends, whether the conversion succeeded or failed
           (<code>tempfile.TemporaryDirectory</code> in <code>app.py</code>). It
           is never copied anywhere else, and the same is true of the original
           PDF when you export annotations back onto it. PowerPoint export never

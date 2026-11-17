@@ -1,5 +1,11 @@
 (function () {
   "use strict";
+  // Non-blocking, on screen (static/js/notify.js); alert() froze the page.
+  function notify(message) {
+    if (window.Inkyscib && window.Inkyscib.notify) window.Inkyscib.notify(message, { tone: "error" });
+    else window.alert(message);
+  }
+
 
   var SMOOTH_FACTOR = 0.45;         
   var HANDS_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js";
@@ -21,7 +27,7 @@
     var video = document.getElementById("arVideo");
     if (!video) return false;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert("AR Inky needs camera support in this browser.");
+      notify("AR Inky needs a browser that can use the camera.");
       console.warn("AR Inky: getUserMedia not supported");
       return false;
     }
@@ -43,11 +49,11 @@
     } catch (err) {
       console.error("AR Camera error:", err);
       if (err.name === "NotAllowedError") {
-        alert("Camera permission denied. Please allow camera access to use AR Inky.");
+        notify("Camera access was blocked. Allow the camera for this site to use AR Inky.");
       } else if (err.name === "NotFoundError") {
-        alert("No camera found on this device.");
+        notify("No camera was found on this device.");
       } else {
-        alert("Could not start camera: " + err.message);
+        notify("The camera could not start: " + err.message);
       }
       return false;
     }
@@ -87,7 +93,7 @@
         await loadScript(HANDS_CDN);
       } catch (err) {
         console.error("AR Inky: Could not load MediaPipe Hands", err);
-        alert("Could not load hand tracking library. Hand drawing won't be available, but you can still draw with the mouse.");
+        notify("Hand tracking could not load, so drawing in the air is off. You can still draw normally.");
         return false;
       }
     }

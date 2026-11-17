@@ -204,7 +204,7 @@ def add_static_version(endpoint, values):
     if token:
         values["v"] = token
 
-APP_VERSION = "2.2.0"
+APP_VERSION = "2.2.1"
 
 # Render sets RENDER=true on every service; INKYSCIB_ENV=production is the
 # switch for any other host. A random fallback is fine on a laptop, but under
@@ -1848,6 +1848,27 @@ def llms_txt():
     return Response(render_template("llms.txt"), mimetype="text/markdown")
 
 
+@app.errorhandler(500)
+def server_error(error):
+    """An unexpected failure. The API always answers in JSON with a sentence a
+    person can read: the editor shows the message as it is, and an HTML error
+    page used to reach it as "Unexpected token '<' ... is not valid JSON"."""
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Something went wrong on the server. Try again, or try a different file."}), 500
+    return Response("Something went wrong. Try again in a moment.", 500, mimetype="text/plain")
+
+
+@app.errorhandler(429)
+@app.errorhandler(413)
+def too_large_or_many(error):
+    if request.path.startswith("/api/"):
+        code = getattr(error, "code", 413)
+        message = ("That file is too large to upload." if code == 413
+                   else "Too many requests from here. Wait a moment and try again.")
+        return jsonify({"error": message}), code
+    return error
+
+
 @app.errorhandler(404)
 def not_found(_error):
     return render_template("404.html"), 404
@@ -2823,7 +2844,7 @@ def import_ppt():
 
     filename = secure_filename(upload.filename) or f"presentation{suffix}"
 
-    with tempfile.TemporaryDirectory(prefix="inkyscib_ppt_") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="inkyscib_ppt_", ignore_cleanup_errors=True) as temp_dir:
         temp_path = Path(temp_dir)
         source_path = temp_path / f"upload{suffix}"
         output_dir = temp_path / "slides"
@@ -2883,37 +2904,38 @@ def import_pdf():
 
     filename = secure_filename(upload.filename) or "document.pdf"
 
-    with tempfile.TemporaryDirectory(prefix="inkyscib_pdf_") as temp_dir:
-        source_path = Path(temp_dir) / "upload.pdf"
-        upload.save(source_path)
+    # Read in memory, never written to disk. Opening from a file path left a
+    # damaged upload locked on Windows: the temporary directory could not be
+    # deleted, the request died with an HTML 500, and the file stayed behind.
+    # The import guard already caps the upload at MAX_IMPORT_UPLOAD_BYTES.
+    data = upload.read()
+    try:
+        doc = _pymupdf.open(stream=data, filetype="pdf")
+    except Exception:
+        logger.warning("Could not open uploaded PDF %s", filename, exc_info=True)
+        return jsonify({"error": "Could not open this PDF. It may be damaged or protected."}), 400
 
-        try:
-            doc = _pymupdf.open(str(source_path))
-        except Exception:
-            logger.warning("Could not open uploaded PDF %s", filename, exc_info=True)
-            return jsonify({"error": "Could not open this PDF."}), 400
-
-        slides = []
-        try:
-            if doc.page_count > MAX_PDF_PAGES:
-                return jsonify({
-                    "error": f"This PDF has {doc.page_count} pages; the import limit is {MAX_PDF_PAGES}."
-                }), 400
-            for index, page in enumerate(doc):
-                page_width = max(1, float(page.rect.width))
-                page_height = max(1, float(page.rect.height))
-                mat = _pymupdf.Matrix(2, 2)
-                pix = page.get_pixmap(matrix=mat)
-                img_data = pix.tobytes("png")
-                b64 = base64.b64encode(img_data).decode("ascii")
-                slides.append({
-                    "index": index,
-                    "width": page_width,
-                    "height": page_height,
-                    "image": f"data:image/png;base64,{b64}"
-                })
-        finally:
-            doc.close()
+    slides = []
+    try:
+        if doc.page_count > MAX_PDF_PAGES:
+            return jsonify({
+                "error": f"This PDF has {doc.page_count} pages; the import limit is {MAX_PDF_PAGES}."
+            }), 400
+        for index, page in enumerate(doc):
+            page_width = max(1, float(page.rect.width))
+            page_height = max(1, float(page.rect.height))
+            mat = _pymupdf.Matrix(2, 2)
+            pix = page.get_pixmap(matrix=mat)
+            img_data = pix.tobytes("png")
+            b64 = base64.b64encode(img_data).decode("ascii")
+            slides.append({
+                "index": index,
+                "width": page_width,
+                "height": page_height,
+                "image": f"data:image/png;base64,{b64}"
+            })
+    finally:
+        doc.close()
 
     if not slides:
         return jsonify({"error": "No pages could be rendered from this PDF."}), 400
@@ -3282,7 +3304,7 @@ def export_pdf_onto_original():
     if total_paths > MAX_ANNOTATION_PATHS:
         return jsonify({"error": f"Export is limited to {MAX_ANNOTATION_PATHS} strokes."}), 400
 
-    with tempfile.TemporaryDirectory(prefix="inkyscib_export_") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="inkyscib_export_", ignore_cleanup_errors=True) as temp_dir:
         source_path = Path(temp_dir) / "original.pdf"
         upload.save(source_path)
 

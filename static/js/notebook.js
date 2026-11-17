@@ -411,6 +411,9 @@
   }
 
   function setNotebookStatus(message, tone = "muted") {
+    if (message && (tone === "error" || (tone === "success" && /^PDF ready/.test(message)))) {
+      window.Inkyscib?.notify?.(message, { tone });
+    }
     const status = document.getElementById("notebookModeStatus");
     if (!status) return;
     status.textContent = message;

@@ -351,7 +351,9 @@
         body: form,
         signal: controller.signal
       });
-      const payload = await response.json();
+      // A reply that is not JSON (a proxy error page, a crash) must still end
+      // in a sentence a person can read, not the parser's own message.
+      const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(payload.detail || payload.error || "PPT import failed.");
@@ -474,7 +476,9 @@
         body: form,
         signal: controller.signal
       });
-      const payload = await response.json();
+      // A reply that is not JSON (a proxy error page, a crash) must still end
+      // in a sentence a person can read, not the parser's own message.
+      const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(payload.detail || payload.error || "PDF import failed.");

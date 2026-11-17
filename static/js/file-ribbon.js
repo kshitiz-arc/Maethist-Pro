@@ -67,6 +67,13 @@
   });
 
   function setStatus(message, tone = "muted") {
+    // The status line is inside the sheet. When the sheet is closed -- which
+    // most commands do before they finish -- the outcome goes to the shared
+    // on-screen notice instead (static/js/notify.js).
+    const sheetOpen = !!document.querySelector(".file-backstage.is-open");
+    if (message && !sheetOpen && (tone === "error" || tone === "success")) {
+      window.Inkyscib?.notify?.(message, { tone });
+    }
     const element = document.getElementById("fileBackstageStatus");
     if (!element) return;
     window.clearTimeout(statusTimer);

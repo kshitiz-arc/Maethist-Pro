@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.2.1 — 2026-11-17
+
+### Fixed
+
+- **Every error now reaches the screen.** 2.2.0 fixed the PDF, PowerPoint
+  and image pickers; the same flaw was in three more places, now fixed:
+  notebook PDF export ("Write notes before exporting.", export failures),
+  File-menu commands whose result was written inside a menu that had already
+  closed, and My Notebooks messages (such as a bad backup) shown inside a
+  dialog that was not open. AR Inky's camera errors used blocking browser
+  pop-ups and now use the same notice.
+- **A damaged PDF crashed the server import on Windows.** PyMuPDF kept the
+  failed file locked, the temporary folder could not be deleted, the request
+  ended in an HTML error page, the upload stayed on disk, and the editor
+  showed the raw text "Unexpected token '<' ... is not valid JSON". PDFs are
+  now read in memory and never written to disk; temporary folders for
+  PowerPoint tolerate a locked file; every API error answers in JSON with a
+  readable sentence; and the editor turns an unreadable reply into a plain
+  message.
+- The privacy policy now says that PDFs are read in memory and that most
+  imports never reach the server.
+- An upload test posted the wrong field name, so it never exercised the code
+  that failed. It now sends a real damaged PDF.
+
+
 ## 2.2.0 — 2026-11-17
 
 Launch checklist. Items that were already in place (privacy and terms pages,

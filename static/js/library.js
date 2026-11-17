@@ -774,6 +774,13 @@
     // ------------------------------------------------------------------ UI
 
     function setStatus(text, tone = 'muted') {
+        // Inside the My Notebooks dialog. With the dialog shut (a restore
+        // started from the File sheet, a backup from the reminder), the
+        // outcome goes to the shared on-screen notice.
+        const dialogOpen = !!document.querySelector('.library-modal.active');
+        if (text && !dialogOpen && (tone === 'error' || tone === 'success')) {
+            window.Inkyscib?.notify?.(text, { tone });
+        }
         const status = document.getElementById('libraryStatus');
         if (!status) return;
 

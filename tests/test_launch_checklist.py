@@ -217,23 +217,41 @@ class ImportErrorVisibilityTests(unittest.TestCase):
     def test_a_wrong_file_says_so_on_screen(self):
         """The messages used to land in side-menu status lines nobody can
         see, so a wrong file looked like a button that did nothing."""
-        for selector, expected in (("#pdfImportInput", "Choose a .pdf file"),
-                                   ("#pptImportInput", "Choose a .pptx file"),
-                                   ("#imageInsertInput", "That file is not an image")):
-            with self.subTest(picker=selector):
+        damaged_pdf = Path(self.tmp.name) / "damaged.pdf"
+        damaged_pdf.write_bytes(b"this is not a pdf")
+        damaged_png = Path(self.tmp.name) / "damaged.png"
+        damaged_png.write_bytes(bytes([0x89]) + b"PNG broken")
+        cases = (
+            ("wrong file in the PDF picker", lambda p: p.set_input_files("#pdfImportInput", str(self.text_file)), "Choose a .pdf file"),
+            ("a damaged PDF", lambda p: p.set_input_files("#pdfImportInput", str(damaged_pdf)), "Could not open this PDF"),
+            ("wrong file in the PowerPoint picker", lambda p: p.set_input_files("#pptImportInput", str(self.text_file)), "Choose a .pptx file"),
+            ("wrong file in the image picker", lambda p: p.set_input_files("#imageInsertInput", str(self.text_file)), "That file is not an image"),
+            ("a damaged image", lambda p: p.set_input_files("#imageInsertInput", str(damaged_png)), "could not be read"),
+            ("a bad backup with My Notebooks closed",
+             lambda p: p.evaluate("async () => { await window.Inkyscib.Library.importBackup(new File(['{}'], 'x.inky')); }"),
+             "not a valid MAETHIST backup"),
+            ("the camera blocked for AR Inky",
+             lambda p: p.evaluate("async () => { navigator.mediaDevices.getUserMedia = () => Promise.reject(Object.assign(new Error('denied'), {name: 'NotAllowedError'})); await window.Inkyscib.AR.enterAR(); }"),
+             "Camera access was blocked"),
+        )
+        for label, act, expected in cases:
+            with self.subTest(case=label):
                 context = self.browser.new_context(viewport={"width": 960, "height": 600})
                 self.addCleanup(context.close)
                 context.add_init_script("localStorage.setItem('inkyscib-feature-tour-v1', JSON.stringify({seen: true}))")
                 page = context.new_page()
+                dialogs = []
+                page.on("dialog", lambda dialog: (dialogs.append(dialog.message), dialog.dismiss()))
                 page.goto(self.base_url + "/write", wait_until="load")
                 page.wait_for_function("() => window.appState?.storageReady === true")
-                page.set_input_files(selector, str(self.text_file))
-                notice = page.wait_for_selector(".app-notice.is-error", state="visible", timeout=5000)
+                act(page)
+                notice = page.wait_for_selector(".app-notice.is-error", state="visible", timeout=10000)
                 self.assertIn(expected, notice.text_content())
                 box = notice.bounding_box()
                 self.assertGreaterEqual(box["x"], 0)
                 self.assertLessEqual(box["x"] + box["width"], 960)
                 self.assertEqual(notice.get_attribute("role"), "alert")
+                self.assertEqual(dialogs, [], "a native pop-up blocked the page")
 
 
 if __name__ == "__main__":
