@@ -6638,3 +6638,279 @@ input[type="range"] {
 .tool-options input[type="number"] {
   min-height: 44px;
 }
+
+
+/* =========================================================================
+   Lecture tools (static/js/youtube.js, "Lecture tools"): the transport
+   under the video, lecture notes, Continue watching, and docking.
+   Neo-brutal like the rest of v3: ink outlines, hard shadows, brand colours.
+   ========================================================================= */
+
+.yt-player.yt-minimized .yt-transport,
+.yt-player.yt-minimized .yt-notes,
+.yt-player.yt-searching .yt-transport,
+.yt-player.yt-searching .yt-notes { display: none !important; }
+
+.yt-transport[hidden], .yt-notes[hidden], .yt-recent[hidden] { display: none !important; }
+
+.yt-transport {
+  flex: none;
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px 8px;
+  border-top: 2px solid var(--ui-line, rgba(255, 255, 255, 0.2));
+  background: var(--frost-strong, var(--surface));
+  color: var(--ink);
+}
+
+/* the bar you scrub along */
+.yt-scrub {
+  position: relative;
+  height: 22px;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+}
+.yt-scrub-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 7px;
+  height: 8px;
+  overflow: hidden;
+  border: 2px solid var(--ui-line);
+  border-radius: 999px;
+  background: var(--frost);
+}
+.yt-scrub-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--brand-yellow);
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+.yt-scrub-loop {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  background: repeating-linear-gradient(45deg, var(--brand-purple) 0 4px, transparent 4px 8px);
+  opacity: 0.9;
+}
+.yt-scrub-marks { position: absolute; inset: 0; pointer-events: none; }
+.yt-scrub-marks i {
+  position: absolute;
+  top: 2px;
+  width: 4px;
+  height: 18px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--brand-red);
+  box-shadow: 0 0 0 1.5px #111111;
+}
+.yt-scrub:focus-visible .yt-scrub-track { outline: 3px solid var(--brand-blue); outline-offset: 2px; }
+.yt-scrub.is-scrubbing .yt-scrub-track { border-color: var(--brand-yellow); }
+
+.yt-transport-row { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.yt-transport-gap { flex: 1; min-width: 4px; }
+
+.yt-tbtn {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 8px;
+  border: 2px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--ink);
+  font: 800 var(--t-2) / 1 var(--display);
+  cursor: pointer;
+  transition: transform var(--dur-1, 120ms) var(--ease-out, ease-out), background-color var(--dur-1, 120ms) var(--ease-out, ease-out), box-shadow var(--dur-1, 120ms) var(--ease-out, ease-out);
+}
+@media (pointer: coarse) { .yt-tbtn { min-width: 44px; height: 44px; } }
+.yt-tbtn:hover { border-color: var(--ui-line); }
+.yt-tbtn:active { transform: scale(0.94); }
+.yt-tbtn svg.icon { width: 19px; height: 19px; }
+.yt-tbtn:focus-visible { outline: 3px solid var(--brand-blue); outline-offset: 2px; }
+
+.yt-tbtn-play { background: var(--brand-yellow); color: #111111; border-color: #111111; box-shadow: 2px 2px 0 #111111; }
+.yt-tbtn-play:hover { border-color: #111111; }
+.yt-tbtn-play .yt-t-pause, .yt-tbtn-play.is-playing .yt-t-play { display: none; }
+.yt-tbtn-play.is-playing .yt-t-pause { display: block; }
+
+.yt-tbtn-text.is-changed { background: var(--brand-blue); color: #111111; border-color: #111111; }
+#ytLoop.is-armed { border-color: var(--brand-purple); border-style: dashed; }
+#ytLoop.is-on { background: var(--brand-purple); color: #111111; border-color: #111111; }
+#ytNotesToggle.is-on { background: var(--brand-green); color: #111111; border-color: #111111; }
+
+.yt-notes-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border: 2px solid #111111;
+  border-radius: 999px;
+  background: var(--brand-red);
+  color: #111111;
+  font: 800 10px / 14px var(--mono);
+  text-align: center;
+}
+
+.yt-time {
+  margin-left: 6px;
+  color: var(--ink-2);
+  font: 700 var(--t-1) / 1 var(--mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* the notes, below the transport */
+.yt-notes {
+  flex: 0 1 auto;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  max-height: 46%;
+  min-height: 150px;
+  padding: 10px;
+  border-top: 2px solid var(--ui-line);
+  background: var(--frost-strong, var(--surface));
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.yt-note-compose { display: flex; gap: 6px; align-items: center; }
+.yt-note-at, .yt-note-time {
+  flex: none;
+  min-width: 54px;
+  height: 36px;
+  padding: 0 8px;
+  border: 2px solid #111111;
+  border-radius: 10px;
+  background: var(--brand-yellow);
+  color: #111111;
+  font: 800 var(--t-1) / 1 var(--mono);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.yt-note-time { background: var(--frost); color: var(--ink); border-color: var(--ui-line); }
+.yt-note-time:hover { background: var(--brand-yellow); color: #111111; border-color: #111111; }
+
+#ytNoteInput, .yt-note-text {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 2px solid var(--ui-line);
+  border-radius: 10px;
+  background: var(--frost);
+  color: var(--ink);
+  font: 500 var(--t-2) / 1 var(--sans);
+}
+.yt-note-text { border-color: transparent; background: transparent; }
+.yt-note-text:hover, .yt-note-text:focus { border-color: var(--ui-line); background: var(--frost); }
+#ytNoteInput:focus, .yt-note-text:focus { outline: none; border-color: var(--brand-blue); }
+
+.yt-note-add, .yt-note-del {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--ui-line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.yt-note-add { background: var(--brand-green); color: #111111; border-color: #111111; }
+.yt-note-del { border-color: transparent; color: var(--ink-2); }
+.yt-note-del:hover { background: var(--brand-red); color: #111111; border-color: #111111; }
+.yt-note-add svg.icon, .yt-note-del svg.icon { width: 16px; height: 16px; }
+
+.yt-note-list { display: grid; align-content: start; gap: 4px; margin: 0; padding: 0; list-style: none; overflow-y: auto; overscroll-behavior: contain; }
+.yt-note { display: flex; align-items: center; gap: 6px; }
+.yt-notes-empty { margin: 0; color: var(--ink-2); font-size: var(--t-1); line-height: 1.45; }
+.yt-notes-empty[hidden] { display: none; }
+
+.yt-notes-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.yt-notes-pause { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); font-size: var(--t-1); cursor: pointer; }
+.yt-notes-pause input { width: 16px; height: 16px; accent-color: var(--brand-yellow); }
+.yt-notes-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 2px solid #111111;
+  border-radius: 10px;
+  background: var(--brand-yellow);
+  color: #111111;
+  box-shadow: 2px 2px 0 #111111;
+  font: 800 var(--t-1) / 1 var(--display);
+  cursor: pointer;
+}
+.yt-notes-copy svg.icon { width: 15px; height: 15px; }
+.yt-notes-copy:active { transform: translate(2px, 2px); box-shadow: none; }
+
+/* Continue watching, on the empty player */
+.yt-recent { width: min(100%, 360px); margin-top: 6px; text-align: left; }
+.yt-recent-head { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; color: var(--ink-2); font: 700 var(--t-1) / 1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+.yt-recent-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.yt-recent-item { display: flex; gap: 4px; }
+.yt-recent-open {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 2px solid var(--ui-line);
+  border-radius: 12px;
+  background: var(--frost);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--dur-1, 120ms) var(--ease-out, ease-out), box-shadow var(--dur-1, 120ms) var(--ease-out, ease-out);
+}
+.yt-recent-open:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--nb-shadow-c, #111111); }
+.yt-recent-title { overflow: hidden; font: 800 var(--t-2) / 1.2 var(--display); white-space: nowrap; text-overflow: ellipsis; }
+.yt-recent-meta { color: var(--ink-2); font: 600 var(--t-1) / 1 var(--mono); }
+.yt-recent-bar { height: 5px; overflow: hidden; border-radius: 999px; background: var(--rule); }
+.yt-recent-bar span { display: block; height: 100%; background: var(--brand-red); transform-origin: left center; }
+.yt-recent-forget { display: grid; place-items: center; width: 34px; border: 0; border-radius: 10px; background: transparent; color: var(--ink-2); cursor: pointer; }
+.yt-recent-forget:hover { color: var(--ink); background: var(--frost); }
+.yt-recent-forget svg.icon { width: 15px; height: 15px; }
+
+/* docked: a column down the right of the canvas */
+.yt-player.yt-docked { border-radius: 18px 0 0 18px !important; }
+.yt-player.yt-docked .yt-resize-edge:not(.yt-resize-w) { display: none; }
+#ytDock[aria-pressed="true"] { background: var(--brand-blue); color: #111111; }
+
+.yt-player.yt-has-video { min-height: 300px; }
+/* The picture never collapses to a strip under the controls and notes. */
+.yt-player.yt-has-video .yt-video-container { min-height: 150px; }
+.yt-player.yt-notes-open .yt-notes { max-height: 40%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .yt-tbtn, .yt-recent-open { transition: none; }
+  .yt-tbtn:active { transform: none; }
+}
+
+/* A narrow player tightens its controls rather than cutting the last ones
+   off; below that the row wraps, so nothing is ever out of reach. */
+.yt-player { container-type: inline-size; container-name: ytplayer; }
+.yt-transport-row { flex-wrap: wrap; row-gap: 4px; }
+@container ytplayer (max-width: 420px) {
+  .yt-tbtn { min-width: 34px; height: 34px; padding: 0 5px; border-radius: 9px; }
+  .yt-tbtn svg.icon { width: 17px; height: 17px; }
+  .yt-time { margin-left: 2px; font-size: 0.66rem; }
+  .yt-transport-row { gap: 2px; }
+}
+@media (pointer: coarse) {
+  @container ytplayer (max-width: 420px) { .yt-tbtn { min-width: 40px; height: 40px; } }
+}

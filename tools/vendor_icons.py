@@ -38,6 +38,7 @@ import concurrent.futures
 import json
 import re
 import subprocess
+import time
 import sys
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -97,6 +98,8 @@ ICONS = {
         "maximize-2", "grip-vertical", "image-down", "circle", "square", "ruler", "clock",
         "contrast", "coffee", "brush-cleaning", "cloud-rain", "waves-horizontal", "brain",
         "flame", "volume-2", "volume-x", "sofa", "target", "keyboard", "layers", "copy",
+        # lecture player (youtube.js)
+        "rotate-cw", "repeat", "bookmark-plus", "notebook-pen", "panel-right",
     ],
     "phosphor": [
         # Pomodoro
@@ -205,8 +208,6 @@ def main():
         lookup = remix_paths(spec["tag"]) if set_name == "remix" else None
         folder = OUT_DIR / set_name
         folder.mkdir(parents=True, exist_ok=True)
-        for old in folder.glob("*.svg"):
-            old.unlink()
         names = sorted(set(ICONS[set_name]))
         paths = {}
         for name in names:
@@ -215,17 +216,26 @@ def main():
                 sys.exit(f"{set_name}: no icon called {name!r} in {spec['tag']}")
             paths[name] = path
 
+        # Twelve parallel downloads from raw.githubusercontent.com drop one now
+        # and then; a dropped download is retried rather than reported as an
+        # icon that does not exist.
         def get(name):
-            try:
-                return name, sanitise(fetch(base + paths[name]), spec["mode"])
-            except subprocess.CalledProcessError:
-                return name, None
+            for attempt in range(4):
+                try:
+                    return name, sanitise(fetch(base + paths[name]), spec["mode"])
+                except subprocess.CalledProcessError:
+                    time.sleep(0.6 * (attempt + 1))
+            return name, None
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:
             results = dict(pool.map(get, names))
         missing = [name for name, inner in results.items() if inner is None]
         if missing:
             sys.exit(f"{set_name}: not found in {spec['tag']}: {', '.join(missing)}")
+        # Only now, with every icon in hand, is the old set cleared: a failed
+        # run used to leave the folder empty and the editor without icons.
+        for old in folder.glob("*.svg"):
+            old.unlink()
         for name in names:
             inner = results[name]
             registry[f"{set_name}:{name}"] = inner

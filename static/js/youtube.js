@@ -19,7 +19,8 @@
   if (!ytPlayer || !ytToggleBtn || !ytEmbedSlot) return;
 
   const STORAGE_KEY = "inkyscib-yt-player";
-  const DEFAULT_SIZE = { width: 420, height: 300 };
+  // Room for the lecture controls under a 16:9 picture.
+  const DEFAULT_SIZE = { width: 460, height: 400 };
   const MIN_SIZE = { width: 280, height: 200 };
   // A 4K frame at JPEG quality 95 is about 3-5 MB as a data URL. Matches
   // INKYSCIB_MAX_FRAME_DATA_URL_LENGTH in storage.js and
@@ -281,8 +282,10 @@
     }
 
     requestAnimationFrame(clampPlayerToViewport);
+    renderRecent();
+    if (pollTimer === null && apiPlayer && playerReady) startPolling();
     if (options.focus !== false && !isPlaying) {
-      requestAnimationFrame(() => ytSearchInput?.focus());
+      requestAnimationFrame(() => { if (!isPlaying) ytSearchInput?.focus(); });
     }
     setTimeout(() => {
       ytPlayer.classList.remove("yt-opening");
@@ -308,6 +311,11 @@
 
   function closePlayer() {
     if (!isOpen && ytPlayer.hidden) return;
+    rememberPosition();
+    stopPolling();
+    setNotesOpen(false);
+    clearLoop(true);
+    setDocked(false);
     saveState();
     isOpen = false;
     document.body.classList.remove("yt-runtime-active");
@@ -332,10 +340,13 @@
       if (ytBackBtn) ytBackBtn.style.display = "none";
       if (ytPlayerTitle) ytPlayerTitle.textContent = "YouTube";
       syncCaptureButton();
+      renderTransport();
+      renderRecent();
     }, 380);
   }
 
   function toggleMinimize() {
+    if (!isMinimized && ytPlayer.classList.contains("yt-docked")) setDocked(false);
     if (!isMinimized) {
       const rect = ytPlayer.getBoundingClientRect();
       expandedSize = { width: rect.width, height: rect.height };
@@ -476,6 +487,9 @@
             }
             if (ytPlayerTitle) ytPlayerTitle.textContent = "Now Playing";
             syncCaptureButton();
+            applySpeed();
+            startPolling();
+            renderTransport();
           },
           onStateChange(event) {
             updateVideoData(event.target);
@@ -486,6 +500,9 @@
               window.YT?.PlayerState?.CUED
             ].includes(event.data);
             syncCaptureButton();
+            if (event.data === window.YT?.PlayerState?.PLAYING) applySpeed();
+            if (event.data === window.YT?.PlayerState?.PAUSED) rememberPosition();
+            renderTransport();
           },
           onError() {
             // The API object is still ready even when one particular video is
@@ -527,14 +544,25 @@
       .catch(() => preparedVideos.delete(videoId));
   }
 
-  function loadVideo(videoId, startSeconds = 0, title = "") {
+  function loadVideo(videoId, startSeconds = 0, title = "", options = {}) {
     if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) return;
     prepareFrames(videoId);
+    if (currentVideoId && currentVideoId !== videoId) rememberPosition();
+    if (currentVideoId !== videoId) clearLoop(true);
+    // A link without a time picks up where you stopped last time.
+    let start = Math.max(0, finiteNumber(startSeconds, 0));
+    let resumed = false;
+    if (!start && options.resume !== false) {
+      start = resumePoint(videoId);
+      resumed = start > 0;
+    }
+    const known = libraryEntry(videoId, false);
     const load = {
       videoId,
-      start: Math.max(0, finiteNumber(startSeconds, 0)),
-      title: typeof title === "string" ? title : ""
+      start,
+      title: typeof title === "string" && title ? title : (known?.title || "")
     };
+    if (resumed) showToast(`Picking up at ${formatVideoTime(start)} - press J to go back, or drag the bar`);
 
     currentVideoId = videoId;
     currentVideoTitle = load.title;
@@ -545,6 +573,10 @@
     isPlaying = true;
     pendingLoad = load;
     setEmbedVisible(true);
+    ytPlayer.classList.remove("yt-searching");
+    // The link has been used: leave the box, so the player's keys (K, J, L,
+    // B...) control the lecture instead of typing into the search field.
+    if (document.activeElement === ytSearchInput) ytSearchInput.blur();
     if (ytPlaceholder) ytPlaceholder.style.display = "none";
     if (ytSearchResults) ytSearchResults.hidden = true;
     ytToggleBtn.classList.add("yt-playing");
@@ -558,6 +590,12 @@
     if (!loadIntoReadyPlayer(load)) bootApiPlayer();
     syncCaptureButton();
     saveState();
+    knownTime = load.start;
+    lastRendered = "";
+    marksFor = "";
+    renderTransport();
+    renderNotes();
+    if (playerReady) applySpeed();
   }
 
   function handleSearch() {
@@ -580,6 +618,7 @@
 
     ytSearchResults.hidden = false;
     setEmbedVisible(false);
+    ytPlayer.classList.add("yt-searching");
     if (ytPlaceholder) ytPlaceholder.style.display = "none";
     if (ytBackBtn) ytBackBtn.style.display = "none";
     if (ytPlayerTitle) ytPlayerTitle.textContent = "YouTube";
@@ -676,6 +715,7 @@
   function hideSearchResults() {
     if (!ytSearchResults) return;
     ytSearchResults.hidden = true;
+    ytPlayer.classList.remove("yt-searching");
     if (isPlaying) {
       setEmbedVisible(true);
       if (ytPlaceholder) ytPlaceholder.style.display = "none";
@@ -920,7 +960,7 @@
     if (isMinimized) toggleMinimize();
     const time = Math.max(0, Number(path.videoTime) || 0);
     if (ytSearchInput) ytSearchInput.value = canonicalVideoUrl(path.videoId, time);
-    loadVideo(path.videoId, time, path.videoTitle || "");
+    loadVideo(path.videoId, time, path.videoTitle || "", { resume: false });
     showToast(`Opening video at ${formatVideoTime(time)}`);
   }
 
@@ -954,6 +994,10 @@
   function startDrag(event) {
     if (isMinimized) return;
     event.preventDefault();
+    if (ytPlayer.classList.contains("yt-docked")) {
+      ytPlayer.classList.remove("yt-docked");
+      ytDock?.setAttribute("aria-pressed", "false");
+    }
     const point = eventClientPoint(event);
     const rect = ytPlayer.getBoundingClientRect();
     ytPlayer.style.left = `${rect.left}px`;
@@ -1087,6 +1131,719 @@
     saveState();
   }
 
+
+  // =====================================================================
+  // Lecture tools
+  // =====================================================================
+  //
+  // The embed's own controls are built for watching, and at the ~420px this
+  // player usually is, YouTube hides most of them. A lecture is not watched,
+  // it is studied: you go back ten seconds to catch a step, slow down a
+  // derivation, loop the part you did not follow, mark the moment the
+  // examiner's favourite trick appears, and come back tomorrow to where you
+  // stopped. All of that is here, kept on this device under
+  // "inkyscib-yt-library-v1" and never sent anywhere.
+
+  const ytTransport = document.getElementById("ytTransport");
+  const ytScrub = document.getElementById("ytScrub");
+  const ytScrubFill = document.getElementById("ytScrubFill");
+  const ytScrubLoop = document.getElementById("ytScrubLoop");
+  const ytScrubMarks = document.getElementById("ytScrubMarks");
+  const ytPlayPause = document.getElementById("ytPlayPause");
+  const ytBack10 = document.getElementById("ytBack10");
+  const ytFwd10 = document.getElementById("ytFwd10");
+  const ytTime = document.getElementById("ytTime");
+  const ytSpeed = document.getElementById("ytSpeed");
+  const ytLoop = document.getElementById("ytLoop");
+  const ytBookmark = document.getElementById("ytBookmark");
+  const ytNotesToggle = document.getElementById("ytNotesToggle");
+  const ytNotesCount = document.getElementById("ytNotesCount");
+  const ytNotes = document.getElementById("ytNotes");
+  const ytNoteCompose = document.getElementById("ytNoteCompose");
+  const ytNoteAt = document.getElementById("ytNoteAt");
+  const ytNoteInput = document.getElementById("ytNoteInput");
+  const ytNoteList = document.getElementById("ytNoteList");
+  const ytNotesEmpty = document.getElementById("ytNotesEmpty");
+  const ytNotesCopy = document.getElementById("ytNotesCopy");
+  const ytPauseOnType = document.getElementById("ytPauseOnType");
+  const ytRecent = document.getElementById("ytRecent");
+  const ytRecentList = document.getElementById("ytRecentList");
+  const ytDock = document.getElementById("ytDock");
+
+  const LIBRARY_KEY = "inkyscib-yt-library-v1";
+  const LIBRARY_LIMIT = 40;
+  const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+  // Resume only past the opening, and not in the last stretch: coming back
+  // to the closing credits of something you finished is not "resuming".
+  const RESUME_FROM = 20;
+  const RESUME_TAIL = 25;
+
+  function loadLibrary() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(LIBRARY_KEY));
+      if (saved && typeof saved === "object" && saved.videos && typeof saved.videos === "object") {
+        return {
+          speed: SPEEDS.includes(saved.speed) ? saved.speed : 1,
+          pauseOnType: saved.pauseOnType !== false,
+          videos: saved.videos
+        };
+      }
+    } catch (_) {
+      // Unreadable storage starts an empty library.
+    }
+    return { speed: 1, pauseOnType: true, videos: {} };
+  }
+
+  let library = loadLibrary();
+
+  function saveLibrary() {
+    const ids = Object.keys(library.videos);
+    if (ids.length > LIBRARY_LIMIT) {
+      // The oldest go first, but never a lecture with notes in it.
+      ids
+        .sort((a, b) => (library.videos[b].updatedAt || 0) - (library.videos[a].updatedAt || 0))
+        .slice(LIBRARY_LIMIT)
+        .forEach((id) => {
+          if (!(library.videos[id].notes || []).length) delete library.videos[id];
+        });
+    }
+    try {
+      localStorage.setItem(LIBRARY_KEY, JSON.stringify(library));
+    } catch (_) {
+      // Storage full or blocked: the controls still work for this visit.
+    }
+  }
+
+  function libraryEntry(videoId, create) {
+    if (!/^[A-Za-z0-9_-]{11}$/.test(videoId || "")) return null;
+    let entry = library.videos[videoId];
+    if (!entry && create) {
+      entry = library.videos[videoId] = { title: "", duration: 0, position: 0, updatedAt: Date.now(), notes: [] };
+    }
+    if (entry && !Array.isArray(entry.notes)) entry.notes = [];
+    return entry || null;
+  }
+
+  // ---------- the player, read safely ----------
+
+  let knownTime = 0;
+  let seekHoldUntil = 0;
+
+  function hasVideo() {
+    return !!(apiPlayer && playerReady && currentVideoId);
+  }
+
+  function playerTime() {
+    if (!apiPlayer) return 0;
+    // Just after a seek the embed can still report the old time for a frame
+    // or two; trust the seek until it catches up.
+    if (performance.now() < seekHoldUntil) return knownTime;
+    try {
+      knownTime = Math.max(0, Number(apiPlayer.getCurrentTime()) || 0);
+    } catch (_) {
+      // Not ready: keep the last known time.
+    }
+    return knownTime;
+  }
+
+  function playerDuration() {
+    try {
+      return Math.max(0, Number(apiPlayer?.getDuration?.()) || 0);
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  function playerPlaying() {
+    try {
+      return apiPlayer?.getPlayerState?.() === window.YT?.PlayerState?.PLAYING;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function seekTo(seconds) {
+    if (!hasVideo()) return;
+    const duration = playerDuration();
+    const target = clamp(Number(seconds) || 0, 0, duration > 1 ? duration - 0.25 : Math.max(0, Number(seconds) || 0));
+    try {
+      apiPlayer.seekTo(target, true);
+    } catch (_) {
+      return;
+    }
+    knownTime = target;
+    seekHoldUntil = performance.now() + 700;
+    renderTransport();
+  }
+
+  function seekBy(delta) {
+    seekTo(playerTime() + delta);
+  }
+
+  function togglePlay() {
+    if (!hasVideo()) return;
+    try {
+      if (playerPlaying()) apiPlayer.pauseVideo();
+      else apiPlayer.playVideo();
+    } catch (_) {
+      return;
+    }
+    window.setTimeout(renderTransport, 60);
+  }
+
+  // ---------- speed ----------
+
+  function applySpeed() {
+    try {
+      apiPlayer?.setPlaybackRate?.(library.speed);
+    } catch (_) {
+      // Some videos only offer 1x; the button still shows what was asked.
+    }
+    if (ytSpeed) ytSpeed.textContent = `${library.speed}\u00d7`;
+    ytSpeed?.classList.toggle("is-changed", library.speed !== 1);
+  }
+
+  function setSpeed(next) {
+    library.speed = SPEEDS.includes(next) ? next : 1;
+    applySpeed();
+    saveLibrary();
+  }
+
+  function stepSpeed(direction) {
+    const index = SPEEDS.indexOf(library.speed);
+    setSpeed(SPEEDS[clamp((index < 0 ? 2 : index) + direction, 0, SPEEDS.length - 1)]);
+    showToast(`Speed ${library.speed}\u00d7`);
+  }
+
+  // ---------- A-B loop ----------
+
+  let loopRange = { a: null, b: null };
+
+  function clearLoop(quiet) {
+    const had = loopRange.a !== null;
+    loopRange = { a: null, b: null };
+    renderTransport();
+    if (had && !quiet) showToast("Loop off");
+  }
+
+  function toggleLoop() {
+    if (!hasVideo()) return;
+    const t = playerTime();
+    if (loopRange.a === null) {
+      loopRange.a = t;
+      showToast(`Loop from ${formatVideoTime(t)} - press again at the end`);
+    } else if (loopRange.b === null) {
+      if (t < loopRange.a + 1) {
+        showToast("Play on past the start, then set the end", true);
+        return;
+      }
+      loopRange.b = t;
+      showToast(`Looping ${formatVideoTime(loopRange.a)} to ${formatVideoTime(loopRange.b)}`);
+      seekTo(loopRange.a);
+    } else {
+      clearLoop();
+      return;
+    }
+    renderTransport();
+  }
+
+  // ---------- notes and bookmarks ----------
+
+  let noteTime = null;
+
+  function currentNotes() {
+    return libraryEntry(currentVideoId, false)?.notes || [];
+  }
+
+  function addNote(text, at) {
+    if (!currentVideoId) return null;
+    const entry = libraryEntry(currentVideoId, true);
+    if (currentVideoTitle) entry.title = currentVideoTitle;
+    const note = {
+      t: Math.round(Math.max(0, Number(at ?? playerTime()) || 0) * 10) / 10,
+      text: String(text || "").trim().slice(0, 500),
+      at: Date.now()
+    };
+    entry.notes.push(note);
+    entry.notes.sort((x, y) => x.t - y.t);
+    entry.updatedAt = Date.now();
+    saveLibrary();
+    renderNotes();
+    renderMarks();
+    return note;
+  }
+
+  function bookmark() {
+    if (!hasVideo()) return;
+    const note = addNote("");
+    if (note) showToast(`Bookmarked ${formatVideoTime(note.t)} - add a note in Lecture notes`);
+  }
+
+  function removeNote(index) {
+    const entry = libraryEntry(currentVideoId, false);
+    if (!entry || !entry.notes[index]) return;
+    entry.notes.splice(index, 1);
+    entry.updatedAt = Date.now();
+    saveLibrary();
+    renderNotes();
+    renderMarks();
+  }
+
+  function notesAsText() {
+    const entry = libraryEntry(currentVideoId, false);
+    if (!entry) return "";
+    const lines = [entry.title || currentVideoTitle || "YouTube lecture", canonicalVideoUrl(currentVideoId, 0), ""];
+    entry.notes.forEach((note) => {
+      lines.push(`${formatVideoTime(note.t)}  ${note.text || "(bookmark)"}  ${canonicalVideoUrl(currentVideoId, note.t)}`);
+    });
+    return lines.join("\n");
+  }
+
+  async function copyNotes() {
+    if (!currentNotes().length) {
+      showToast("No notes to copy yet", true);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(notesAsText());
+      showToast("Notes copied, each with a link to its moment");
+    } catch (_) {
+      showToast("The browser would not allow copying here", true);
+    }
+  }
+
+  function setNotesOpen(open) {
+    if (!ytNotes) return;
+    const next = !!open && !!currentVideoId;
+    ytNotes.hidden = !next;
+    ytPlayer.classList.toggle("yt-notes-open", next);
+    ytNotesToggle?.setAttribute("aria-expanded", String(next));
+    ytNotesToggle?.classList.toggle("is-on", next);
+    if (next) {
+      // Room for the notes without squeezing the video to a strip: the
+      // picture keeps 16:9 at the player's width, and the notes get ~200px.
+      const rect = ytPlayer.getBoundingClientRect();
+      const chrome = rect.height - (document.getElementById("ytVideoContainer")?.getBoundingClientRect().height || 0);
+      const wanted = Math.round(rect.width * 9 / 16 + chrome + 210);
+      if (!isMinimized && rect.height < wanted && !ytPlayer.classList.contains("yt-docked")) {
+        const size = viewportPlayerSize(rect.width, wanted);
+        // Grow downward, and move up only as far as the screen needs.
+        const top = clamp(rect.top, minPlayerTop(size.height), Math.max(8, window.innerHeight - size.height - 8));
+        setPlayerBox({ top, width: rect.width, height: size.height });
+      }
+      renderNotes();
+    }
+  }
+
+  function renderNotes() {
+    if (!ytNoteList) return;
+    const notes = currentNotes();
+    if (ytNotesCount) {
+      ytNotesCount.hidden = notes.length === 0;
+      ytNotesCount.textContent = String(notes.length);
+    }
+    if (ytNotesEmpty) ytNotesEmpty.hidden = notes.length > 0;
+    if (ytNotes?.hidden) return;
+    ytNoteList.innerHTML = notes.map((note, index) => `
+      <li class="yt-note" data-index="${index}">
+        <button class="yt-note-time" type="button" data-seek="${note.t}" title="Jump to ${formatVideoTime(note.t)}">${formatVideoTime(note.t)}</button>
+        <input class="yt-note-text" type="text" maxlength="500" value="${escapeHtml(note.text)}" placeholder="Bookmark - add a note" aria-label="Note at ${formatVideoTime(note.t)}">
+        <button class="yt-note-del" type="button" aria-label="Delete the note at ${formatVideoTime(note.t)}" title="Delete">${iconMarkup("lucide:trash")}</button>
+      </li>`).join("");
+  }
+
+  function iconMarkup(ref) {
+    try {
+      return window.Inkyscib?.Icon?.svg?.(ref) || "";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function renderMarks() {
+    if (!ytScrubMarks) return;
+    const duration = playerDuration();
+    if (!duration) {
+      ytScrubMarks.innerHTML = "";
+      return;
+    }
+    ytScrubMarks.innerHTML = currentNotes()
+      .map((note) => `<i style="left:${clamp((note.t / duration) * 100, 0, 100).toFixed(3)}%"></i>`)
+      .join("");
+  }
+
+  // ---------- the transport ----------
+
+  let lastRendered = "";
+
+  function renderTransport() {
+    if (!ytTransport) return;
+    const show = isOpen && !!currentVideoId && isPlaying;
+    ytTransport.hidden = !show;
+    ytPlayer.classList.toggle("yt-has-video", show);
+    if (!show) return;
+    const t = playerTime();
+    const duration = playerDuration();
+    const fraction = duration ? clamp(t / duration, 0, 1) : 0;
+    const playing = playerPlaying();
+    ytPlayPause?.classList.toggle("is-playing", playing);
+    ytPlayPause?.setAttribute("aria-label", playing ? "Pause" : "Play");
+    const label = `${formatVideoTime(t)} / ${formatVideoTime(duration)}`;
+    if (label !== lastRendered) {
+      lastRendered = label;
+      if (ytTime) ytTime.textContent = label;
+      if (ytScrub) {
+        ytScrub.setAttribute("aria-valuemax", String(Math.round(duration)));
+        ytScrub.setAttribute("aria-valuenow", String(Math.round(t)));
+        ytScrub.setAttribute("aria-valuetext", formatVideoTime(t));
+      }
+    }
+    if (ytScrubFill) ytScrubFill.style.transform = `scaleX(${fraction.toFixed(4)})`;
+    if (ytNoteAt && document.activeElement !== ytNoteInput) ytNoteAt.textContent = formatVideoTime(t);
+    if (ytLoop) {
+      const armed = loopRange.a !== null && loopRange.b === null;
+      const on = loopRange.b !== null;
+      ytLoop.classList.toggle("is-armed", armed);
+      ytLoop.classList.toggle("is-on", on);
+      ytLoop.setAttribute("aria-pressed", String(armed || on));
+      ytLoop.title = on
+        ? `Looping ${formatVideoTime(loopRange.a)} to ${formatVideoTime(loopRange.b)} - press to stop (A)`
+        : armed ? "Press at the end of the section (A)" : "Loop a section (A)";
+    }
+    if (ytScrubLoop) {
+      const on = loopRange.a !== null && duration > 0;
+      ytScrubLoop.hidden = !on;
+      if (on) {
+        const end = loopRange.b ?? t;
+        ytScrubLoop.style.left = `${(clamp(loopRange.a / duration, 0, 1) * 100).toFixed(3)}%`;
+        ytScrubLoop.style.width = `${(clamp((end - loopRange.a) / duration, 0, 1) * 100).toFixed(3)}%`;
+      }
+    }
+  }
+
+  // ---------- remembering where you were ----------
+
+  let lastRemembered = 0;
+  let pollTimer = null;
+  let marksFor = "";
+
+  function rememberPosition() {
+    if (!hasVideo()) return;
+    const t = playerTime();
+    const duration = playerDuration();
+    if (t < 1 && !duration) return;
+    lastRemembered = Date.now();
+    const entry = libraryEntry(currentVideoId, true);
+    entry.position = t;
+    if (duration) entry.duration = duration;
+    if (currentVideoTitle) entry.title = currentVideoTitle;
+    entry.updatedAt = Date.now();
+    saveLibrary();
+  }
+
+  function poll() {
+    if (!isOpen || !hasVideo()) return;
+    if (loopRange.b !== null && playerPlaying() && playerTime() >= loopRange.b) seekTo(loopRange.a);
+    renderTransport();
+    const durationKey = currentVideoId + ":" + Math.round(playerDuration());
+    if (durationKey !== marksFor) {
+      marksFor = durationKey;
+      renderMarks();
+    }
+    if (Date.now() - lastRemembered > 5000 && playerPlaying()) rememberPosition();
+  }
+
+  function startPolling() {
+    if (pollTimer) return;
+    pollTimer = window.setInterval(poll, 250);
+  }
+
+  function stopPolling() {
+    if (pollTimer) window.clearInterval(pollTimer);
+    pollTimer = null;
+  }
+
+  function resumePoint(videoId) {
+    const entry = libraryEntry(videoId, false);
+    if (!entry) return 0;
+    const position = Number(entry.position) || 0;
+    const duration = Number(entry.duration) || 0;
+    if (position < RESUME_FROM) return 0;
+    if (duration && position > duration - RESUME_TAIL) return 0;
+    return position;
+  }
+
+  function renderRecent() {
+    if (!ytRecent || !ytRecentList) return;
+    const items = Object.entries(library.videos)
+      .filter(([id, entry]) => id !== currentVideoId && (entry.position > 5 || (entry.notes || []).length))
+      .sort((a, b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0))
+      .slice(0, 4);
+    ytRecent.hidden = items.length === 0;
+    // No thumbnails: a picture from YouTube would be a request to YouTube
+    // before anyone pressed play. The progress bar says enough.
+    ytRecentList.innerHTML = items.map(([id, entry]) => {
+      const duration = Number(entry.duration) || 0;
+      const fraction = duration ? clamp(entry.position / duration, 0, 1) : 0;
+      const notes = (entry.notes || []).length;
+      const meta = [
+        duration ? `${formatVideoTime(entry.position)} of ${formatVideoTime(duration)}` : formatVideoTime(entry.position),
+        notes ? `${notes} note${notes === 1 ? "" : "s"}` : ""
+      ].filter(Boolean).join(" \u00b7 ");
+      return `
+        <li class="yt-recent-item">
+          <button class="yt-recent-open" type="button" data-video-id="${escapeHtml(id)}">
+            <span class="yt-recent-title">${escapeHtml(entry.title || "YouTube video")}</span>
+            <span class="yt-recent-meta">${escapeHtml(meta)}</span>
+            <span class="yt-recent-bar" aria-hidden="true"><span style="transform:scaleX(${fraction.toFixed(4)})"></span></span>
+          </button>
+          <button class="yt-recent-forget" type="button" data-forget="${escapeHtml(id)}" aria-label="Remove from Continue watching" title="Remove">${iconMarkup("lucide:x")}</button>
+        </li>`;
+    }).join("");
+  }
+
+  // Sizes the player at once. The player animates its height in CSS, and
+  // clampPlayerToViewport, run on the next frame, reads the half-animated
+  // height back and writes it as the new size: growing for the notes or
+  // leaving the dock ended at whatever height the animation had reached.
+  function setPlayerBox(box) {
+    const previous = ytPlayer.style.transition;
+    ytPlayer.style.transition = "none";
+    if (box.left !== undefined) ytPlayer.style.left = `${box.left}px`;
+    if (box.top !== undefined) ytPlayer.style.top = `${box.top}px`;
+    if (box.width !== undefined) ytPlayer.style.width = `${box.width}px`;
+    if (box.height !== undefined) ytPlayer.style.height = `${box.height}px`;
+    ytPlayer.style.right = "auto";
+    void ytPlayer.offsetHeight;
+    ytPlayer.style.transition = previous;
+    if (box.width !== undefined && box.height !== undefined) expandedSize = { width: box.width, height: box.height };
+  }
+
+  // ---------- docking beside the canvas ----------
+
+  let floatRect = null;
+
+  function placeDocked() {
+    const top = minPlayerTop(400);
+    const width = clamp(Math.round(window.innerWidth * 0.34), 320, 640);
+    const height = Math.max(260, window.innerHeight - top - 44);
+    setPlayerBox({ left: Math.max(8, window.innerWidth - width - 8), top, width, height });
+  }
+
+  function setDocked(docked) {
+    const next = !!docked && !isMinimized;
+    if (next === ytPlayer.classList.contains("yt-docked")) return;
+    if (next) {
+      const rect = ytPlayer.getBoundingClientRect();
+      floatRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+      ytPlayer.classList.add("yt-docked");
+      placeDocked();
+    } else {
+      ytPlayer.classList.remove("yt-docked");
+      if (floatRect) setPlayerBox(floatRect);
+      clampPlayerToViewport();
+    }
+    ytDock?.setAttribute("aria-pressed", String(next));
+    if (ytDock) ytDock.title = next ? "Float the player again" : "Dock beside the canvas";
+    saveState();
+  }
+
+  // ---------- keyboard ----------
+  //
+  // Only while the pointer is over the player, or focus is inside it, so the
+  // canvas keeps every key it owns the rest of the time. Once the video
+  // itself is clicked the keys go to YouTube's own iframe, which has its own
+  // shortcuts for the same things.
+
+  let pointerInside = false;
+  ytPlayer.addEventListener("pointerenter", () => { pointerInside = true; });
+  ytPlayer.addEventListener("pointerleave", () => { pointerInside = false; });
+
+  function typingTarget(target) {
+    return !!target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName || ""));
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (!isOpen || isMinimized || !hasVideo()) return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    if (!pointerInside && !ytPlayer.contains(document.activeElement)) return;
+    if (typingTarget(event.target)) return;
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+    const actions = {
+      k: togglePlay,
+      " ": togglePlay,
+      j: () => seekBy(-10),
+      l: () => seekBy(10),
+      ArrowLeft: () => seekBy(-5),
+      ArrowRight: () => seekBy(5),
+      b: bookmark,
+      a: toggleLoop,
+      s: saveCurrentFrame,
+      "[": () => stepSpeed(-1),
+      "]": () => stepSpeed(1),
+      n: () => {
+        setNotesOpen(true);
+        ytNoteInput?.focus();
+      }
+    };
+    const action = actions[key];
+    if (!action) return;
+    event.preventDefault();
+    event.stopPropagation();
+    action();
+  }, true);
+
+  // ---------- wiring ----------
+
+  ytPlayPause?.addEventListener("click", togglePlay);
+  ytBack10?.addEventListener("click", () => seekBy(-10));
+  ytFwd10?.addEventListener("click", () => seekBy(10));
+  ytSpeed?.addEventListener("click", () => {
+    const index = SPEEDS.indexOf(library.speed);
+    setSpeed(SPEEDS[(index + 1) % SPEEDS.length]);
+  });
+  ytLoop?.addEventListener("click", toggleLoop);
+  ytBookmark?.addEventListener("click", bookmark);
+  ytNotesToggle?.addEventListener("click", () => setNotesOpen(ytNotes?.hidden));
+  ytNotesCopy?.addEventListener("click", copyNotes);
+  ytDock?.addEventListener("click", () => setDocked(!ytPlayer.classList.contains("yt-docked")));
+
+  if (ytPauseOnType) {
+    ytPauseOnType.checked = library.pauseOnType;
+    ytPauseOnType.addEventListener("change", () => {
+      library.pauseOnType = ytPauseOnType.checked;
+      saveLibrary();
+    });
+  }
+
+  // The note is for the moment you started typing it, not the moment you
+  // finished: by then the lecturer has moved on.
+  let resumeAfterNote = false;
+  ytNoteInput?.addEventListener("focus", () => {
+    noteTime = playerTime();
+    if (ytNoteAt) ytNoteAt.textContent = formatVideoTime(noteTime);
+    resumeAfterNote = false;
+    if (library.pauseOnType && playerPlaying()) {
+      try {
+        apiPlayer.pauseVideo();
+        resumeAfterNote = true;
+      } catch (_) { /* not ready */ }
+    }
+  });
+  ytNoteInput?.addEventListener("blur", () => {
+    noteTime = null;
+    if (resumeAfterNote) {
+      try { apiPlayer?.playVideo(); } catch (_) { /* gone */ }
+    }
+    resumeAfterNote = false;
+  });
+  ytNoteAt?.addEventListener("click", () => {
+    if (noteTime !== null) seekTo(noteTime);
+  });
+  ytNoteCompose?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const text = ytNoteInput.value.trim();
+    if (!text) return;
+    addNote(text, noteTime ?? playerTime());
+    ytNoteInput.value = "";
+    noteTime = playerTime();
+  });
+
+  ytNoteList?.addEventListener("click", (event) => {
+    const seek = event.target.closest("[data-seek]");
+    if (seek) {
+      seekTo(Number(seek.dataset.seek));
+      return;
+    }
+    const del = event.target.closest(".yt-note-del");
+    if (del) removeNote(Number(del.closest(".yt-note")?.dataset.index));
+  });
+  ytNoteList?.addEventListener("change", (event) => {
+    const input = event.target.closest(".yt-note-text");
+    if (!input) return;
+    const entry = libraryEntry(currentVideoId, false);
+    const note = entry?.notes[Number(input.closest(".yt-note")?.dataset.index)];
+    if (!note) return;
+    note.text = input.value.trim().slice(0, 500);
+    entry.updatedAt = Date.now();
+    saveLibrary();
+  });
+
+  // Typing in the notes must never reach the canvas's single-key shortcuts.
+  ytNotes?.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.target.blur?.();
+      event.stopPropagation();
+      return;
+    }
+    if (typingTarget(event.target)) event.stopPropagation();
+  });
+  ["keyup", "keypress"].forEach((type) => {
+    ytNotes?.addEventListener(type, (event) => {
+      if (typingTarget(event.target)) event.stopPropagation();
+    });
+  });
+
+  ytRecentList?.addEventListener("click", (event) => {
+    const forget = event.target.closest("[data-forget]");
+    if (forget) {
+      const entry = library.videos[forget.dataset.forget];
+      if (entry) {
+        // Notes are kept: forgetting the place is not deleting the work.
+        if ((entry.notes || []).length) entry.position = 0;
+        else delete library.videos[forget.dataset.forget];
+        saveLibrary();
+      }
+      renderRecent();
+      return;
+    }
+    const open = event.target.closest("[data-video-id]");
+    if (!open) return;
+    const id = open.dataset.videoId;
+    const entry = libraryEntry(id, false);
+    if (ytSearchInput) ytSearchInput.value = canonicalVideoUrl(id, 0);
+    loadVideo(id, 0, entry?.title || "");
+  });
+
+  // Scrubbing: tap or drag along the bar, arrows for five seconds.
+  let scrubbing = false;
+  function scrubTo(event) {
+    const rect = ytScrub.getBoundingClientRect();
+    const fraction = clamp((event.clientX - rect.left) / Math.max(1, rect.width), 0, 1);
+    seekTo(fraction * playerDuration());
+  }
+  ytScrub?.addEventListener("pointerdown", (event) => {
+    if (!hasVideo() || !playerDuration()) return;
+    scrubbing = true;
+    ytScrub.setPointerCapture?.(event.pointerId);
+    ytScrub.classList.add("is-scrubbing");
+    scrubTo(event);
+  });
+  ytScrub?.addEventListener("pointermove", (event) => {
+    if (scrubbing) scrubTo(event);
+  });
+  ["pointerup", "pointercancel"].forEach((type) => ytScrub?.addEventListener(type, () => {
+    scrubbing = false;
+    ytScrub.classList.remove("is-scrubbing");
+  }));
+  ytScrub?.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      event.preventDefault();
+      event.stopPropagation();
+      seekBy(event.key === "ArrowLeft" ? -5 : 5);
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    if (isOpen && ytPlayer.classList.contains("yt-docked")) requestAnimationFrame(placeDocked);
+  });
+  window.addEventListener("pagehide", rememberPosition);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) rememberPosition();
+  });
+
+  applySpeed();
+
   ytToggleBtn.addEventListener("click", () => isOpen ? closePlayer() : openPlayer());
   ytClose?.addEventListener("click", closePlayer);
   ytMinimize?.addEventListener("click", toggleMinimize);
@@ -1129,7 +1886,28 @@
   window.Inkyscib = window.Inkyscib || {};
   window.Inkyscib.YouTube = {
     openFrame,
-    saveCurrentFrame
+    saveCurrentFrame,
+    seekTo,
+    seekBy,
+    togglePlay,
+    setSpeed,
+    toggleLoop,
+    bookmark,
+    addNote,
+    notesAsText,
+    setNotesOpen,
+    setDocked,
+    lectureState: () => ({
+      videoId: currentVideoId,
+      time: playerTime(),
+      duration: playerDuration(),
+      speed: library.speed,
+      loop: { ...loopRange },
+      notes: currentNotes().map((note) => ({ ...note })),
+      docked: ytPlayer.classList.contains("yt-docked"),
+      notesOpen: !!ytNotes && !ytNotes.hidden,
+      transport: !!ytTransport && !ytTransport.hidden
+    })
   };
 
   syncCaptureButton();

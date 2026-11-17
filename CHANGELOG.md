@@ -1,5 +1,40 @@
 # Changelog
 
+## 2.4.0 — 2026-11-17
+
+### Added: lecture tools in the YouTube player
+
+- **Controls built for studying.** A bar under the video with back and
+  forward 10 seconds, play and pause, a scrub bar you can tap or drag, the
+  time, and playback speed from 0.5x to 2x (remembered between visits).
+- **Loop a section.** Press loop at the start of the part you did not
+  follow and again at its end, and it replays until you stop it. The
+  section is shaded on the scrub bar.
+- **Lecture notes.** Bookmark a moment with one press, or type a note. A
+  note belongs to the moment you started typing, and the video pauses while
+  you type (you can switch that off). Notes are listed in time order, marked
+  on the scrub bar, and jump back to their moment when tapped. "Copy all"
+  copies them as text, each with a link to its moment.
+- **Pick up where you stopped.** A lecture opened without a time resumes
+  from where you left it. The empty player lists "Continue watching" with
+  progress and note counts. It shows no thumbnails, so nothing reaches
+  YouTube until you press play.
+- **Dock beside the canvas.** One button turns the player into a
+  full-height column on the right, and the same button floats it again.
+- **Keyboard shortcuts** while the pointer is over the player: K or Space to
+  play and pause, J and L for 10 seconds, the arrow keys for 5, B to
+  bookmark, A to loop, S to save the frame, [ and ] for speed, N for notes.
+  Everywhere else the canvas keeps its keys.
+- Notes, places and speed stay on this device.
+
+### Fixed
+
+- `tools/vendor_icons.py` deleted the vendored icons before downloading the
+  new set, so one dropped download left the editor without icons. It now
+  retries each download and replaces the set only once everything has
+  arrived.
+
+
 ## 2.3.0 — 2026-11-17
 
 ### Changed

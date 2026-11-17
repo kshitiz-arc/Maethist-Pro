@@ -712,15 +712,15 @@ html::before {
 /* motion.js adds .mx-reveal to <html> and .mx-r to each block below the
    fold, then .is-in as it scrolls into view. Blocks already on screen at
    load are never hidden, so the first paint and LCP are untouched. */
+/* Movement only, no fade: text that is half transparent is text below its
+   contrast ratio for as long as the fade lasts, and axe caught exactly that
+   while scrolling the page. Rising into place reads as the same arrival. */
 html.mx-reveal .mx-r {
-  opacity: 0;
-  transform: translateY(28px) scale(0.985);
-  transition:
-    opacity var(--dur-4) var(--ease-out),
-    transform var(--dur-4) var(--ease-out);
+  transform: translateY(36px) scale(0.98);
+  transition: transform var(--dur-4) var(--ease-out);
   transition-delay: calc(var(--mx-i, 0) * 70ms);
 }
-html.mx-reveal .mx-r.is-in { opacity: 1; transform: none; }
+html.mx-reveal .mx-r.is-in { transform: none; }
 
 /* ---------- header settles once you scroll ---------- */
 header { transition: box-shadow var(--dur-3) var(--ease-out), background var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out); }
@@ -787,7 +787,7 @@ a.nb-tile:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--n
 @keyframes mxBob { to { translate: 0 -8px; } }
 
 @media (prefers-reduced-motion: reduce) {
-  html.mx-reveal .mx-r { opacity: 1; transform: none; transition: none; }
+  html.mx-reveal .mx-r { transform: none; transition: none; }
   .nb-window { transform: none; transition: none; }
   .nb-tile, .nb-tile::after, .nb-sticker, header { transition: none; }
   .nb-sticker:hover { transform: none; }

@@ -1452,6 +1452,10 @@
           {{ icon("lucide:camera", "yt-control-icon yt-capture-icon") }}
           <span class="yt-control-spinner" aria-hidden="true"></span>
         </button>
+        <button class="yt-ctrl-btn" id="ytDock" title="Dock beside the canvas" type="button" aria-pressed="false"
+          aria-label="Dock the player beside the canvas">
+          {{ icon("lucide:panel-right", "yt-control-icon") }}
+        </button>
         <button class="yt-ctrl-btn" id="ytBackBtn" title="Back to Search" type="button" style="display: none;">
           {{ icon("lucide:arrow-left", "yt-control-icon") }}
         </button>
@@ -1476,12 +1480,67 @@
         {{ icon("lucide:tv-minimal-play", "yt-placeholder-icon", 56) }}
         <p>Paste a link or search YouTube to start watching</p>
         <span class="yt-placeholder-hint">Supports video URLs, IDs, or search queries</span>
+        <div class="yt-recent" id="ytRecent" hidden>
+          <p class="yt-recent-head">{{ icon("lucide:clock", "yt-recent-head-icon", 14) }} Continue watching</p>
+          <ul class="yt-recent-list" id="ytRecentList"></ul>
+        </div>
       </div>
       <div id="ytSearchResults" class="yt-search-results" hidden></div>
       <div id="ytEmbedSlot" class="yt-embed-slot" aria-label="YouTube video player">
         <div id="ytIframe"></div>
       </div>
     </div>
+    <!-- Lecture controls: everything the embed's own bar hides at this size,
+         plus what a lecture needs and a music video does not. youtube.js. -->
+    <div class="yt-transport" id="ytTransport" hidden>
+      <div class="yt-scrub" id="ytScrub" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0"
+        aria-valuemax="0" aria-valuenow="0" aria-valuetext="0:00">
+        <span class="yt-scrub-track" aria-hidden="true">
+          <span class="yt-scrub-loop" id="ytScrubLoop" hidden></span>
+          <span class="yt-scrub-fill" id="ytScrubFill"></span>
+        </span>
+        <span class="yt-scrub-marks" id="ytScrubMarks" aria-hidden="true"></span>
+      </div>
+      <div class="yt-transport-row">
+        <button class="yt-tbtn" id="ytBack10" type="button" title="Back 10 seconds (J)" aria-label="Back 10 seconds">
+          {{ icon("lucide:rotate-ccw", "yt-t-icon") }}
+        </button>
+        <button class="yt-tbtn yt-tbtn-play" id="ytPlayPause" type="button" title="Play or pause (K)" aria-label="Play or pause">
+          {{ icon("lucide:play", "yt-t-icon yt-t-play") }}
+          {{ icon("lucide:pause", "yt-t-icon yt-t-pause") }}
+        </button>
+        <button class="yt-tbtn" id="ytFwd10" type="button" title="Forward 10 seconds (L)" aria-label="Forward 10 seconds">
+          {{ icon("lucide:rotate-cw", "yt-t-icon") }}
+        </button>
+        <span class="yt-time" id="ytTime">0:00 / 0:00</span>
+        <span class="yt-transport-gap"></span>
+        <button class="yt-tbtn yt-tbtn-text" id="ytSpeed" type="button" title="Playback speed ([ and ])" aria-label="Playback speed">1&times;</button>
+        <button class="yt-tbtn" id="ytLoop" type="button" title="Loop a section (A)" aria-label="Loop a section" aria-pressed="false">
+          {{ icon("lucide:repeat", "yt-t-icon") }}
+        </button>
+        <button class="yt-tbtn" id="ytBookmark" type="button" title="Bookmark this moment (B)" aria-label="Bookmark this moment">
+          {{ icon("lucide:bookmark-plus", "yt-t-icon") }}
+        </button>
+        <button class="yt-tbtn" id="ytNotesToggle" type="button" title="Lecture notes (N)" aria-label="Lecture notes" aria-expanded="false" aria-controls="ytNotes">
+          {{ icon("lucide:notebook-pen", "yt-t-icon") }}
+          <span class="yt-notes-count" id="ytNotesCount" hidden>0</span>
+        </button>
+      </div>
+    </div>
+    <section class="yt-notes" id="ytNotes" aria-label="Lecture notes" hidden>
+      <form class="yt-note-compose" id="ytNoteCompose">
+        <button class="yt-note-at" id="ytNoteAt" type="button" title="The moment this note is for">0:00</button>
+        <input id="ytNoteInput" type="text" maxlength="500" autocomplete="off" spellcheck="true"
+          placeholder="Note this moment, then Enter" aria-label="Note for this moment">
+        <button class="yt-note-add" type="submit" aria-label="Add note">{{ icon("lucide:plus", "yt-t-icon") }}</button>
+      </form>
+      <ol class="yt-note-list" id="ytNoteList"></ol>
+      <p class="yt-notes-empty" id="ytNotesEmpty">Bookmarks and notes for this lecture appear here, in time order. Tap a time to jump back.</p>
+      <div class="yt-notes-foot">
+        <label class="yt-notes-pause"><input type="checkbox" id="ytPauseOnType"> Pause while I type</label>
+        <button class="yt-notes-copy" id="ytNotesCopy" type="button">{{ icon("lucide:copy", "yt-t-icon") }} Copy all</button>
+      </div>
+    </section>
     <div class="yt-resize-edge yt-resize-n" data-yt-resize="n" aria-hidden="true"></div>
     <div class="yt-resize-edge yt-resize-e" data-yt-resize="e" aria-hidden="true"></div>
     <div class="yt-resize-edge yt-resize-s" data-yt-resize="s" aria-hidden="true"></div>
