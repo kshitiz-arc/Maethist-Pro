@@ -177,6 +177,45 @@ function compactLockedAngles(angles) {
     });
 }
 
+// A picture's edit (static/js/image-tools.js): a few numbers, a crop as
+// fractions of the source, and flags. Rebuilt field by field so nothing else
+// can ride along into storage, and every value is clamped to what the
+// renderer accepts.
+function compactMediaEdit(edit) {
+    if (!edit || typeof edit !== 'object') return null;
+    const out = {};
+    const number = (key, low, high) => {
+        const value = Number(edit[key]);
+        if (Number.isFinite(value)) out[key] = roundStoredNumber(Math.max(low, Math.min(high, value)), 3);
+    };
+    number('brightness', 0, 4);
+    number('contrast', 0, 4);
+    number('saturate', 0, 4);
+    number('grayscale', 0, 1);
+    number('invert', 0, 1);
+    number('sepia', 0, 1);
+    number('opacity', 0.05, 1);
+    const rotate = Number(edit.rotate);
+    if (rotate === 90 || rotate === 180 || rotate === 270) out.rotate = rotate;
+    if (edit.flipX === true) out.flipX = true;
+    if (edit.flipY === true) out.flipY = true;
+    if (edit.backdrop === 'paper' || edit.backdrop === 'ink' || edit.backdrop === 'none') out.backdrop = edit.backdrop;
+    const crop = edit.crop;
+    if (crop && typeof crop === 'object') {
+        const x = Number(crop.x), y = Number(crop.y), w = Number(crop.w), h = Number(crop.h);
+        if ([x, y, w, h].every(Number.isFinite) && w > 0.01 && h > 0.01 &&
+            x >= 0 && y >= 0 && x + w <= 1.0001 && y + h <= 1.0001) {
+            out.crop = {
+                x: roundStoredNumber(x, 6),
+                y: roundStoredNumber(y, 6),
+                w: roundStoredNumber(w, 6),
+                h: roundStoredNumber(h, 6)
+            };
+        }
+    }
+    return Object.keys(out).length ? out : null;
+}
+
 function compactPath(path) {
     if (!path || !Array.isArray(path.points)) return null;
 
@@ -307,6 +346,12 @@ function compactPath(path) {
     const componentBounds = compactBounds(path.componentBounds);
     if (componentBounds) compact.componentBounds = componentBounds;
 
+    if (path.tool === 'image' || path.tool === 'youtube-frame') {
+        const edit = compactMediaEdit(path.edit);
+        if (edit) compact.edit = edit;
+        if (path.tool === 'youtube-frame' && path.hideBadge === true) compact.hideBadge = true;
+    }
+
     return compact;
 }
 
@@ -330,6 +375,12 @@ function normalizeLoadedPath(path) {
     if (points.length === 0) return null;
 
     const normalized = { ...path, points };
+    if (normalized.tool === 'image' || normalized.tool === 'youtube-frame') {
+        const edit = compactMediaEdit(path.edit);
+        if (edit) normalized.edit = edit;
+        else delete normalized.edit;
+        if (normalized.hideBadge !== true) delete normalized.hideBadge;
+    }
     if (normalized.tool === 'youtube-frame') {
         const storedAspect = Number(normalized.aspectRatio);
         normalized.aspectRatio = Number.isFinite(storedAspect) && storedAspect > 0

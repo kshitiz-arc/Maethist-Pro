@@ -100,6 +100,9 @@ ICONS = {
         "flame", "volume-2", "volume-x", "sofa", "target", "keyboard", "layers", "copy",
         # lecture player (youtube.js)
         "rotate-cw", "repeat", "bookmark-plus", "notebook-pen", "panel-right",
+        # image tools (image-tools.js)
+        "crop", "ellipsis", "sun", "bring-to-front", "send-to-back", "eye-off",
+        "square-split-horizontal", "square-split-vertical",
     ],
     "phosphor": [
         # Pomodoro

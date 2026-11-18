@@ -1,0 +1,309 @@
+/* Image tools (static/js/image-tools.js): the bar over a selected picture and
+ * the Edit sheet. Neo-brutal like the rest of the v3 editor: ink outlines,
+ * hard shadows, the yellow for the main action, red for delete. */
+
+/* ---------- the bar ---------- */
+
+.img-bar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 9985;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 2px solid var(--ui-line, #111111);
+  border-radius: 14px;
+  background: var(--frost-strong, var(--surface));
+  color: var(--ink);
+  box-shadow: var(--ui-shadow, 4px 4px 0 #111111);
+  -webkit-backdrop-filter: var(--frost-blur);
+  backdrop-filter: var(--frost-blur);
+  will-change: transform;
+  touch-action: none;
+}
+
+.img-bar[hidden], .img-more[hidden], .img-sheet[hidden] { display: none !important; }
+
+.img-bar.is-in { animation: imgBarIn var(--dur-2, 180ms) var(--ease-out, ease-out) both; }
+@keyframes imgBarIn { from { opacity: 0; scale: 0.94; } }
+
+.img-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 10px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: 800 var(--t-2) / 1 var(--display);
+  cursor: pointer;
+  transition: background-color var(--dur-1, 120ms) var(--ease-out, ease-out),
+    transform var(--dur-1, 120ms) var(--ease-out, ease-out);
+}
+.img-btn[hidden] { display: none; }
+.img-btn svg.icon { width: 20px; height: 20px; }
+.img-btn:hover:not(:disabled) { border-color: var(--ui-line); }
+.img-btn:active:not(:disabled) { transform: scale(0.94); }
+.img-btn:disabled { opacity: 0.38; cursor: default; }
+.img-btn:focus-visible, .img-more button:focus-visible, .img-sheet button:focus-visible,
+.img-sheet input:focus-visible, .img-crop-box:focus-visible {
+  outline: 3px solid var(--brand-blue, #5CC8FF);
+  outline-offset: 2px;
+}
+
+.img-btn-primary { background: var(--brand-yellow, #FFD23F); color: #111111; border-color: #111111; box-shadow: 2px 2px 0 #111111; }
+.img-btn-primary:hover:not(:disabled) { border-color: #111111; }
+.img-btn-danger:hover:not(:disabled) { background: var(--brand-red, #FF6B6B); color: #111111; border-color: #111111; }
+
+.img-sep { width: 2px; height: 26px; margin: 0 3px; border-radius: 2px; background: var(--ui-line, #111111); opacity: 0.35; }
+
+/* ---------- the More menu ---------- */
+
+.img-more {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 9986;
+  display: grid;
+  min-width: 220px;
+  padding: 6px;
+  border: 2px solid var(--ui-line, #111111);
+  border-radius: 14px;
+  background: var(--frost-strong, var(--surface));
+  color: var(--ink);
+  box-shadow: var(--ui-shadow, 4px 4px 0 #111111);
+  -webkit-backdrop-filter: var(--frost-blur);
+  backdrop-filter: var(--frost-blur);
+}
+.img-more button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: 600 var(--t-2) / 1.2 var(--sans);
+  text-align: left;
+  cursor: pointer;
+}
+.img-more button[hidden] { display: none; }
+.img-more button:hover { background: var(--brand-yellow, #FFD23F); color: #111111; }
+.img-more svg.icon { width: 18px; height: 18px; flex: none; }
+
+/* ---------- the Edit sheet ---------- */
+
+.img-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(8, 10, 20, 0.55);
+  animation: imgFade var(--dur-2, 180ms) var(--ease-out, ease-out) both;
+}
+@keyframes imgFade { from { opacity: 0; } }
+
+.img-sheet-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(760px, 100%);
+  max-height: calc(100vh - 32px);
+  max-height: calc(100svh - 32px);
+  padding: 14px 16px 16px;
+  border: 3px solid #111111;
+  border-radius: 22px;
+  background: var(--frost-strong, var(--surface));
+  color: var(--ink);
+  box-shadow: 10px 10px 0 #111111;
+  -webkit-backdrop-filter: var(--frost-blur);
+  backdrop-filter: var(--frost-blur);
+  overflow: auto;
+  animation: imgCardIn var(--dur-3, 320ms) var(--ease-out, ease-out) both;
+}
+@keyframes imgCardIn { from { transform: translateY(14px) scale(0.98); } }
+
+.img-sheet-head { display: flex; align-items: center; gap: 12px; }
+.img-sheet-head h2 { margin: 0; font: 800 var(--t-5) / 1 var(--display); letter-spacing: -0.02em; }
+
+.img-tabs {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  padding: 4px;
+  border: 2px solid var(--ui-line, #111111);
+  border-radius: 14px;
+}
+.img-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-2);
+  font: 800 var(--t-2) / 1 var(--display);
+  cursor: pointer;
+}
+.img-tabs button svg.icon { width: 17px; height: 17px; }
+.img-tabs button[aria-selected="true"] { background: var(--brand-yellow, #FFD23F); color: #111111; box-shadow: inset 0 0 0 2px #111111; }
+
+.img-sheet-close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--ui-line, #111111);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.img-sheet-close:hover { background: var(--brand-red, #FF6B6B); color: #111111; border-color: #111111; }
+.img-sheet-close svg.icon { width: 20px; height: 20px; }
+
+.img-stage {
+  position: relative;
+  min-height: 220px;
+  height: clamp(200px, calc(100vh - 470px), 400px);
+  height: clamp(200px, calc(100svh - 470px), 400px);
+  border: 2px solid var(--ui-line, #111111);
+  border-radius: 16px;
+  overflow: hidden;
+  /* A checkerboard, so transparency and the background choice read. */
+  background:
+    conic-gradient(rgba(127, 127, 127, 0.16) 25%, transparent 0 50%, rgba(127, 127, 127, 0.16) 0 75%, transparent 0) 0 0 / 22px 22px,
+    #10131c;
+  flex: none;
+}
+[data-theme="light"] .img-stage { background-color: #eef0f4; }
+/* The card is frosted, but not over the canvas it is editing: the picture
+   underneath showed through and read as a double image. */
+.img-sheet-card { background: var(--nb-bg, var(--surface)) !important; }
+.img-preview { position: absolute; inset: 0; display: block; }
+
+.img-crop { position: absolute; inset: 0; touch-action: none; }
+.img-crop-box {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid var(--brand-yellow, #FFD23F);
+  box-shadow: 0 0 0 1px #111111, 0 0 0 200vmax rgba(8, 10, 20, 0.55);
+  cursor: move;
+  touch-action: none;
+  background-image:
+    linear-gradient(to right, transparent calc(33.33% - 1px), rgba(255, 255, 255, 0.45) calc(33.33% - 1px) 33.33%, transparent 33.33% calc(66.66% - 1px), rgba(255, 255, 255, 0.45) calc(66.66% - 1px) 66.66%, transparent 66.66%),
+    linear-gradient(to bottom, transparent calc(33.33% - 1px), rgba(255, 255, 255, 0.45) calc(33.33% - 1px) 33.33%, transparent 33.33% calc(66.66% - 1px), rgba(255, 255, 255, 0.45) calc(66.66% - 1px) 66.66%, transparent 66.66%);
+}
+.img-crop-box span {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #111111;
+  border-radius: 6px;
+  background: var(--brand-yellow, #FFD23F);
+}
+/* The hit area is larger than the handle you see: a finger needs 44px. */
+.img-crop-box span::before { content: ""; position: absolute; inset: -12px; }
+.img-crop-box [data-h="nw"] { left: -12px; top: -12px; cursor: nwse-resize; }
+.img-crop-box [data-h="ne"] { right: -12px; top: -12px; cursor: nesw-resize; }
+.img-crop-box [data-h="sw"] { left: -12px; bottom: -12px; cursor: nesw-resize; }
+.img-crop-box [data-h="se"] { right: -12px; bottom: -12px; cursor: nwse-resize; }
+
+.img-panel { display: grid; gap: 12px; }
+.img-panel[hidden] { display: none; }
+
+.img-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.img-chip {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 2px solid var(--ui-line, #111111);
+  border-radius: 999px;
+  background: var(--frost, transparent);
+  color: var(--ink);
+  font: 800 var(--t-2) / 1 var(--display);
+  cursor: pointer;
+  transition: transform var(--dur-1, 120ms) var(--ease-out, ease-out), background-color var(--dur-1, 120ms) var(--ease-out, ease-out);
+}
+.img-chip:hover { transform: translate(-1px, -1px); }
+.img-chip[aria-pressed="true"] { background: var(--brand-yellow, #FFD23F); color: #111111; border-color: #111111; box-shadow: 2px 2px 0 #111111; }
+.img-chip-sm { min-height: 36px; padding: 0 10px; font-size: var(--t-1); }
+@media (pointer: coarse) { .img-chip, .img-chip-sm { min-height: 44px; } }
+
+.img-sliders { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 18px; }
+.img-slider { display: grid; gap: 0; font-size: var(--t-2); font-weight: 600; }
+.img-slider > span { display: flex; justify-content: space-between; }
+.img-slider output { font: 700 var(--t-1) / 1 var(--mono); color: var(--ink-2); }
+.img-slider input { width: 100%; height: 44px; margin: 0; accent-color: var(--brand-yellow, #FFD23F); }
+
+.img-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.img-group { display: flex; align-items: center; gap: 4px; }
+.img-group[hidden], .img-check[hidden] { display: none; }
+.img-group-label { margin-right: 4px; color: var(--ink-2); font: 700 var(--t-1) / 1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; }
+.img-mini {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--ui-line, #111111);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.img-mini:hover { background: var(--brand-blue, #5CC8FF); color: #111111; border-color: #111111; }
+.img-mini svg.icon { width: 19px; height: 19px; }
+.img-check { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 600; cursor: pointer; }
+.img-check input { width: 18px; height: 18px; accent-color: var(--brand-yellow, #FFD23F); }
+
+.img-hint { margin: 0; color: var(--ink-2); font-size: var(--t-1); }
+
+.img-sheet-foot { display: flex; align-items: center; gap: 8px; }
+.img-gap { flex: 1; }
+.img-ghost, .img-apply {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 2px solid var(--ui-line, #111111);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  font: 800 var(--t-2) / 1 var(--display);
+  cursor: pointer;
+}
+.img-ghost svg.icon, .img-apply svg.icon { width: 18px; height: 18px; }
+.img-apply { background: var(--brand-yellow, #FFD23F); color: #111111; border-color: #111111; box-shadow: 4px 4px 0 #111111; }
+.img-apply:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 #111111; }
+.img-apply:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 #111111; }
+
+@media (max-width: 640px) {
+  .img-sheet { place-items: end stretch; padding: 8px; }
+  .img-sheet-card { border-radius: 20px; box-shadow: 6px 6px 0 #111111; padding: 12px; }
+  .img-sheet-head h2 { font-size: var(--t-4); }
+  .img-tabs button span { display: none; }
+  .img-sliders { grid-template-columns: 1fr; }
+  .img-stage { height: 34vh; }
+  .img-btn span { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .img-bar.is-in, .img-sheet, .img-sheet-card { animation: none; }
+  .img-btn, .img-chip { transition: none; }
+}
+
+/* The card scrolls when the screen is short; its sections never shrink into
+   each other (the crop hint used to sit on top of Apply). */
+.img-sheet-card > * { flex-shrink: 0; }

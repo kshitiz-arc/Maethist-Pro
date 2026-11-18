@@ -834,14 +834,20 @@ function __cloneValue(value, depth) {
 
 function __clonePathSnapshot(paths) {
     return (paths || []).map(path => {
-        if (path?.tool === 'youtube-frame') {
+        if (path?.tool === 'youtube-frame' || path?.tool === 'image') {
             // Image data is immutable and can be shared by history snapshots.
             // Re-serializing its base64 payload on every pen stroke or resize
-            // causes large pauses and memory spikes on low-end tablets.
-            return {
+            // causes large pauses and memory spikes on low-end tablets. The
+            // edit (crop, rotation, filters) is small and is copied, so undo
+            // never shares it between steps.
+            const copy = {
                 ...path,
                 points: (path.points || []).map(point => ({ ...point }))
             };
+            if (path.edit && typeof path.edit === 'object') {
+                copy.edit = { ...path.edit, crop: path.edit.crop ? { ...path.edit.crop } : path.edit.crop };
+            }
+            return copy;
         }
         try {
             return __cloneValue(path, 0);

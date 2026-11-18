@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "maethist",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-c", "import os,sys; sys.path.insert(0,'.'); os.environ.setdefault('SECRET_KEY','dev'); from app import app; app.jinja_env.auto_reload=True; app.config['TEMPLATES_AUTO_RELOAD']=True; app.run(host='127.0.0.1', port=8977)"],
+      "port": 8977
+    }
+  ]
+}

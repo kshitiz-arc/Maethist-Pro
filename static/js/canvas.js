@@ -1471,6 +1471,80 @@ function __drawImageContained(ctx, image, left, top, width, height) {
     ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
 }
 
+// ---------- edits on a picture (static/js/image-tools.js) ----------
+//
+// A frame or an inserted picture can carry `edit`: a crop (fractions of the
+// source), a quarter-turn rotation, flips, CSS-style filters and an opacity.
+// The source pixels are never touched; this draws the edit every time, so
+// Reset is always lossless and PDF export, which renders through here, shows
+// exactly what the canvas shows.
+
+function __mediaEdit(path) {
+    const edit = path && path.edit;
+    return edit && typeof edit === 'object' ? edit : null;
+}
+
+function __mediaFilter(edit) {
+    if (!edit) return 'none';
+    const parts = [];
+    const num = (value, fallback) => (Number.isFinite(Number(value)) ? Number(value) : fallback);
+    const add = (name, value, neutral, unit = '') => {
+        const v = num(value, neutral);
+        if (Math.abs(v - neutral) > 0.001) parts.push(`${name}(${v}${unit})`);
+    };
+    // Invert first, so "board to paper" turns chalk dark before the contrast.
+    add('invert', edit.invert, 0);
+    add('grayscale', edit.grayscale, 0);
+    add('sepia', edit.sepia, 0);
+    add('brightness', edit.brightness, 1);
+    add('contrast', edit.contrast, 1);
+    add('saturate', edit.saturate, 1);
+    return parts.length ? parts.join(' ') : 'none';
+}
+
+function __drawMediaImage(ctx, image, left, top, width, height, edit) {
+    const sourceWidth = image.naturalWidth || image.width || 0;
+    const sourceHeight = image.naturalHeight || image.height || 0;
+    if (sourceWidth <= 0 || sourceHeight <= 0) return;
+    if (!edit) {
+        __drawImageContained(ctx, image, left, top, width, height);
+        return;
+    }
+
+    const raw = edit.crop || {};
+    const cx = Math.max(0, Math.min(0.98, Number(raw.x) || 0));
+    const cy = Math.max(0, Math.min(0.98, Number(raw.y) || 0));
+    const cw = Math.max(0.02, Math.min(1 - cx, Number.isFinite(Number(raw.w)) ? Number(raw.w) : 1));
+    const ch = Math.max(0.02, Math.min(1 - cy, Number.isFinite(Number(raw.h)) ? Number(raw.h) : 1));
+    const sx = cx * sourceWidth;
+    const sy = cy * sourceHeight;
+    const sw = cw * sourceWidth;
+    const sh = ch * sourceHeight;
+
+    const rotation = (((Number(edit.rotate) || 0) % 360) + 360) % 360;
+    const quarter = rotation === 90 || rotation === 270;
+    const fitWidth = quarter ? height : width;
+    const fitHeight = quarter ? width : height;
+    const scale = Math.min(fitWidth / sw, fitHeight / sh);
+    const drawWidth = sw * scale;
+    const drawHeight = sh * scale;
+
+    ctx.save();
+    ctx.translate(left + width / 2, top + height / 2);
+    if (rotation) ctx.rotate((rotation * Math.PI) / 180);
+    ctx.scale(edit.flipX ? -1 : 1, edit.flipY ? -1 : 1);
+    const filter = __mediaFilter(edit);
+    if (filter !== 'none' && 'filter' in ctx) ctx.filter = filter;
+    if (Number.isFinite(Number(edit.opacity))) {
+        ctx.globalAlpha *= Math.max(0.05, Math.min(1, Number(edit.opacity)));
+    }
+    ctx.drawImage(image, sx, sy, sw, sh, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+    ctx.restore();
+}
+
+window.Inkyscib = window.Inkyscib || {};
+window.Inkyscib.MediaDraw = { draw: __drawMediaImage, filter: __mediaFilter };
+
 // An inserted picture: the same two-corner geometry a captured video moment
 // uses, without the badge and play button painted over it.
 function __drawInsertedImage(ctx, path) {
@@ -1497,7 +1571,7 @@ function __drawInsertedImage(ctx, path) {
     if (media?.ready) {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        __drawImageContained(ctx, media.image, left, top, width, height);
+        __drawMediaImage(ctx, media.image, left, top, width, height, __mediaEdit(path));
     } else {
         // Still decoding, or the data URL is gone: a quiet placeholder rather
         // than a hole in the page.
@@ -1531,14 +1605,20 @@ function __drawYoutubeFrame(ctx, path) {
     __roundedRectPath(ctx, left, top, width, height, radius);
     ctx.clip();
 
-    ctx.fillStyle = isLight ? '#e8e8eb' : '#12141b';
-    ctx.fillRect(left, top, width, height);
+    const edit = __mediaEdit(path);
+    const backdrop = edit?.backdrop || 'auto';
+    if (backdrop !== 'none') {
+        ctx.fillStyle = backdrop === 'paper' ? '#ffffff'
+            : backdrop === 'ink' ? '#111111'
+            : (isLight ? '#e8e8eb' : '#12141b');
+        ctx.fillRect(left, top, width, height);
+    }
     if (media?.ready) {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         // Never stretch legacy or malformed media bounds. Current captures are
         // aspect-locked, while this remains a safe fallback for older drawings.
-        __drawImageContained(ctx, media.image, left, top, width, height);
+        __drawMediaImage(ctx, media.image, left, top, width, height, edit);
     } else {
         const stripeWidth = Math.max(10, width / 12);
         ctx.fillStyle = isLight ? 'rgba(0,0,0,0.045)' : 'rgba(255,255,255,0.045)';
@@ -1553,36 +1633,41 @@ function __drawYoutubeFrame(ctx, path) {
         }
     }
 
-    const badgeHeight = Math.max(16, Math.min(30, height * 0.16));
-    const badgePad = badgeHeight * 0.28;
-    const badgeY = bottom - badgeHeight - badgePad;
-    const fontSize = Math.max(9, Math.min(15, badgeHeight * 0.48));
-    const timeLabel = __formatVideoTime(path.videoTime);
-    ctx.font = `700 ${fontSize}px system-ui, sans-serif`;
-    const textWidth = ctx.measureText(timeLabel).width;
-    const badgeWidth = badgeHeight + textWidth + badgePad * 2.1;
+    // The timestamp badge can be hidden from the image tools; the frame keeps
+    // its video time and still reopens the video on a double tap.
+    if (!path.hideBadge) {
+        const badgeHeight = Math.max(16, Math.min(30, height * 0.16));
+        const badgePad = badgeHeight * 0.28;
+        const badgeY = bottom - badgeHeight - badgePad;
+        const fontSize = Math.max(9, Math.min(15, badgeHeight * 0.48));
+        const timeLabel = __formatVideoTime(path.videoTime);
+        ctx.font = `700 ${fontSize}px system-ui, sans-serif`;
+        const textWidth = ctx.measureText(timeLabel).width;
+        const badgeWidth = badgeHeight + textWidth + badgePad * 2.1;
 
-    ctx.fillStyle = 'rgba(5, 6, 10, 0.82)';
-    ctx.beginPath();
-    __roundedRectPath(ctx, left + badgePad, badgeY, badgeWidth, badgeHeight, badgeHeight / 2);
-    ctx.fill();
+        ctx.fillStyle = 'rgba(5, 6, 10, 0.82)';
+        ctx.beginPath();
+        __roundedRectPath(ctx, left + badgePad, badgeY, badgeWidth, badgeHeight, badgeHeight / 2);
+        ctx.fill();
 
-    const playX = left + badgePad * 1.9;
-    const playY = badgeY + badgeHeight / 2;
-    const playSize = badgeHeight * 0.34;
-    ctx.fillStyle = '#ff3038';
-    ctx.beginPath();
-    ctx.moveTo(playX - playSize * 0.32, playY - playSize * 0.58);
-    ctx.lineTo(playX + playSize * 0.65, playY);
-    ctx.lineTo(playX - playSize * 0.32, playY + playSize * 0.58);
-    ctx.closePath();
-    ctx.fill();
+        const playX = left + badgePad * 1.9;
+        const playY = badgeY + badgeHeight / 2;
+        const playSize = badgeHeight * 0.34;
+        ctx.fillStyle = '#ff3038';
+        ctx.beginPath();
+        ctx.moveTo(playX - playSize * 0.32, playY - playSize * 0.58);
+        ctx.lineTo(playX + playSize * 0.65, playY);
+        ctx.lineTo(playX - playSize * 0.32, playY + playSize * 0.58);
+        ctx.closePath();
+        ctx.fill();
 
-    ctx.fillStyle = '#ffffff';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(timeLabel, left + badgePad + badgeHeight, playY);
+        ctx.fillStyle = '#ffffff';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(timeLabel, left + badgePad + badgeHeight, playY);
+    }
     ctx.restore();
 
+    if (__mediaEdit(path)?.backdrop === 'none') return;
     ctx.save();
     ctx.globalCompositeOperation = 'source-over';
     ctx.strokeStyle = isLight ? 'rgba(20, 22, 30, 0.24)' : 'rgba(255,255,255,0.22)';
