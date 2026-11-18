@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.5.2 — 2026-11-18
+
+### Changed
+
+- **About: Recent writing redesigned as editorial cards.** Each card has an
+  outlined index numeral, a date chip and a band in that card's own colour,
+  a tighter display title that breaks on balanced lines, and a quieter
+  blurb. "Read on LinkedIn" is pinned to the foot of every card, so the
+  links line up across the row, and its arrow turns on hover. The hard
+  shadows are no longer cut off at the edge of the list.
+
+
 ## 2.5.1 — 2026-11-18
 
 ### Fixed

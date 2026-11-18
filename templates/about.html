@@ -186,19 +186,25 @@
 
       {% if articles %}
       <div class="nb-writing" aria-labelledby="writingTitle">
-        <h3 class="nb-writing-title" id="writingTitle">Recent writing</h3>
-        <ul class="nb-writing-list">
+        <div class="nb-writing-head">
+          <span class="nb-writing-kicker">From LinkedIn · {{ articles|length }} pieces</span>
+          <h3 class="nb-writing-title" id="writingTitle">Recent <em>writing</em></h3>
+        </div>
+        <ol class="nb-writing-list">
           {% for article in articles %}
           <li>
-            <a class="nb-article card" href="{{ article.url }}" target="_blank" rel="noopener noreferrer">
-              {% if article.date %}<span class="nb-article-date">{{ article.date }}</span>{% endif %}
+            <a class="nb-article" href="{{ article.url }}" target="_blank" rel="noopener noreferrer">
+              <span class="nb-article-top">
+                <span class="nb-article-no" aria-hidden="true">{{ "%02d"|format(loop.index) }}</span>
+                {% if article.date %}<time class="nb-article-date">{{ article.date }}</time>{% endif %}
+              </span>
               <strong class="nb-article-title">{{ article.title }}</strong>
               {% if article.blurb %}<span class="nb-article-blurb">{{ article.blurb }}</span>{% endif %}
-              <span class="nb-article-more">Read on LinkedIn {{ icon("remix:arrow-right-up-line", "link-out") }}</span>
+              <span class="nb-article-more">Read on LinkedIn <span class="nb-article-arrow" aria-hidden="true">{{ icon("remix:arrow-right-up-line") }}</span></span>
             </a>
           </li>
           {% endfor %}
-        </ul>
+        </ol>
       </div>
       {% endif %}
     </section>
