@@ -43,6 +43,8 @@ FAMILIES = (
     "Archivo:wght@400..900",
     "Space+Grotesk:wght@400..700",
     "JetBrains+Mono:wght@400..800",
+    # The handwritten line under the owner's name on About.
+    "Gochi+Hand",
 )
 
 CSS_URL = (

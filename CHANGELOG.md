@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.6.0 — 2026-11-18
+
+### Changed
+
+- **Every panel is one card.** About, Features, legal pages and the
+  homepage (principles, how-it-works, accessibility, stats, bento tiles,
+  steps) share the Recent writing look: an ink outline, rounded corners, a
+  hard offset shadow, a colour band along the top cycling yellow, blue, red
+  and green, and frosted glass over the colour field. Only link cards lift
+  on hover.
+- **About: a new bio.** It opens with a lead line, "Mathematics, to him, is
+  not a subject. It is a way of seeing.", followed by three paragraphs on
+  what he teaches and studies, why he builds instruments that look past the
+  answer, and what MAETHIST is for.
+- **About: "Starting is the heaviest rep."** sits under the name in
+  handwritten marker (Gochi Hand, self-hosted) on a strip of dark ruled
+  paper with an orange margin, with an orange brush stroke swept behind
+  "heaviest rep".
+
+
 ## 2.5.3 — 2026-11-18
 
 ### Removed (cleanup review)

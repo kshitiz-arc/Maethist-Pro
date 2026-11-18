@@ -1103,3 +1103,129 @@ a.nb-tile:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--n
   .nb-article:hover, .nb-article:active { transform: none; }
   .nb-article:hover .nb-article-arrow { transform: none; }
 }
+
+
+/* =========================================================================
+   About: the lead line and the handwritten quote under the name.
+   ========================================================================= */
+.nb-lead {
+  margin: 4px 0 2px;
+  max-width: 30ch;
+  font: 800 clamp(1.35rem, 2.6vw, 1.75rem) / 1.2 var(--display);
+  letter-spacing: -0.025em;
+  color: var(--nb-ink);
+  text-wrap: balance;
+}
+.nb-lead span {
+  background: linear-gradient(transparent 62%, var(--brand-yellow) 62%, var(--brand-yellow) 92%, transparent 92%);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.profile-bio em { font-style: italic; color: var(--nb-ink); }
+
+/* A strip of dark ruled paper with an orange margin, written in marker. */
+.nb-ink-quote {
+  position: relative;
+  margin: 2px 0 6px;
+  padding: 14px 22px 12px 34px;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 27px, rgba(255, 255, 255, 0.07) 27px 28px),
+    #15161a;
+  box-shadow: 4px 4px 0 #111111;
+  transform: rotate(-0.6deg);
+  max-width: max-content;
+}
+.nb-ink-quote::before {
+  content: "";
+  position: absolute;
+  left: 18px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #ff6a13;
+  opacity: 0.85;
+}
+.nb-ink-line {
+  font: 400 clamp(1.5rem, 3.2vw, 2.15rem) / 1.25 "Gochi Hand", "Segoe Print", "Comic Sans MS", cursive;
+  color: #f4f1ea;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+@media (max-width: 520px) { .nb-ink-line { white-space: normal; } }
+/* A brush stroke, not a box: an irregular orange swipe behind dark ink. */
+.nb-ink-line mark {
+  position: relative;
+  padding: 0 0.22em;
+  margin: 0 0.04em;
+  background: none;
+  color: #111111;
+  z-index: 0;
+}
+.nb-ink-line mark::before {
+  content: "";
+  position: absolute;
+  inset: 0.02em -0.08em -0.04em -0.12em;
+  z-index: -1;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 50' preserveAspectRatio='none'%3E%3Cpath fill='%23ff6a13' d='M6 9 C 30 4 70 6 110 5 C 150 4 180 3 196 8 C 199 18 197 30 198 41 C 170 46 120 44 80 46 C 50 47 25 45 4 43 C 2 32 3 20 6 9 Z M2 14 l-2 3 l3 2 Z M197 36 l3 2 l-3 3 Z'/%3E%3Cpath fill='%23ff8a3d' opacity='.55' d='M20 12 C 70 10 130 11 185 13 L 184 17 C 130 15 70 15 21 16 Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  transform: rotate(-1.2deg);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nb-ink-line mark::before { transform-origin: left center; animation: nbBrush 700ms var(--ease-out, ease-out) 400ms both; }
+}
+@keyframes nbBrush { from { transform: rotate(-1.2deg) scaleX(0); } to { transform: rotate(-1.2deg) scaleX(1); } }
+
+/* =========================================================================
+   Every panel, one card. The look the Recent writing cards set: an ink
+   outline, rounded corners, a hard offset shadow, a colour band along the
+   top, and frosted glass over the colour field. The band is an inset
+   shadow, so it follows the corners and needs no extra element or clip.
+   ========================================================================= */
+.panel,
+.card,
+.principle,
+.nb-tile:not(.is-slab),
+.nb-stat,
+.nb-step,
+.nb-window,
+.page-cta {
+  --band: var(--brand-yellow);
+  border: 2px solid var(--nb-line) !important;
+  border-radius: 18px !important;
+  background: var(--frost) !important;
+  -webkit-backdrop-filter: var(--frost-blur);
+  backdrop-filter: var(--frost-blur);
+  box-shadow: inset 0 6px 0 var(--band), 5px 5px 0 var(--nb-shadow-c) !important;
+  transition: transform var(--dur-3, 320ms) var(--ease-spring, ease-out), box-shadow var(--dur-3, 320ms) var(--ease-out, ease-out);
+}
+:is(.panel, .card, .principle, .nb-tile, .nb-stat, .nb-step):nth-child(4n + 2) { --band: var(--brand-blue); }
+:is(.panel, .card, .principle, .nb-tile, .nb-stat, .nb-step):nth-child(4n + 3) { --band: var(--brand-red); }
+:is(.panel, .card, .principle, .nb-tile, .nb-stat, .nb-step):nth-child(4n + 4) { --band: var(--brand-green); }
+
+/* Only things you can follow lift: a link card, a tile. Plain panels stay
+   put, so reading a long one never feels like it is sliding away. */
+a.card:hover, a.nb-tile:not(.is-slab):hover, a.panel:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: inset 0 6px 0 var(--band), 8px 8px 0 var(--nb-shadow-c) !important;
+}
+a.card:active, a.nb-tile:not(.is-slab):active, a.panel:active {
+  transform: translate(2px, 2px);
+  box-shadow: inset 0 6px 0 var(--band), 2px 2px 0 var(--nb-shadow-c) !important;
+}
+
+/* The demo window keeps its own title bar, so its band is the bar itself. */
+.nb-window { box-shadow: var(--nb-shadow-lg) !important; }
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .panel, .card, .principle, .nb-tile:not(.is-slab), .nb-stat, .nb-step, .page-cta { background: var(--frost-strong) !important; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .panel, .card, .principle, .nb-tile:not(.is-slab), .nb-stat, .nb-step, .page-cta {
+    background: var(--frost-strong) !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  a.card:hover, a.nb-tile:hover, a.panel:hover, a.card:active, a.nb-tile:active, a.panel:active { transform: none; }
+}
