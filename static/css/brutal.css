@@ -886,13 +886,16 @@ a.nb-tile:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--n
 
 /* The role line cycles through what he does, one at a time. */
 .profile-rotator { position: relative; display: inline-grid; height: 1.5em; overflow: hidden; vertical-align: bottom; font-weight: 700; color: var(--nb-ink); }
-.profile-rotator span { grid-area: 1 / 1; animation: nbRole 9s var(--ease-out, ease-out) infinite; opacity: 0; transform: translateY(100%); }
+/* A cross-fade in place. It used to slide through a clip one line tall, so
+   mid-change, and on any scroll frame that caught it, two half lines
+   showed. */
+.profile-rotator span { grid-area: 1 / 1; animation: nbRole 9s var(--ease-in-out, ease-in-out) infinite; opacity: 0; white-space: nowrap; }
 .profile-rotator span:nth-child(2) { animation-delay: 3s; }
 .profile-rotator span:nth-child(3) { animation-delay: 6s; }
 @keyframes nbRole {
-  0% { opacity: 0; transform: translateY(100%); }
-  6%, 30% { opacity: 1; transform: none; }
-  36%, 100% { opacity: 0; transform: translateY(-100%); }
+  0% { opacity: 0; }
+  5%, 30% { opacity: 1; }
+  35%, 100% { opacity: 0; }
 }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
@@ -932,7 +935,7 @@ a.nb-tile:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--n
 .nb-portfolio > div:last-child { display: grid; align-content: start; gap: 12px; }
 .nb-portfolio .profile-name { font-size: clamp(1.6rem, 3vw, 2.2rem); font-family: var(--display); font-weight: 800; letter-spacing: -0.03em; }
 .nb-portfolio .profile-role { display: block; min-height: 1.6em; }
-.nb-portfolio .profile-rotator { display: grid; height: 1.6em; line-height: 1.6em; font-size: var(--t-4); }
+.nb-portfolio .profile-rotator { display: grid; height: 1.6em; line-height: 1.6em; font-size: var(--t-4); overflow: visible; }
 
 
 /* where he works: a compact, animated timeline */

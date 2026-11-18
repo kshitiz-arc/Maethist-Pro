@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.5.1 — 2026-11-18
+
+### Fixed
+
+- **The About page's rolling numbers and rotating roles broke up while
+  scrolling.** Each digit sat in a window exactly 1em tall, but the mono
+  digits are taller than that, so slivers of the digits above and below
+  always showed and shifted with every scroll step ("390+" could read
+  "39A+"). The window is now 1.3em, with the digit centred and drawn on its
+  own layer. The role line slid through a one-line clip and could show two
+  half lines; it now cross-fades in place, one role at a time.
+
+
 ## 2.5.0 — 2026-11-18
 
 ### Changed: the compass and the angle tool, rebuilt for a finger

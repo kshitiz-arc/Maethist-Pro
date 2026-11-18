@@ -86,7 +86,9 @@
 
   function roll(built) {
     built.strips.forEach(function (entry) {
-      entry.strip.style.transform = "translateY(-" + entry.value + "em)";
+      // One cell per digit. The cell is taller than the glyph (vengeance.css,
+      // --odometer-cell), so it is the cell, not 1em, the strip moves by.
+      entry.strip.style.transform = "translateY(calc(-" + entry.value + " * var(--odometer-cell, 1.3em)))";
     });
   }
 
