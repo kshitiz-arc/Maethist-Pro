@@ -267,11 +267,13 @@ footer .footer-credit-link:focus-visible {
 }
 
 /* Dialog titles speak in the display face, like the marketing headlines. */
-.file-backstage h2, .file-backstage h3,
-.pomo-title, .planner-overlay h2, .planner-overlay h3,
-.clear-confirm h2, .clear-confirm h3,
-.tool-help-sheet-panel h2, .feature-tour-card h2, .feature-tour-card h3,
-.tool-dock-title, .file-ribbon-tab {
+.file-backstage h2,
+.file-backstage h3,
+.pomo-title,
+.planner-overlay h2,
+.planner-overlay h3,
+.tool-help-sheet-panel h2,
+.file-ribbon-tab {
   font-family: var(--display);
 }
 

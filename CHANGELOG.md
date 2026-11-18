@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.5.3 — 2026-11-18
+
+### Removed (cleanup review)
+
+- Files nothing loads: `static/css/style.css` (38 KB, the pre-v2
+  stylesheet), `static/js/home.js` and `static/js/fx.js` (12 KB, the old
+  homepage scripts), `DESIGN.md.bak`, and the `design/editor-chrome/`
+  prototypes from the editor-chrome exploration.
+- 131 CSS rules and selectors, about 13 KB, styling classes that no
+  template or script uses any more: the old signature footer, the menu
+  overlay and hamburger, the toolbar-location toggle, the pattern popover,
+  old hero and HUD pieces, compass hex input, line-kind buttons and
+  others. Rules shared with live selectors kept those selectors.
+- `search_youtube()` in app.py, an unused wrapper.
+
+### Fixed
+
+- The v3 frost and entrance styling for the Clear canvas dialog targeted
+  class names the dialog does not use, so it never applied. It now targets
+  `.clear-confirm-panel`, and only while the dialog is open: the dialog stays
+  in the page when hidden, and a backdrop blur on it was an extra GPU pass
+  over the canvas on every frame (tests/test_live_stroke_cost.py caught it).
+
+
 ## 2.5.2 — 2026-11-18
 
 ### Changed

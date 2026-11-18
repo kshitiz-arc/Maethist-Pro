@@ -262,8 +262,6 @@ body::before {
   border-top: none;
 }
 
-
-
 .tool-option-heading,
 .tool-options label>span {
   /* Panel labels are the map of the tool, so they are read at full strength
@@ -491,18 +489,14 @@ body.menu-open .tool-dock {
   transform: translateX(-12px);
 }
 
-
 .toolbar,
 #canvas-container,
 footer,
 .size-preview,
-.side-menu,
-.menu-btn,
-.menu-overlay {
+.side-menu {
   position: relative;
   z-index: 1;
 }
-
 
 .toolbar {
   position: fixed;
@@ -576,10 +570,8 @@ body.toolbar-relocating .toolbar .tool {
   -webkit-tap-highlight-color: transparent;
 }
 
-.menu-btn,
 .menu-action-btn,
 .notebook-toggle,
-.toolbar-location-btn,
 .ar-btn,
 .pattern-option {
   touch-action: manipulation;
@@ -679,19 +671,6 @@ body.toolbar-relocating .toolbar .tool {
   animation: toolIconActivePop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-.tool-icon-accent,
-.pen-ink-mark {
-  stroke: #7dd3fc;
-}
-
-.eraser-clean-line {
-  stroke: rgba(226, 232, 240, 0.76);
-}
-
-.eraser-dust {
-  fill: rgba(226, 232, 240, 0.72);
-}
-
 /* Built on the core tokens, following shape-picker.css: 34px was under the
    44px floor DESIGN.md sets, the 8px radius was off the 3/6/10 scale, and the
    selected state was indigo (rgba(133,126,255,.46) on rgba(106,96,255,.2)) in
@@ -728,21 +707,6 @@ body.toolbar-relocating .toolbar .tool {
 .eraser-mode-btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
-}
-
-.highlighter-chisel,
-.highlighter-swatch {
-  stroke: #facc15;
-}
-
-.highlighter-swatch {
-  opacity: 0.92;
-}
-
-[data-theme="light"] .eraser-clean-line,
-[data-theme="light"] .eraser-dust {
-  stroke: rgba(71, 85, 105, 0.62);
-  fill: rgba(71, 85, 105, 0.62);
 }
 
 .select-tool-icon {
@@ -997,7 +961,6 @@ body.toolbar-location-up.toolbar-relocating .toolbar .tool {
   }
 }
 
-
 /* Placement and visibility only. This block also set background, padding,
    border-radius and max-width, every one of which the second .tool-options
    block 3,800 lines below overrode -- same selector, same file, dead on
@@ -1051,12 +1014,6 @@ body.toolbar-location-up.toolbar-relocating .toolbar .tool {
   border: 2px solid var(--accent);
 }
 
-
-.size-input:focus {
-  outline: 2px solid var(--accent);
-}
-
-
 #canvas-container {
   width: 100%;
   height: 100%;
@@ -1066,20 +1023,12 @@ body.toolbar-location-up.toolbar-relocating .toolbar .tool {
   border-radius: inherit;
 }
 
-
 #drawingCanvas {
   width: 100%;
   height: 100%;
   background: transparent;
   touch-action: none;
 }
-
-
-body.keyboard-open .workspace-shell {
-  transform: translateY(-100px);
-  transition: transform 0.3s ease;
-}
-
 
 footer {
   position: fixed;
@@ -1107,7 +1056,6 @@ footer a:hover {
   text-decoration: underline;
 }
 
-
 .size-preview {
   position: fixed;
   pointer-events: none;
@@ -1124,7 +1072,6 @@ footer a:hover {
   border-color: rgba(0, 0, 0, 0.7);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5);
 }
-
 
 .size-preview.pen {
   background: var(--w-3);
@@ -1150,7 +1097,6 @@ footer a:hover {
   background: rgba(0, 255, 255, 0.1);
 }
 
-
 .size-preview .size-label {
   position: absolute;
   top: 50%;
@@ -1168,9 +1114,6 @@ footer a:hover {
   color: black;
   text-shadow: 1px 1px 2px white;
 }
-
-
-
 
 .clear-confirm-modal {
   position: fixed;
@@ -1194,7 +1137,6 @@ footer a:hover {
 
 body.canvas-clearing #drawingCanvas,
 body.canvas-clearing .toolbar,
-body.canvas-clearing .menu-btn,
 body.canvas-clearing .side-menu {
   pointer-events: none;
 }
@@ -1219,7 +1161,6 @@ body.canvas-clearing .side-menu {
 .clear-confirm-modal.is-confirming .clear-confirm-panel {
   transform: scale(0.99);
 }
-
 
 .clear-confirm-panel>* {
   position: relative;
@@ -1377,56 +1318,6 @@ body.canvas-clearing .side-menu {
   }
 }
 
-.menu-btn {
-  position: fixed;
-  top: 1.2rem;
-  left: 1.2rem;
-  z-index: 9999;
-  width: 46px;
-  height: 46px;
-  border-radius: var(--r-lg);
-  background: rgba(18, 18, 18, 0.55);
-  border: 1px solid var(--w-3);
-  backdrop-filter: blur(10px);
-  cursor: pointer;
-
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-  padding: 0 12px;
-  color: #fff;
-}
-
-[data-theme="light"] .menu-btn {
-  background: rgba(255, 255, 255, 0.75);
-  border: 1px solid var(--d-2);
-  color: #000;
-}
-
-.menu-btn span {
-  display: block;
-  height: 2px;
-  width: 100%;
-  background: currentColor;
-  opacity: 0.9;
-  border-radius: var(--r-sm);
-}
-
-
-@media (max-width: 640px) {
-  .menu-btn {
-    top: auto;
-    bottom: 3.2rem;
-    left: 1rem;
-  }
-
-  body.toolbar-location-down .menu-btn {
-    top: 1rem;
-    bottom: auto;
-  }
-}
-
 .side-menu {
   position: fixed;
   top: 0;
@@ -1454,48 +1345,13 @@ body.canvas-clearing .side-menu {
   border-right: 1px solid var(--d-2);
 }
 
-.menu-item {
-  /* 44px minimum tap target; this was 41. */
-  min-height: var(--tap);
-  display: block;
-  padding: 12px 12px;
-  border-radius: var(--r-lg);
-  text-decoration: none;
-  color: inherit;
-  margin-bottom: 8px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
-  transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.menu-item:hover {
-  background: rgba(120, 120, 255, 0.12);
-  transform: translateX(2px);
-}
-
-.menu-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-  background: rgba(0, 0, 0, 0.4);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
 body.menu-open .side-menu {
   transform: translateX(0);
-}
-
-body.menu-open .menu-overlay {
-  opacity: 1;
-  pointer-events: auto;
 }
 
 body.menu-open #sideMenu.side-menu {
   transform: translateX(0) !important;
 }
-
 
 .menu-section {
   position: relative;
@@ -1536,80 +1392,14 @@ body.menu-open #sideMenu.side-menu {
   background: rgba(120, 120, 255, 0.12);
 }
 
-.menu-action-btn .chev {
-  opacity: 0.8;
-}
-
-.pattern-preview {
-  margin-top: 10px;
-  height: 62px;
-  border-radius: var(--r-lg);
-  border: 1px solid var(--w-3);
-  background: var(--w-1);
-  overflow: hidden;
-}
-
-[data-theme="light"] .pattern-preview {
-  border: 1px solid var(--d-2);
-  background: var(--d-1);
-}
-
 /* Pattern moved out of the hamburger drawer and into the View cluster, where
    DESIGN.md's zone rule puts it: it is a property of the view. Anchored under
    its button and right-aligned so it never runs off the bar, and the canvas
    stays visible behind it -- which is the point. A backstage pane covers the
    very thing you are choosing a pattern for. */
-.pattern-control {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
 
 /* The icon plus the popover say enough in a compact bar; the swatch stays in
    the DOM because the inline pattern script paints it. */
-.pattern-control .pattern-preview {
-  display: none;
-}
-
-.pattern-control .pattern-pop {
-  left: auto;
-  right: 0;
-  top: calc(100% + 8px);
-  width: max-content;
-  min-width: 172px;
-}
-
-.pattern-pop {
-  position: absolute;
-  left: 0;
-  top: calc(100% + 10px);
-  width: 100%;
-  border-radius: var(--r-lg);
-  padding: 10px;
-  z-index: 10001;
-
-  /* Was 0.96 alpha over a 14px backdrop blur: 4% of the backdrop showing
-     through a blur nobody can resolve, at the price of a compositing layer.
-     Opaque instead, and the blur goes. */
-  background: #0C0C0C;
-  border: 1px solid var(--w-3);
-
-  transform: translateY(-6px);
-  opacity: 0;
-  pointer-events: none;
-  transition: 0.18s ease;
-}
-
-[data-theme="light"] .pattern-pop {
-  background: #FAFAFA;
-  border: 1px solid var(--d-3);
-}
-
-.pattern-pop.open {
-  transform: translateY(0);
-  opacity: 1;
-  pointer-events: auto;
-}
 
 .pattern-option {
   width: 100%;
@@ -1628,51 +1418,6 @@ body.menu-open #sideMenu.side-menu {
 .pattern-option:hover {
   background: rgba(120, 120, 255, 0.12);
 }
-
-.mini-swatch {
-  width: 32px;
-  height: 24px;
-  border-radius: var(--r-md);
-  border: 1px solid var(--w-3);
-  background: var(--w-1);
-}
-
-[data-theme="light"] .mini-swatch {
-  border: 1px solid var(--d-3);
-  background: var(--d-1);
-}
-
-.mini-swatch.dot {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.35) 1px, transparent 1px);
-  background-size: 10px 10px;
-}
-
-.mini-swatch.lines {
-  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.35) 1px, transparent 1px);
-  background-size: 100% 10px;
-}
-
-.mini-swatch.graph {
-  background-image:
-    linear-gradient(var(--w-5) 1px, transparent 1px),
-    linear-gradient(to right, var(--w-5) 1px, transparent 1px);
-  background-size: 10px 10px;
-}
-
-[data-theme="light"] .mini-swatch.dot {
-  background-image: radial-gradient(var(--d-5) 1px, transparent 1px);
-}
-
-[data-theme="light"] .mini-swatch.lines {
-  background-image: linear-gradient(to bottom, var(--d-4) 1px, transparent 1px);
-}
-
-[data-theme="light"] .mini-swatch.graph {
-  background-image:
-    linear-gradient(var(--d-4) 1px, transparent 1px),
-    linear-gradient(to right, var(--d-4) 1px, transparent 1px);
-}
-
 
 [data-pattern="dot"] #paperPattern {
   background-image: radial-gradient(var(--w-4) 1px, transparent 1px);
@@ -1709,8 +1454,6 @@ body.menu-open #sideMenu.side-menu {
   background: transparent;
 }
 
-
-
 #arVideo {
   display: none;
   position: absolute;
@@ -1744,7 +1487,6 @@ body.ar-active #panMode {
   opacity: 0.3;
   pointer-events: none;
 }
-
 
 .ar-section {
   margin-top: 10px;
@@ -1793,60 +1535,6 @@ body.ar-active #panMode {
 .ar-btn i {
   font-size: 1.1rem;
 }
-
-.toolbar-location-section {
-  display: grid;
-  gap: 8px;
-}
-
-.toolbar-location-toggle {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  padding: 4px;
-  border-radius: var(--r-lg);
-  background: var(--w-1);
-  border: 1px solid var(--w-3);
-}
-
-[data-theme="light"] .toolbar-location-toggle {
-  background: var(--d-1);
-  border-color: var(--d-2);
-}
-
-.toolbar-location-btn {
-  /* 44px minimum tap target; this was 38. */
-  min-height: var(--tap);
-  border: 0;
-  border-radius: var(--r-md);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  color: inherit;
-  background: transparent;
-  cursor: pointer;
-  font-weight: 800;
-  font-size: 0.84rem;
-  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
-}
-
-.toolbar-location-btn:hover {
-  background: var(--w-2);
-}
-
-.toolbar-location-btn.active {
-  color: #ffffff;
-  background: var(--accent-wash);
-  box-shadow: inset 0 0 0 1px rgba(150, 150, 255, 0.36);
-}
-
-[data-theme="light"] .toolbar-location-btn.active {
-  color: #1f1b62;
-  background: var(--accent-wash);
-  box-shadow: inset 0 0 0 1px var(--accent-wash);
-}
-
 
 @media (hover: none),
 (pointer: coarse) {
@@ -2524,7 +2212,6 @@ body.notebook-active #pptImportBtn {
   letter-spacing: 0.02em;
 }
 
-body.ppt-active .pattern-preview,
 body.ppt-active #patternBtn {
   opacity: 0.45;
 }
@@ -2582,7 +2269,6 @@ body.ppt-active #patternBtn {
     min-width: 56px;
   }
 }
-
 
 /* ══════════════════════════════════════════════════════
    YouTube Mini-Player
@@ -3128,9 +2814,6 @@ body.yt-runtime-active .tool.yt-playing {
 }
 
 /* ── Shake (invalid URL) ─────────────────────────── */
-.yt-shake {
-  animation: ytShake 0.4s ease !important;
-}
 
 /* ── Light theme ─────────────────────────────────── */
 [data-theme="light"] .yt-player {
@@ -3563,9 +3246,8 @@ body.yt-runtime-active .tool.yt-playing {
 @media (prefers-reduced-motion: reduce) {
 
   .yt-player,
-  .yt-placeholder-icon,
-  .tool.yt-playing,
-  .yt-shake {
+.yt-placeholder-icon,
+.tool.yt-playing {
     animation: none !important;
   }
 }
@@ -3576,7 +3258,6 @@ body.yt-runtime-active .tool.yt-playing {
     min-width: 240px;
   }
 }
-
 
 /* ============================== Notebook library ============================== */
 
@@ -3963,40 +3644,6 @@ body.library-busy .library-actions {
 }
 
 /* Text Tool styles */
-.text-input-overlay {
-  position: fixed;
-  z-index: 2000;
-  pointer-events: none;
-}
-
-.text-input-overlay textarea {
-  pointer-events: auto;
-  background: transparent;
-  border: 1px dashed rgba(126, 119, 255, 0.6);
-  outline: none;
-  padding: 0;
-  margin: 0;
-  overflow: hidden;
-  resize: none;
-  line-height: 1.2;
-  white-space: pre;
-}
-
-[data-theme="light"] .text-input-overlay textarea {
-  border-color: var(--accent-wash);
-}
-
-.font-category {
-  font-weight: 700;
-  font-size: 0.85em;
-  color: #a0aec0;
-  background-color: #1a202c;
-}
-
-[data-theme="light"] .font-category {
-  color: #718096;
-  background-color: #f7fafc;
-}
 
 /* Smart geometry inspector */
 .geometry-inspector[hidden],
@@ -4838,7 +4485,6 @@ body.toolbar-location-down .geometry-inspector {
   }
 }
 
-
 /* ============================================================
    Tool option panels — shared polish
    ============================================================ */
@@ -5075,16 +4721,6 @@ body.toolbar-location-down .geometry-inspector.is-collapsed {
 /* ============================================================
    Algebra tiles — tool panel
    ============================================================ */
-
-.tile-tool-icon .tile-icon-unit {
-  fill: currentColor;
-  opacity: 0.82;
-}
-
-.tool.active .tile-tool-icon .tile-icon-unit {
-  fill: var(--accent);
-  opacity: 1;
-}
 
 .tile-tray {
   display: grid;
@@ -5587,7 +5223,6 @@ body.tile-dragging {
   }
 }
 
-
 /* Light-theme contrast for the tile sign toggle and status lines */
 [data-theme="light"] .tile-sign-btn[data-tile-sign="positive"].active,
 [data-theme="light"] .tile-sign-btn[data-tile-inspector-sign="positive"].active {
@@ -5627,26 +5262,12 @@ body.tile-dragging {
 
 /* A bottom-sheet inspector owns the lower-left corner on small screens, so the
    floating menu button steps aside instead of sitting on top of the controls. */
-@media (max-width: 760px) {
-  body.geometry-sheet-open .menu-btn,
-  body.tile-sheet-open .menu-btn,
-  body.line-sheet-open .menu-btn {
-    opacity: 0;
-    transform: translateY(14px);
-    pointer-events: none;
-  }
-
-  .menu-btn {
-    transition: opacity 0.18s ease, transform 0.18s ease;
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .tile-chip,
-  .tile-suggestion,
-  .tile-sign-btn,
-  .geometry-collapse-btn span,
-  .menu-btn {
+.tile-suggestion,
+.tile-sign-btn,
+.geometry-collapse-btn span {
     transition: none;
   }
 }
@@ -5849,62 +5470,7 @@ footer a {
   transition: color var(--fast) ease-out;
 }
 
-.footer-signature {
-  display: inline-block;
-  /* Sized to hold its own beside 12px caps: the T's stand a little taller
-     than the letters of MAETHIST, the way a signature does. */
-  width: 40px;
-  height: 20px;
-  vertical-align: -6px;
-  overflow: visible;
-  /* 1 while the ink is wet, easing to 0 as it dries; the sheen's strength. */
-  --wet: 0;
-  --sheen: 0;
-}
-
 /* The mask strokes: white reveals, and their width covers the widest ink. */
-.sig-reveal,
-.sig-sheen-reveal {
-  fill: none;
-  stroke: #ffffff;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.sig-ink path {
-  /* Wet ink is the accent; dry ink is whatever colour the footer is. */
-  fill: color-mix(in oklab, var(--accent) calc(var(--wet) * 100%), currentColor);
-}
-
-.sig-sheen {
-  opacity: var(--sheen);
-}
-
-.sig-sheen path {
-  /* Fresh ink, a step brighter than the accent, so it reads even while the
-     hovered signature is already ochre. */
-  /* A glint of fresh ink: close to white-hot, so it reads as it travels even
-     though the hovered signature is already ochre underneath. */
-  fill: color-mix(in oklab, var(--accent) 22%, #fff8ee);
-}
-
-[data-theme="light"] .sig-sheen path {
-  /* On a light ground white would vanish; a bright amber reads instead. */
-  fill: color-mix(in oklab, var(--accent) 35%, #ffb347);
-}
-
-.sig-nib {
-  pointer-events: none;
-}
-
-.sig-nib-tip {
-  fill: var(--accent);
-}
-
-.sig-nib-halo {
-  fill: var(--accent);
-  opacity: 0.22;
-}
 
 footer .footer-credit-link:hover,
 footer .footer-credit-link:focus-visible {
@@ -5918,14 +5484,6 @@ footer .footer-credit-link:focus-visible {
 
 /* The letters themselves, for copying and for anything that reads text
    rather than the link's name. Present, invisible, taking no room. */
-.footer-signature-text {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 
 /* The credit rests at 0.4, which would leave the signing at 40% ink and the
    hovered accent as mud. It comes forward while the pen is moving and while
@@ -5954,11 +5512,6 @@ footer:has(.footer-credit-link:focus-visible) .left {
 @media (prefers-reduced-motion: reduce) {
   footer {
     transition: none;
-  }
-
-  .sig-nib,
-  .sig-sheen {
-    display: none;
   }
 }
 
@@ -6070,8 +5623,7 @@ footer:has(.footer-credit-link:focus-visible) .left {
 }
 
 /* the two inspectors lay their colour control out as a label row */
-.geometry-style-row .hex-field,
-.tile-color-row .hex-field {
+.geometry-style-row .hex-field {
   flex: 0 0 auto;
 }
 
@@ -6213,7 +5765,6 @@ footer:has(.footer-credit-link:focus-visible) .left {
 .color-studio[hidden] {
   display: none !important;
 }
-
 
 .studio-head { display: flex; align-items: center; gap: 8px; }
 
@@ -6587,19 +6138,6 @@ footer:has(.footer-credit-link:focus-visible) .left {
  * where the toolbar owns the top.
  */
 
-@media (min-width: 641px) and (max-width: 1179px) {
-  .menu-btn {
-    top: auto;
-    bottom: 1.4rem;
-    left: 1.2rem;
-  }
-
-  body.toolbar-location-down .menu-btn {
-    top: 1.2rem;
-    bottom: auto;
-  }
-}
-
 /* ---------- editor: readable labels, hittable controls ----------
  *
  * A design audit found panel headings at 11.2px, the footer credit at 11.5px,
@@ -6638,7 +6176,6 @@ input[type="range"] {
 .tool-options input[type="number"] {
   min-height: 44px;
 }
-
 
 /* =========================================================================
    Lecture tools (static/js/youtube.js, "Lecture tools"): the transport

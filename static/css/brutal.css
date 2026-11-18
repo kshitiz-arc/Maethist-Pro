@@ -69,27 +69,28 @@ body::after {
   border-radius: 6px;
 }
 
-h1, h2, h3, .nb-display { font-family: var(--display); color: var(--nb-ink); }
+h1,
+h2,
+h3 { font-family: var(--display); color: var(--nb-ink); }
 
 .page { position: relative; }
 
 /* ---------- shared surfaces ---------- */
 
-.nb-frost {
-  background: var(--frost);
-  -webkit-backdrop-filter: var(--frost-blur);
-  backdrop-filter: var(--frost-blur);
-  border: var(--nb-border);
-  border-radius: var(--nb-radius);
-  box-shadow: var(--nb-shadow);
-}
-
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .nb-frost, header, .panel, .card, .principle, .page-cta { background: var(--frost-strong) !important; }
+  header,
+.panel,
+.card,
+.principle,
+.page-cta { background: var(--frost-strong) !important; }
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  .nb-frost, header, .panel, .card, .principle, .page-cta {
+  header,
+.panel,
+.card,
+.principle,
+.page-cta {
     background: var(--frost-strong) !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
@@ -177,8 +178,7 @@ header {
 /* ---------- the one call to action ---------- */
 
 .write-btn,
-.primary,
-.nb-button {
+.primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -201,13 +201,15 @@ header {
 
 .write-btn { padding: 0 16px; font-size: var(--t-2); }
 
-.write-btn:hover, .primary:hover, .nb-button:hover {
+.write-btn:hover,
+.primary:hover {
   transform: translate(-2px, -2px);
   box-shadow: 6px 6px 0 #111111;
   opacity: 1;
 }
 
-.write-btn:active, .primary:active, .nb-button:active {
+.write-btn:active,
+.primary:active {
   transform: translate(3px, 3px);
   box-shadow: 1px 1px 0 #111111;
 }
@@ -635,7 +637,9 @@ a.nb-tile:hover .nb-tile-more svg.icon { transform: translateX(4px); }
 }
 
 .card h3, .principle strong { font-family: var(--display); color: var(--nb-ink); }
-.card p, .card li, .principle span, .track-what p { color: var(--nb-ink-2); }
+.card p,
+.card li,
+.principle span { color: var(--nb-ink-2); }
 
 .card-grid .card:nth-child(3n+1) .card-index { background: var(--brand-yellow); }
 .card-grid .card:nth-child(3n+2) .card-index { background: var(--brand-blue); }
@@ -685,7 +689,9 @@ a.nb-tile:hover .nb-tile-more svg.icon { transform: translateX(4px); }
 @media (prefers-reduced-motion: reduce) {
   body::before, .nb-marquee-track { animation: none !important; }
   #geometrySvg.is-drawing .draw, #geometrySvg.is-drawing .point, #geometrySvg.is-drawing .label { animation: none !important; }
-  .write-btn, .primary, .nb-button, .nb-tile { transition: none; }
+  .write-btn,
+.primary,
+.nb-tile { transition: none; }
 }
 
 /* =========================================================================
@@ -763,13 +769,15 @@ a.nb-tile:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--n
 .nb-window.is-tracking { transition-duration: 120ms; }
 
 /* ---------- buttons: a sheen crosses on hover, a press sinks ---------- */
-.write-btn, .primary, .nb-button {
+.write-btn,
+.primary {
   transition:
     transform var(--dur-2) var(--ease-spring),
     box-shadow var(--dur-2) var(--ease-out),
     background-color var(--dur-2) var(--ease-out);
 }
-.write-btn:active, .primary:active, .nb-button:active { transition-duration: 60ms; }
+.write-btn:active,
+.primary:active { transition-duration: 60ms; }
 
 /* Links underline from the left. */
 .nav a { transition: color var(--dur-2) var(--ease-out); }
@@ -837,7 +845,6 @@ a.nb-tile:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--n
 .nb-window .zoom button[hidden] { display: none; }
 @media (max-width: 600px) { .nb-demo-hint { left: 12px; bottom: 6px; font-size: 0.66rem; } }
 @media (prefers-reduced-motion: reduce) { #geometrySvg.is-inviting .point { animation: none; } }
-
 
 /* ---------- About: the builder, as a small portfolio ---------- */
 .nb-portfolio { grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: clamp(20px, 4vw, 40px); }
@@ -937,7 +944,6 @@ a.nb-tile:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--n
 .nb-portfolio .profile-role { display: block; min-height: 1.6em; }
 .nb-portfolio .profile-rotator { display: grid; height: 1.6em; line-height: 1.6em; font-size: var(--t-4); overflow: visible; }
 
-
 /* where he works: a compact, animated timeline */
 .nb-timeline { position: relative; display: grid; gap: 10px; margin: 6px 0 4px; padding: 0 0 0 22px; list-style: none; }
 .nb-timeline::before { content: ""; position: absolute; left: 6px; top: 6px; bottom: 6px; width: 2px; border-radius: 2px; background: linear-gradient(var(--brand-yellow), var(--brand-purple), var(--brand-blue)); }
@@ -960,13 +966,11 @@ a.nb-tile:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--n
 }
 @keyframes nbTimelineIn { from { transform: translateX(-10px); } }
 
-
 /* the education timeline under the work one */
 .nb-timeline-head { margin: 10px 0 0; font: 700 var(--t-1) / 1 var(--mono); color: var(--nb-ink-2); letter-spacing: 0.12em; text-transform: uppercase; }
 .nb-timeline.is-education::before { background: linear-gradient(var(--brand-green), var(--brand-blue)); }
 .nb-timeline.is-education li::before { background: var(--brand-green); }
 .nb-timeline.is-education li:nth-child(2)::before { background: var(--brand-blue); }
-
 
 /* =========================================================================
    Recent writing, take two: editorial cards.

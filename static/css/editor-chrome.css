@@ -403,7 +403,6 @@ body.chrome-rail.toolbar-relocating .toolbar.is-topbar {
    them, and these overrides have nothing left to override. Only the genuinely
    dock-specific rules remain, below. */
 
-
 /* ---------- make room for the chrome ---------- */
 
 /* The canvas runs edge to edge in the rail layout too. The rail, the dock and
@@ -427,14 +426,6 @@ body.chrome-rail.toolbar-relocating .toolbar.is-topbar {
 }
 
 /* keep the hamburger clear of the rail below it */
-.chrome-rail .menu-btn {
-  top: 14px;
-  left: 14px;
-  bottom: auto;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--r-lg);
-}
 
 @media (prefers-reduced-motion: reduce) {
   .chrome-rail .tool-rail .tool,
@@ -477,8 +468,7 @@ body.chrome-rail.toolbar-relocating .toolbar.is-topbar {
   text-align: right;
 }
 
-.compass-modes,
-.compass-actions {
+.compass-modes {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -531,7 +521,6 @@ body.chrome-rail.toolbar-relocating .toolbar.is-topbar {
   line-height: 1.45;
   opacity: 0.78;
 }
-
 
 /* ---------- compass stepper ----------
    Shows where you are in the construction and doubles as the control.
@@ -664,44 +653,6 @@ body.chrome-rail.toolbar-relocating .toolbar.is-topbar {
 .compass-row-value:not(:empty) { letter-spacing: -0.01em; }
 
 /* ---------- line kind (segment / ray / line) ---------- */
-
-.line-kinds {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-  width: 100%;
-}
-
-.line-kind-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  min-height: 52px;
-  padding: 7px 4px;
-  border-radius: var(--r-lg);
-  border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.05);
-  color: inherit;
-  font: inherit;
-  font-size: 0.68rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.18s ease, border-color 0.18s ease;
-}
-
-[data-theme="light"] .line-kind-btn { background: rgba(15, 23, 42, 0.04); }
-.line-kind-btn:hover { background: var(--accent-wash); }
-
-.line-kind-btn.active {
-  border-color: var(--accent);
-  background: var(--accent-wash);
-  font-weight: 800;
-}
-
-.line-kind-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.line-kind-btn svg { display: block; }
 
 /* ---------- write assist: a level, not three buttons ----------
    The slider sets how much help, the readout names it, and the preview runs
@@ -951,39 +902,6 @@ body.chrome-rail.toolbar-relocating .toolbar.is-topbar {
   background: var(--accent-wash);
 }
 
-.compass-hex-prefix {
-  padding-left: 6px;
-  opacity: 0.6;
-  font-weight: 800;
-}
-
-.compass-hex-input {
-  box-sizing: border-box;
-  flex: 1;
-  min-width: 0;
-  min-height: 44px;
-  padding: 0 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--r-lg);
-  background: rgba(255, 255, 255, 0.06);
-  color: inherit;
-  font: inherit;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: lowercase;
-}
-
-.compass-hex-input::placeholder {
-  opacity: 0.45;
-  letter-spacing: 0.08em;
-}
-
-[data-theme="light"] .compass-hex-input {
-  border-color: rgba(15, 23, 42, 0.1);
-  background: rgba(15, 23, 42, 0.04);
-}
-
-.compass-hex-input:focus-visible,
 .compass-hex-picker:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;

@@ -204,7 +204,7 @@ def add_static_version(endpoint, values):
     if token:
         values["v"] = token
 
-APP_VERSION = "2.5.2"
+APP_VERSION = "2.5.3"
 
 # Render sets RENDER=true on every service; INKYSCIB_ENV=production is the
 # switch for any other host. A random fallback is fine on a laptop, but under
@@ -2084,10 +2084,6 @@ def _search_youtube_result(query):
         while len(YOUTUBE_SEARCH_CACHE) > 128:
             YOUTUBE_SEARCH_CACHE.pop(next(iter(YOUTUBE_SEARCH_CACHE)))
     return videos, available
-
-
-def search_youtube(query):
-    return _search_youtube_result(query)[0]
 
 
 @app.route("/api/youtube/search")

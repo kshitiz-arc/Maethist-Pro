@@ -62,8 +62,7 @@
 .planner-shell,
 .library-panel,
 .tool-help-sheet-panel,
-.clear-confirm-card,
-.clear-confirm-dialog,
+.clear-confirm-modal.active .clear-confirm-panel,
 .yt-player {
   border: 2px solid var(--ui-line) !important;
   border-radius: 20px !important;
@@ -86,7 +85,7 @@
 
 @media (prefers-reduced-transparency: reduce) {
   .file-backstage, .canvas-theme-pop, .pomo-panel, .planner-shell, .library-panel,
-  .tool-help-sheet-panel, .clear-confirm-card, .clear-confirm-dialog, .yt-player,
+  .tool-help-sheet-panel, .clear-confirm-modal.active .clear-confirm-panel, .yt-player,
   .chrome-rail .toolbar.is-topbar, .chrome-rail .tool-rail, .file-ribbon {
     background: var(--surface) !important;
     -webkit-backdrop-filter: none !important;
@@ -144,8 +143,6 @@
 
 .library-action-primary,
 .pomo-main,
-.planner-add-btn,
-.planner-primary,
 .clear-confirm-danger,
 .backup-reminder-go {
   border: 2px solid #111111 !important;
@@ -161,7 +158,6 @@
 
 .library-action-primary:hover,
 .pomo-main:hover,
-.planner-add-btn:hover,
 .backup-reminder-go:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #111111 !important; }
 
 /* ---------- the notices ---------- */
@@ -178,7 +174,6 @@
 
 /* ---------- headings speak in the display face ---------- */
 
-.tool-dock-title,
 .file-backstage h2,
 .file-backstage h3,
 .library-panel h3,
@@ -190,8 +185,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .file-command:hover, .library-action-primary:hover, .pomo-main:hover,
-  .planner-add-btn:hover, .backup-reminder-go:hover { transform: none; }
+  .file-command:hover,
+.library-action-primary:hover,
+.pomo-main:hover,
+.backup-reminder-go:hover { transform: none; }
 }
 
 /* On desktop the File tabs sit inside the top bar, which already has the
