@@ -431,7 +431,10 @@ class ImageTests(unittest.TestCase):
         for path, html in self.html.items():
             for tag in SVG_OPEN_RE.findall(html):
                 with self.subTest(page=path, tag=tag):
-                    named = 'role="img"' in tag and "aria-label" in tag
+                    # A picture is role="img"; an illustration you can operate
+                    # (the homepage demo, whose points are focusable) cannot be,
+                    # because img hides its children, so it is a named group.
+                    named = ('role="img"' in tag or 'role="group"' in tag) and "aria-label" in tag
                     decorative = 'aria-hidden="true"' in tag
                     self.assertTrue(named or decorative, tag)
 

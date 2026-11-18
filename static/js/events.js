@@ -793,6 +793,7 @@
       window.Inkyscib.Compass.handleMove(e);
       return;
     }
+    if (s.currentTool === "angle" && window.Inkyscib?.AngleTool?.handleMove?.(e)) return;
 
     if (updateCustomTrianglePreview(e)) return;
 
@@ -1215,6 +1216,7 @@
       window.Inkyscib.Compass.handleMove(e);
       return;
     }
+    if (s.currentTool === "angle" && window.Inkyscib?.AngleTool?.handleMove?.(e)) return;
     if (updateCustomTrianglePreview(e)) return;
     updateConstructionHover(e);
     if (s.isDrawing) {

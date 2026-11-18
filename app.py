@@ -204,7 +204,7 @@ def add_static_version(endpoint, values):
     if token:
         values["v"] = token
 
-APP_VERSION = "2.4.1"
+APP_VERSION = "2.5.0"
 
 # Render sets RENDER=true on every service; INKYSCIB_ENV=production is the
 # switch for any other host. A random fallback is fine on a laptop, but under
@@ -1371,7 +1371,74 @@ def features():
 
 @app.route("/about")
 def about():
-    return render_template("about.html", nav_active="about")
+    return render_template(
+        "about.html",
+        nav_active="about",
+        portrait=_portrait_file(),
+        articles=_portfolio_articles(),
+    )
+
+
+# The About page portfolio. The portrait is whichever of these files exists in
+# static/img (none: the monogram), and the articles are the owner's recent
+# writing, newest first. Each needs a title and an https link; date and blurb
+# are optional. Kept here rather than fetched from LinkedIn, which serves
+# nothing to visitors who are not signed in and whose image links expire.
+PORTRAIT_CANDIDATES = ("profile.webp", "profile.jpg", "profile.jpeg", "profile.png")
+
+PORTFOLIO_ARTICLES = [
+    {
+        "title": "Measuring what a test cannot see",
+        "url": "https://www.linkedin.com/feed/update/urn:li:activity:7499106372169596928/",
+        "date": "28 Aug 2026",
+        "blurb": "HYPERION at the CBSE District Level Deliberations: twin-item, confidence-aware "
+                 "assessment that separates procedural fluency from understanding.",
+    },
+    {
+        "title": "India doesn't have a maths problem. It has a diagnosis problem.",
+        "url": "https://www.linkedin.com/feed/update/urn:li:activity:7479416737457958912/",
+        "date": "5 Jul 2026",
+        "blurb": "Five structural gaps, from the number-sense cliff in Grades 3 to 5 to an exam "
+                 "system that has become the curriculum.",
+    },
+    {
+        "title": "You matter more than your marks",
+        "url": "https://www.linkedin.com/feed/update/urn:li:activity:7458208887972937728/",
+        "date": "7 May 2026",
+        "blurb": "Board exams test families too: it is many parents' first time as well.",
+    },
+    {
+        "title": "The neuroscience of understanding",
+        "url": "https://www.linkedin.com/feed/update/urn:li:activity:7413822524175708161/",
+        "date": "5 Jan 2026",
+        "blurb": "Why memory becomes automatic once students grasp the why, and what that "
+                 "asks of how we design curricula.",
+    },
+]
+
+
+def _portrait_file():
+    folder = Path(app.root_path) / "static" / "img"
+    for name in PORTRAIT_CANDIDATES:
+        if (folder / name).is_file():
+            return name
+    return None
+
+
+def _portfolio_articles():
+    cards = []
+    for item in PORTFOLIO_ARTICLES[:4]:
+        title = str(item.get("title", "")).strip()[:140]
+        url = str(item.get("url", "")).strip()
+        if not title or not url.startswith("https://"):
+            continue
+        cards.append({
+            "title": title,
+            "url": url,
+            "date": str(item.get("date", "")).strip()[:24],
+            "blurb": str(item.get("blurb", "")).strip()[:220],
+        })
+    return cards
 
 
 @app.route("/write")

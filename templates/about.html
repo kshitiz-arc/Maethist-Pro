@@ -41,10 +41,9 @@
   Profile facts come from Kshitiz's own CV. Deliberately kept off this public
   page: phone number, personal email, home address.
 
-  portrait: drop a file into static/img/ and name it here to replace the
-  monogram with the photo.
+  portrait: app.py passes static/img/profile.(webp|jpg|png) when that file
+  exists (the monogram otherwise). Articles: PORTFOLIO_ARTICLES in app.py.
 #}
-{% set portrait = None %}
 
 {% block content %}
     <div class="page-head">
@@ -92,36 +91,63 @@
         <h2>Who builds it</h2>
       </div>
 
-      <article class="profile panel clip-hud">
+      <article class="profile panel clip-hud nb-portfolio">
 
         <div class="profile-portrait">
-          {% if portrait %}
-          <img src="{{ url_for('static', filename='img/' ~ portrait) }}"
-            alt="Kshitiz Kumar Sinha" width="186" height="186" />
-          {% else %}
-          <div class="profile-monogram" aria-hidden="true">KS</div>
-          {% endif %}
+          <div class="profile-ring">
+            {% if portrait %}
+            <img src="{{ url_for('static', filename='img/' ~ portrait) }}"
+              alt="Kshitiz Kumar Sinha" width="186" height="186" decoding="async" />
+            {% else %}
+            <div class="profile-monogram" aria-hidden="true">KS</div>
+            {% endif %}
+          </div>
+          <span class="profile-status"><i aria-hidden="true"></i> Teaching &amp; building</span>
         </div>
 
         <div>
-          <span class="profile-tier">Teacher</span>
+          <span class="profile-tier">Educator · Founder · Researcher</span>
           <h3 class="profile-name">Kshitiz Kumar Sinha</h3>
           <p class="profile-role">
-            EdTech developer · Applied ML researcher · Mathematics educator
+            <span class="visually-hidden">Mathematics educator · Founder of Tungston Theory and HYPERION · Ph.D. scholar in applied ML</span>
+            <span class="profile-rotator" aria-hidden="true">
+              <span>Mathematics educator</span>
+              <span>Founder, Tungston Theory</span>
+              <span>Building HYPERION</span>
+            </span>
           </p>
 
           <p class="profile-bio">
-            He teaches CBSE mathematics to Classes IX and X at Sarala Birla
-            Public School in Ranchi, coordinates its IT &amp; Coding Club and
+            He teaches CBSE mathematics at Sarala Birla Public School in Ranchi, coordinates its IT &amp; Coding Club and
             Composite Skill Lab, and is reading for a Ph.D. in mathematics —
             applied machine learning for fluid dynamics — at Sarala Birla
             University.
           </p>
 
           <p class="profile-bio">
+            He founded Tungston Theory, AI-powered learning for CBSE mathematics,
+            and HYPERION, a cognitive diagnostic platform that shows how a student
+            thinks and where understanding breaks down, which he presented at the
+            CBSE District Level Deliberations on Computational Thinking and AI.
+          </p>
+
+          <p class="profile-bio">
             MAETHIST comes out of that overlap. It is built by someone who has to
             stand in front of a class and use it the next morning.
           </p>
+
+          <ol class="nb-timeline" aria-label="Where he works">
+            <li><span class="nb-when">Aug 2026 —</span><strong>HYPERION</strong><em>Founder · Product &amp; Research Lead</em></li>
+            <li><span class="nb-when">Nov 2025 —</span><strong>Tungston Theory</strong><em>Founder · Subject Matter Expert, Mathematics</em></li>
+            <li><span class="nb-when">Apr 2025 —</span><strong>Sarala Birla Public School</strong><em>Mathematics Teacher · Coordinator, Composite Skill Lab · Mentor, IT &amp; Coding Club</em></li>
+            <li><span class="nb-when">2024 — 2025</span><strong>Cambrian Public School</strong><em>Mathematics Teacher</em></li>
+          </ol>
+
+          <h4 class="nb-timeline-head">Education</h4>
+          <ol class="nb-timeline is-education" aria-label="Education">
+            <li><span class="nb-when">2025 — 2028</span><strong>Ph.D., Mathematics</strong><em>Sarala Birla University, Ranchi · applied machine learning for fluid dynamics · coursework 9.00 CGPA</em></li>
+            <li><span class="nb-when">2020 — 2022</span><strong>M.Sc., Mathematics</strong><em>St. Xavier's College, Ranchi · dissertation: Mathematics for Deep Learning, Matrix Calculus</em></li>
+          </ol>
 
           <div class="profile-tags">
             <span>PH.D. MATHEMATICS (APPLIED ML)</span>
@@ -145,8 +171,8 @@
               <span>PH.D. COURSEWORK RANK · 9/10 CGPA</span>
             </div>
             <div class="profile-stat">
-              <b>7.4K+</b>
-              <span>READERS OF HIS EDTECH WRITING</span>
+              <b>11K+</b>
+              <span>FOLLOWERS OF HIS EDTECH WRITING</span>
             </div>
           </div>
 
@@ -157,79 +183,29 @@
         </div>
 
       </article>
+
+      {% if articles %}
+      <div class="nb-writing" aria-labelledby="writingTitle">
+        <h3 class="nb-writing-title" id="writingTitle">Recent writing</h3>
+        <ul class="nb-writing-list">
+          {% for article in articles %}
+          <li>
+            <a class="nb-article card" href="{{ article.url }}" target="_blank" rel="noopener noreferrer">
+              {% if article.date %}<span class="nb-article-date">{{ article.date }}</span>{% endif %}
+              <strong class="nb-article-title">{{ article.title }}</strong>
+              {% if article.blurb %}<span class="nb-article-blurb">{{ article.blurb }}</span>{% endif %}
+              <span class="nb-article-more">Read on LinkedIn {{ icon("remix:arrow-right-up-line", "link-out") }}</span>
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
     </section>
 
     <section class="section">
       <div class="section-title">
         <i>02</i>
-        <h2>Built before this</h2>
-      </div>
-
-      <div class="panel clip-hud">
-
-        <div class="track-row">
-          <div class="track-when">2025 — PRESENT</div>
-          <div class="track-what">
-            <strong>Tungston Theory</strong>
-            <p>
-              A full-stack, AI-powered CBSE Class X mathematics platform taken
-              from concept to production — 13 chapters, 50+ concepts, an XP and
-              streak engine with a real-time leaderboard, and HMAC-SHA256 OTP
-              verification hardened from day one.
-            </p>
-            <div class="track-stack">FLASK · REACT · MYSQL · GOOGLE CLOUD · NGINX · GUNICORN</div>
-          </div>
-        </div>
-
-        <div class="track-row">
-          <div class="track-when">2025 — PRESENT</div>
-          <div class="track-what">
-            <strong>Institutional timetable automation</strong>
-            <p>
-              A hybrid constraint-satisfaction solver — a Python backtracking
-              engine alongside Google OR-Tools' CP-SAT — that replaced fully
-              manual timetabling for 175+ faculty across 60 sections, handling
-              parallel classes, combined-section teacher sharing and period
-              frequency. The school's first conflict-free automated schedule.
-            </p>
-            <div class="track-stack">PYTHON · JAVASCRIPT · OR-TOOLS CP-SAT · OPENPYXL</div>
-          </div>
-        </div>
-
-        <div class="track-row">
-          <div class="track-when">RESEARCH</div>
-          <div class="track-what">
-            <strong>Handwriting emotion detection</strong>
-            <p>
-              An end-to-end ML pipeline classifying emotion from online
-              handwriting trajectories on the EMOTHAW dataset — extracting
-              pressure, velocity, acceleration and stroke features from raw pen
-              data. The same question MAETHIST's canvas sits next to: what a
-              stroke tells you about the person making it.
-            </p>
-            <div class="track-stack">PYTHON · SCIKIT-LEARN · NUMPY · PANDAS · SCIPY</div>
-          </div>
-        </div>
-
-        <div class="track-row">
-          <div class="track-when">RESEARCH</div>
-          <div class="track-what">
-            <strong>Vision Fusion</strong>
-            <p>
-              A multi-model computer-vision pipeline fusing OpenCV, YOLOv8 and
-              MediaPipe for real-time scene understanding and pose estimation —
-              the groundwork behind MAETHIST's experimental hand-tracking canvas.
-            </p>
-            <div class="track-stack">PYTHON · OPENCV · YOLOV8 · MEDIAPIPE</div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="section-title">
-        <i>03</i>
         <h2>How it works</h2>
       </div>
 
@@ -273,7 +249,7 @@
        not conform is named here rather than left for someone to discover. #}
     <section class="section" id="accessibility">
       <div class="section-title">
-        <i>04</i>
+        <i>03</i>
         <h2>Accessibility</h2>
       </div>
 

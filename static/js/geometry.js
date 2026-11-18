@@ -398,7 +398,8 @@
 
   function snapPoint(rawPoint, sourcePath = null, options = {}) {
     const raw = { x: rawPoint.x, y: rawPoint.y };
-    const threshold = worldSize(SNAP_SCREEN_DISTANCE);
+    const engine = window.Inkyscib?.GeometryEngine;
+    const threshold = worldSize(engine?.hitScreenPx ? engine.hitScreenPx(SNAP_SCREEN_DISTANCE) : SNAP_SCREEN_DISTANCE);
     let best = null;
 
     if (options.objects !== false) {

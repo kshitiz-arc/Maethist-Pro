@@ -419,6 +419,38 @@
     return pixels / scale;
   }
 
+  // ---------- touch-sized targets ----------
+  //
+  // Every hit radius in the construction tools was a pixel constant tuned for
+  // a mouse: a 10px snap and a 4px tap-or-drag threshold. A fingertip covers
+  // ~40px and wobbles ~8px as it lifts, so on the tablet this app is for,
+  // taps became tiny arcs and points were missed. The last input's
+  // pointerType is remembered here and every target is scaled by it.
+  const INPUT_SCALE = { touch: 1.8, pen: 1.3, mouse: 1 };
+  let lastPointerType = "mouse";
+  if (typeof window !== "undefined" && window.addEventListener) {
+    window.addEventListener("pointerdown", (event) => {
+      if (event.pointerType) lastPointerType = event.pointerType;
+    }, { capture: true, passive: true });
+  }
+
+  function inputScale(event) {
+    const type = (event && event.pointerType) || lastPointerType;
+    return INPUT_SCALE[type] || 1;
+  }
+
+  // A hit radius in screen pixels for this input: base for a mouse, larger
+  // for a pen, larger still for a finger.
+  function hitScreenPx(base, event) {
+    return base * inputScale(event);
+  }
+
+  // The tap-or-drag threshold: 4px for a mouse, 10px for a finger, 6px for a pen.
+  function dragSlopPx(event) {
+    const type = (event && event.pointerType) || lastPointerType;
+    return type === "touch" ? 10 : type === "pen" ? 6 : 4;
+  }
+
   window.Inkyscib = window.Inkyscib || {};
   window.Inkyscib.GeometryEngine = {
     EPSILON,
@@ -456,6 +488,11 @@
 
     worldToScreen,
     screenToWorld,
-    screenDistanceToWorld
+    screenDistanceToWorld,
+
+    inputScale,
+    hitScreenPx,
+    dragSlopPx,
+    lastPointerType: () => lastPointerType
   };
 })();

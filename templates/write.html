@@ -56,6 +56,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/chrome-compact.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/chrome-brutal.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/image-tools.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/scroll-cue.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/motion.css') }}">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest', v='pwa-1') }}">
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/maethist-180.png', v='pwa-1') }}">
@@ -1183,22 +1184,27 @@
         </div>
         <button type="button" class="compass-link" data-compass-action="clear-radius">Clear radius</button>
         <p class="compass-status" id="compassStatus" role="status" aria-live="polite">Tap a point to place the compass needle.</p>
+        <p class="geometry-control-hint">
+          <span aria-hidden="true">&#x2194;</span>
+          In Circle mode, drag out from the centre and lift: that draws the circle. Hold still on an arc you drew to pick it back up.
+        </p>
         <p class="compass-pinned-note">This panel stays open while you build. Tap the compass again to close it.</p>
       </div>
     </div>
 
-    <button id="angleTool" class="tool" type="button" title="Angle between two lines" aria-label="Angle between two lines">
+    <button id="angleTool" class="tool" type="button" title="Measure an angle" aria-label="Measure an angle">
       {{ icon("lucide:angle", "tool-icon", 23) }}
     </button>
     <div id="angleOptions" class="tool-options" data-tool-panel="angle" data-tool-title="Angle">
       <div class="tool-option-section">
-        <div class="tool-option-heading">Angle between two lines</div>
+        <div class="tool-option-heading">Measure an angle</div>
         <p class="geometry-control-hint">
           <span aria-hidden="true">&#x2194;</span>
-          Click one line, then another. The mark lands at the corner they make, with the angle on it.
-          A right angle gets a square instead of a number.
+          Tap one line, then another, and the mark lands at the corner on the side you tapped.
+          Or tap three points: an arm, the corner, the other arm. That works on pen ink, PDFs and pictures too.
+          The reading follows your finger. Tap inside a mark to flip it to the reflex angle.
         </p>
-        <p class="compass-status" id="angleStatus" role="status" aria-live="polite">Tap the first line.</p>
+        <p class="compass-status" id="angleStatus" role="status" aria-live="polite">Tap a line, then another. Or tap three points: an arm, the corner, the other arm.</p>
       </div>
 
       <div class="tool-option-section">
@@ -1671,6 +1677,7 @@
   <script src="{{ url_for('static', filename='js/ar.js', v='smart-geometry-2') }}" defer></script>
   <script src="{{ url_for('static', filename='js/youtube.js', v='yt-capture-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/image-tools.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/scroll-cue.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/tour.js') }}" defer></script>
 
 

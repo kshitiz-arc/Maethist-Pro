@@ -1,5 +1,75 @@
 # Changelog
 
+## 2.5.0 — 2026-11-18
+
+### Changed: the compass and the angle tool, rebuilt for a finger
+
+From an LLM council review of the two tools the owner names as the most
+important (report in docs/council/). Five advisors and five peer reviewers
+agreed on the cause: both tools were tuned for a mouse on a product made for
+a budget tablet.
+
+- **Every hit target scales with the input.** About 1.8x for a finger and
+  1.3x for a pen. The tap-or-drag threshold is now 10px for a finger (it was
+  4px, so a finger tap became a tiny arc). This covers snapping, arc ends,
+  arc bodies, point and intersection menus, and smart-shape snaps.
+- **Measure an angle with three taps:** an arm, the corner, the other arm,
+  as in angle ABC. It works anywhere, including on pen ink, PDFs and
+  pictures. The reading follows your finger before the last tap.
+- **The mark goes on the corner you tapped.** It used to use the far end of
+  each line, so on an X crossing it could mark the wrong corner.
+- **Tap inside a mark to flip it** to the reflex angle and back. The reading
+  now stays on screen, where it used to be replaced in the same tap.
+- **Whole degrees when the angle is one:** a constructed 60° reads 60°, not
+  59.9°.
+- **Circle mode draws the circle when you lift** after dragging out the
+  radius, and one Undo removes it.
+- **The radius is shown on the compass opening** while you set it.
+- **Hold still on an arc to pick it back up.** A plain press now starts a
+  new arc, so the second arc of a construction can begin on top of the
+  first.
+- "Click" is now "Tap" throughout the angle tool.
+
+### Added
+
+- **Image tools.** Select a captured frame or an inserted picture for a bar
+  with Edit, rotate, duplicate, open the video, undo, redo and delete, plus
+  More: flip, bring to front or send back, hide the timestamp, save the
+  image, reset. Edit opens a sheet with crop (free or a fixed shape), looks
+  (Scan, Board to paper, Mono, Vivid, Warm), brightness, contrast, colour,
+  opacity, rotate, flip and the frame's background. Every edit is one undo
+  step, survives a reload, and appears the same in PDF export.
+- **The homepage demo works.** Drag A, B or C and the circumcircle, the
+  altitude and the right-angle mark follow. Pen, Line, Circle and Triangle
+  draw on the page.
+- **About: the builder as a small portfolio**, taken from the owner's
+  LinkedIn: his photo in an animated ring, his roles in rotation, a
+  "where he works" timeline (HYPERION, Tungston Theory, Sarala Birla Public
+  School, Cambrian Public School), an education timeline (Ph.D. at Sarala
+  Birla University, M.Sc. at St. Xavier's College), and "Recent writing", four dated posts linked to
+  LinkedIn. Articles live in `PORTFOLIO_ARTICLES` in app.py. The photo is
+  `static/img/profile.jpg`, a 384px copy served from this site, so the page
+  never loads anything from LinkedIn.
+- **Long panels say they are long.** Any tool panel or sheet that scrolls
+  shows a "More" chip at its bottom edge while there is more below (a tap
+  scrolls a screenful), fades at whichever edge has more content, and a
+  visible scrollbar on touch screens. On an Android tablet the scrollbar only
+  appeared mid-scroll, so options below the fold were invisible.
+
+### Removed
+
+- The About page's "Built before this" section.
+- The homepage "Watch the demo" button. The demo is now live, so there is
+  nothing to watch.
+
+### Fixed
+
+- Picking an arc back up had never worked. `reopenArc` referred to two names
+  that were not in scope and threw.
+- `tools/vendor_icons.py` emptied the icon folder when a download failed. It
+  now retries, and replaces the set only once every icon has arrived.
+
+
 ## 2.4.1 — 2026-11-18
 
 ### Fixed

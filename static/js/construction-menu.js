@@ -55,7 +55,7 @@
     const construction = C();
     const engine = G();
     if (!construction || !engine) return null;
-    const tolerance = engine.screenDistanceToWorld(HIT_SCREEN_PX, state()?.transform);
+    const tolerance = engine.screenDistanceToWorld(engine.hitScreenPx ? engine.hitScreenPx(HIT_SCREEN_PX) : HIT_SCREEN_PX, state()?.transform);
     return construction.findPointAt(world, tolerance);
   }
 
@@ -63,7 +63,7 @@
     const construction = C();
     const engine = G();
     if (!construction || !engine) return null;
-    const tolerance = engine.screenDistanceToWorld(HIT_SCREEN_PX, state()?.transform);
+    const tolerance = engine.screenDistanceToWorld(engine.hitScreenPx ? engine.hitScreenPx(HIT_SCREEN_PX) : HIT_SCREEN_PX, state()?.transform);
     let best = null;
     let bestDistance = tolerance;
     construction.computeIntersections().forEach((point) => {

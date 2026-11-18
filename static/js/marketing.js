@@ -104,61 +104,16 @@
     });
   });
 
-  // ---------- geometry demo ----------
+  // ---------- geometry intro ----------
 
-  const demoButton = document.getElementById("demoButton");
-  let demoTimer = 0;
-
-  // The construction draws itself: circle, the three sides, the arc, the
-  // altitude, then the points (brutal.css: .is-drawing). Restarting means
-  // removing the class and forcing a style flush before adding it back.
-  function runDemo() {
-    if (!svg) return;
-    if (reduceMotion.matches) return;
-    window.clearTimeout(demoTimer);
-    svg.classList.remove("is-drawing");
-    void svg.getBoundingClientRect();
-    svg.classList.add("is-drawing");
-    demoTimer = window.setTimeout(() => svg.classList.remove("is-drawing"), 3400);
-  }
-
-  // Space is also the browser's page-down. It is only claimed on a page with
-  // nowhere to scroll — which means the shortcut is not always available, so
-  // the button only advertises it when it is genuinely live.
-  function spaceIsFree() {
-    return root.scrollHeight <= window.innerHeight + 4;
-  }
-
-  function syncDemoLabel() {
-    if (!demoButton) return;
-    demoButton.textContent = spaceIsFree() ? "Watch the demo  [space]" : "Watch the demo";
-  }
-
+  // The construction draws itself once on arrival: circle, the three sides,
+  // the arc, the altitude, then the points (brutal.css: .is-drawing). After
+  // that it is a working demo (static/js/demo-canvas.js).
   if (svg && svg.querySelector(".draw") && !reduceMotion.matches) {
-    // Play once on arrival, after the first paint so it never delays it.
-    window.requestAnimationFrame(() => window.setTimeout(runDemo, 350));
-  }
-
-  if (demoButton && svg) {
-    demoButton.addEventListener("click", runDemo);
-    syncDemoLabel();
-    window.addEventListener("resize", syncDemoLabel, { passive: true });
-
-    document.addEventListener("keydown", (event) => {
-      if (event.code !== "Space") return;
-      if (event.ctrlKey || event.metaKey || event.altKey) return;
-
-      const target = event.target;
-      const typing = target && (
-        target.isContentEditable ||
-        /^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(target.tagName || "")
-      );
-      if (typing) return;
-      if (!spaceIsFree()) return;
-
-      event.preventDefault();
-      runDemo();
-    });
+    window.requestAnimationFrame(() => window.setTimeout(() => {
+      svg.classList.add("is-drawing");
+      window.setTimeout(() => svg.classList.remove("is-drawing"), 3400);
+    }, 350));
   }
 
 })();

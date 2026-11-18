@@ -339,7 +339,7 @@
     if (!construction || !engine || !engine.isValidPoint(world)) return null;
 
     const grab = engine.screenDistanceToWorld(
-      EXTEND_GRAB_SCREEN_PX,
+      engine.hitScreenPx ? engine.hitScreenPx(EXTEND_GRAB_SCREEN_PX) : EXTEND_GRAB_SCREEN_PX,
       state()?.transform
     );
 
@@ -393,7 +393,7 @@
     if (!construction || !engine || !engine.isValidPoint(world)) return null;
 
     const tolerance = engine.screenDistanceToWorld(
-      ARC_BODY_GRAB_SCREEN_PX,
+      engine.hitScreenPx ? engine.hitScreenPx(ARC_BODY_GRAB_SCREEN_PX) : ARC_BODY_GRAB_SCREEN_PX,
       state()?.transform
     );
 
@@ -578,11 +578,14 @@
    * Reopen an arc you already drew.
    *
    * Adopting its centre, radius and colour means "carry on from that one" is a
-   * tap on the arc rather than a hunt for its endpoint — which is what made
+   * hold on the arc rather than a hunt for its endpoint (a plain press starts a
+   * new arc, so the second arc of a construction can begin on the first) — which is what made
    * short arcs so awkward, since their two ends sit inside one grab radius.
    */
   function reopenArc(path) {
-    if (!path) return false;
+    const construction = C();
+    const engine = G();
+    if (!path || !construction || !engine) return false;
     const centre = construction.center(path);
     if (!centre || !engine.isFiniteNumber(path.radius) || path.radius <= 0) return false;
 
@@ -827,14 +830,13 @@
         return true;
       }
 
-      // Missed the ends but landed on the arc itself: pick that arc back up.
-      // Only when it is not already the one in hand, so this never fights a
-      // press meant to start a fresh sweep from the current setup.
+      // Missed the ends but landed on the arc itself. A press there used to
+      // pick that arc back up at once, which is exactly where the second arc
+      // of a perpendicular bisector starts, so the student grabbed the first
+      // arc instead of drawing the second. Now a press starts a new sweep as
+      // usual, and only holding still on the old arc picks it up.
       const body = arcBodyAt(world);
-      if (body && body.gid !== compassState.lastArcGid) {
-        commitHistory();
-        if (reopenArc(body)) return true;
-      }
+      if (body && body.gid !== compassState.lastArcGid) armReopenHold(body, world, event);
     }
 
     if (compassState.phase === STATES.SELECT_CENTER || !compassState.centerPointId) {
@@ -884,12 +886,59 @@
     return true;
   }
 
+  // ---------- hold to pick an arc back up ----------
+
+  const REOPEN_HOLD_MS = 450;
+
+  function clearReopenHold() {
+    if (compassState.reopenHold?.timer) window.clearTimeout(compassState.reopenHold.timer);
+    compassState.reopenHold = null;
+  }
+
+  function armReopenHold(body, world, event) {
+    clearReopenHold();
+    const engine = G();
+    const hold = { gid: body.gid, at: { x: world.x, y: world.y }, slop: engine.dragSlopPx ? engine.dragSlopPx(event) : DRAG_SLOP_PX };
+    hold.timer = window.setTimeout(() => {
+      if (compassState.reopenHold !== hold) return;
+      compassState.reopenHold = null;
+      // Abandon the sweep the press started, then pick the old arc up.
+      compassState.phase = STATES.READY;
+      compassState.pendingDown = null;
+      compassState.tapSweep = false;
+      compassState.startAngle = null;
+      compassState.sweepAccum = 0;
+      compassState.lastAngle = null;
+      const path = C()?.get?.(hold.gid);
+      if (!path || !reopenArc(path)) return;
+      if (navigator.vibrate) {
+        try { navigator.vibrate(12); } catch (_) { /* not allowed */ }
+      }
+      // The finger is still down: carry straight on into a sweep from here,
+      // so hold-then-drag draws the next arc without lifting.
+      const engine = G();
+      compassState.startAngle = engine.angleOf(compassState.center, hold.at);
+      compassState.endAngle = compassState.startAngle;
+      compassState.lastAngle = compassState.startAngle;
+      compassState.sweepAccum = 0;
+      compassState.pendingDown = { x: hold.at.x, y: hold.at.y };
+      compassState.phase = STATES.SWEEPING;
+      setStatus("Picked that arc back up. Drag to carry it on.");
+      render();
+    }, REOPEN_HOLD_MS);
+    compassState.reopenHold = hold;
+  }
+
   function handleMove(event) {
     const engine = G();
     if (!engine) return false;
 
     const world = worldFromEvent(event);
     compassState.cursor = world;
+
+    // Moving off the press means a new arc, not picking the old one up.
+    const hold = compassState.reopenHold;
+    if (hold && engine.distance(hold.at, world) * transform().scale > hold.slop) clearReopenHold();
 
     if (compassState.phase === STATES.EXTENDING) {
       applyExtend(world);
@@ -1011,6 +1060,7 @@
     const engine = G();
     const construction = C();
     if (!engine || !construction) return false;
+    clearReopenHold();
 
     // A drag-started extension finishes on release; a menu-armed one waits
     // for a click instead, so it is left alone here.
@@ -1040,12 +1090,22 @@
         return true;
       }
 
-      commitHistory();
       compassState.radius = radius;
       compassState.radiusFromId = compassState.centerPointId;
       compassState.radiusToId = existing ? existing.gid : null;
       if (existing) compassState.selectedPointId = existing.gid;
       compassState.phase = STATES.READY;
+
+      // In circle mode the drag from the centre IS the circle: press, drag,
+      // lift, done. It used to need a further press and release, which nobody
+      // expects of a "circle". One history step, so one Undo removes it.
+      if (compassState.mode === "circle") {
+        compassState.startAngle = engine.angleOf(compassState.center, target);
+        compassState.sweepAccum = 0;
+        return commitSweep(target);
+      }
+
+      commitHistory();
       refreshIntersections();
       syncPanel();
       save();
@@ -1064,7 +1124,8 @@
     // drag would make arcs hard to place on the tablets this app targets.
     // The first tap anchors the arc's start and stays in SWEEPING; the second
     // tap (handled in handleDown) sets the end and commits.
-    if (moved < DRAG_SLOP_PX && compassState.mode !== "circle" && !compassState.tapSweep) {
+    const slop = engine.dragSlopPx ? engine.dragSlopPx(event) : DRAG_SLOP_PX;
+    if (moved < slop && compassState.mode !== "circle" && !compassState.tapSweep) {
       compassState.tapSweep = true;
       compassState.pendingDown = null;
       setStatus("Now tap where the arc should end.");
@@ -1117,6 +1178,8 @@
               mode: compassState.mode,
               color: compassState.color,
               sweeping: compassState.phase === STATES.SWEEPING,
+              measuring: !!compassState.measuring,
+              radiusText: formatLength(compassState.radius),
               // preview the arc that would actually be committed, including
               // its direction, so what you see is what you get
               ...(compassState.phase === STATES.SWEEPING

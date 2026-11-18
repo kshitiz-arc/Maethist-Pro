@@ -604,7 +604,7 @@
 
     const transform = options.transform || state()?.transform || { scale: 1, offsetX: 0, offsetY: 0 };
     const threshold = engine.screenDistanceToWorld(
-      options.screenDistance ?? SNAP_SCREEN_DISTANCE,
+      options.screenDistance ?? (G()?.hitScreenPx ? G().hitScreenPx(SNAP_SCREEN_DISTANCE) : SNAP_SCREEN_DISTANCE),
       transform
     );
 

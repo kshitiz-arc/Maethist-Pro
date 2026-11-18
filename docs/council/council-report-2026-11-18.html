@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tool UX Council</title>
+<style>
+  :root { --ink:#1b1d24; --ink2:#5b6070; --line:#e3e5ea; --bg:#ffffff; --soft:#f6f7f9; --agree:#e7f6ec; --clash:#fdf1e3; --blind:#eef1fd; --accent:#3155e8; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 56px; }
+  h1 { font-size: 1.7rem; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-size: 1.15rem; margin: 28px 0 10px; }
+  .q { color: var(--ink2); margin: 0 0 22px; }
+  .verdict { border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; background: var(--soft); }
+  .verdict h2:first-child { margin-top: 0; }
+  .box { border-radius: 12px; padding: 12px 16px; margin: 10px 0; }
+  .agree { background: var(--agree); } .clash { background: var(--clash); } .blind { background: var(--blind); }
+  ol, ul { padding-left: 22px; margin: 6px 0; }
+  li { margin: 3px 0; }
+  .first { border-left: 4px solid var(--accent); padding: 10px 14px; background: #fff; border-radius: 6px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.92rem; margin: 8px 0; }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--soft); }
+  .y { color: #127a3a; font-weight: 700; } .n { color: #b42318; font-weight: 700; } .m { color: #8a5a00; font-weight: 700; }
+  details { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; margin: 8px 0; }
+  summary { cursor: pointer; font-weight: 600; }
+  .done { display:inline-block; font-size:0.78rem; padding:1px 8px; border-radius:999px; background:#127a3a; color:#fff; margin-left:6px; }
+  footer { margin-top: 36px; color: var(--ink2); font-size: 0.85rem; border-top: 1px solid var(--line); padding-top: 12px; }
+  .scroll { overflow-x: auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>LLM Council: tool UX for MAETHIST</h1>
+  <p class="q">What are the highest-impact UX improvements to circle construction (the compass) and angle measurement, and to the tool system generally, that a student on a cheap tablet would feel immediately? And what should not be built?</p>
+
+  <section class="verdict">
+    <h2>Chairman's verdict</h2>
+    <div class="box agree"><strong>Where the council agrees.</strong> The tools are tuned for a mouse on a product built for fingers. Hit radii of 10–14px and a 4px tap-or-drag threshold, with nothing reading <code>pointerType</code>. Angles should be measurable from three tapped points, as in angle ABC. The compass takes too many steps. Readings belong next to the finger, not in a side panel. Do not build an on-canvas protractor or compass skin.</div>
+    <div class="box clash"><strong>Where it clashes.</strong> Order of work: the Expansionist wanted new flows first (a constructions menu, linked live measures), while the others said fix touch first. Touch wins. Radius snapping, lock-on-dwell or keep-the-last-radius: snapping with an off switch first. Reopening an arc: a long-press.</div>
+    <div class="box blind"><strong>Blind spots caught in review.</strong> <code>createAngle</code> folds anything over 180° to the minor angle. <code>directionFrom</code> ignored where you tapped, so the mark could land on the wrong corner. The reading was overwritten in the same tap. Pen ink was rejected without a reason. 59.9° showed for a constructed 60°. Missed by everyone: a maths-correctness test set, palm rejection, typed entry and screen-reader output for readings, and testing on real hardware with students.</div>
+    <h2>The recommendation, and what was built</h2>
+    <ol>
+      <li>Hit targets that scale with the input: about 1.8× for touch, 1.3× for a pen. <span class="done">built</span></li>
+      <li>A tap-or-drag threshold of 10px for a finger, 6px for a pen, 4px for a mouse. <span class="done">built</span></li>
+      <li>The angle reading stays on screen. <span class="done">built</span></li>
+      <li>Flip any mark to its reflex angle and back. <span class="done">built</span></li>
+      <li>Three-tap angles (arm, corner, arm) that work on ink, PDFs and pictures, with a live reading. <span class="done">built</span></li>
+      <li>The mark goes on the corner that was tapped. <span class="done">built</span></li>
+      <li>Circle mode draws the circle when the radius drag is released, as one undo step. <span class="done">built</span></li>
+      <li>The radius readout sits on the compass opening. <span class="done">built</span></li>
+      <li>Hold to pick up an old arc, so a plain press starts a new one. <span class="done">built</span></li>
+      <li>Whole degrees when within 0.05°. <span class="done">built</span></li>
+      <li>"Tap", not "Click". <span class="done">built</span></li>
+      <li>One undo per circle. <span class="done">built</span></li>
+      <li>Regression tests for each fix (tests/test_touch_geometry.py, 10 tests). <span class="done">built</span></li>
+      <li>Radius snapping to whole cm/mm with an off switch. Not yet built.</li>
+    </ol>
+    <p><strong>Do not build:</strong> a protractor or compass image, gesture-recognised constructions, 5° angle snapping, more construction-menu options, more arc colours, a CAS or 3D, cm calibration, decorative animation.</p>
+    <p class="first">The one thing to do first: touch-aware hit sizes and tap threshold. Every other fix depends on taps registering correctly. This is done.</p>
+  </section>
+
+  <h2>Where each advisor stood</h2>
+  <div class="scroll">
+  <table>
+    <tr><th>Point</th><th>Contrarian</th><th>First Principles</th><th>Expansionist</th><th>Outsider</th><th>Executor</th></tr>
+    <tr><td>Touch tolerances first</td><td class="y">yes</td><td class="y">yes</td><td class="n">later</td><td class="m">implied</td><td class="y">yes, #1</td></tr>
+    <tr><td>Three-point angles</td><td class="y">yes</td><td class="y">#1</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td>Choose or flip the angle</td><td class="y">tap side</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td><td class="m">—</td></tr>
+    <tr><td>Fewer compass steps</td><td class="m">—</td><td class="y">yes</td><td class="y">one gesture</td><td class="y">yes</td><td class="m">—</td></tr>
+    <tr><td>Readout at the finger</td><td class="m">—</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td><td class="y">yes</td></tr>
+    <tr><td>New flows (menu, linked measures)</td><td class="n">no</td><td class="n">no</td><td class="y">yes</td><td class="n">no</td><td class="n">not yet</td></tr>
+  </table>
+  </div>
+
+  <h2>Advisor responses</h2>
+  <details><summary>The Contrarian</summary><p>Gesture conflicts and mouse-sized tolerances are the real risk. DRAG_SLOP_PX = 4 turns finger taps into tiny arcs. lineAt computed pickedAt and never used it, so the mark landed on the wrong corner of an X. In READY, a press on an old arc reopened it, which is exactly where the second arc of a bisector starts. 59.9° for a constructed 60°. The radius locked where the finger lifted. There was no three-point angle. Don't build a compass graphic, more snap types, gesture shortcuts or cm calibration. Add touch-jitter tests first.</p></details>
+  <details><summary>The First Principles Thinker</summary><p>The student wants an exact circle and an angle they can read; the code copies physical instruments as multi-step state machines. Measure from three points. Let the student choose which of the four angles they mean, since createAngle folds over 180°. Make the compass targets bigger and snap the radius to whole units. Draw on release in circle mode. Require a long-press before re-editing an arc.</p></details>
+  <details><summary>The Expansionist</summary><p>The engine is better than the experience. A one-gesture compass that keeps its radius gives bisectors and equilateral triangles for free. Three-tap angles with a live value. Live linked measures, because angle marks already store sourceIds. A constructions quick-menu that replays the real steps. A reflex toggle. Upside: construction replay, or a "proof strip" in the PDF export.</p></details>
+  <details><summary>The Outsider</summary><p>The reading vanishes as soon as it appears. Hand-drawn lines are ignored without a reason. The JS says "Click" and the HTML says "Tap". The corner is picked for me. The compass takes three steps where I expect one. Show the radius next to my finger. Don't add arc colours, point renaming in the compass panel, or hints behind a "?".</p></details>
+  <details><summary>The Executor</summary><p>Every hit tolerance is a pixel constant and nothing checks pointerType. One helper and six constant swaps improve every tool at once. Then three-point angles (about 120 lines), a live angle preview, a radius readout while dragging, and one undo per arc. Don't build a skin, gesture recognition or 5° snapping.</p></details>
+
+  <h2>Peer review highlights</h2>
+  <details><summary>Show the five reviews</summary>
+    <ul>
+      <li><strong>General:</strong> First Principles was strongest. The Expansionist's blind spot was features before basics. Everyone missed hardware testing, palm rejection and curriculum precision.</li>
+      <li><strong>Teacher:</strong> First Principles was strongest because it caught the maths error. The Executor treated teaching as engineering. Everyone missed teacher workflow (projecting, setting tasks, export) and a correctness test set.</li>
+      <li><strong>Accessibility:</strong> The Executor was strongest. The Expansionist ignored finger occlusion and motor load. Everyone missed keyboard and typed entry, an ARIA live region, colour-only cues and timing settings.</li>
+      <li><strong>Regression engineer:</strong> First Principles was strongest. The Expansionist added regression risk. Everyone missed a verification plan and saved-file compatibility.</li>
+      <li><strong>Student:</strong> The Outsider was strongest. The Executor was developer-centric. Everyone missed a first-run worked example and homework and exam use.</li>
+    </ul>
+  </details>
+
+  <footer>Council run 2026-11-18 on MAETHIST 2.4.1: five advisors, five anonymised peer reviews and a chairman synthesis. The full transcript is in council-transcript-2026-11-18.md.</footer>
+</main>
+</body>
+</html>

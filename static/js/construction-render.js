@@ -126,6 +126,10 @@
     let degrees = (radians * 180) / Math.PI;
     if (!Number.isFinite(degrees)) return "";
     degrees = Math.abs(degrees) % 360;
+    // A constructed 60 degrees reads 60, not 59.9: float noise below 0.05 of
+    // a whole degree is not a measurement a student should have to doubt.
+    const whole = Math.round(degrees);
+    if (Math.abs(degrees - whole) < 0.05) return whole + "°";
     return degrees.toFixed(1) + "°";
   }
 
@@ -391,6 +395,18 @@
     ctx.fillStyle = accent;
     ctx.fill();
     ctx.restore();
+
+    // The radius, on the opening itself while it is being set: the panel
+    // that used to be the only place it showed is shut on a tablet, and the
+    // finger is covering the pencil end anyway.
+    if (preview.radiusText && (preview.measuring || !preview.sweeping)) {
+      const mid = { x: (center.x + tip.x) / 2, y: (center.y + tip.y) / 2 };
+      const normal = angle - Math.PI / 2;
+      drawLabel(ctx, "r = " + preview.radiusText, {
+        x: mid.x + Math.cos(normal) * px(16),
+        y: mid.y + Math.sin(normal) * px(16)
+      }, colors, 0);
+    }
   }
 
   function drawSelection(ctx, point, colors) {
@@ -400,6 +416,51 @@
     ctx.beginPath();
     ctx.arc(point.x, point.y, px(7), 0, Math.PI * 2);
     ctx.stroke();
+    ctx.restore();
+  }
+
+  // Three-point mode and the live reading: the taps so far, a guide to the
+  // pointer, and the angle it would make, drawn at the mark's own radius.
+  function drawAngleAim(ctx, overlay, colors) {
+    const engine = G();
+    if (!engine) return;
+    const taps = overlay.taps || [];
+    ctx.save();
+    setStroke(ctx, colors.accent, 2.4);
+    if (taps.length) {
+      ctx.setLineDash([px(6), px(5)]);
+      ctx.beginPath();
+      if (taps.length === 1 && overlay.hover) {
+        ctx.moveTo(taps[0].x, taps[0].y);
+        ctx.lineTo(overlay.hover.x, overlay.hover.y);
+      } else if (taps.length === 2) {
+        ctx.moveTo(taps[0].x, taps[0].y);
+        ctx.lineTo(taps[1].x, taps[1].y);
+        if (overlay.hover) ctx.lineTo(overlay.hover.x, overlay.hover.y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      taps.forEach((point, index) => {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, px(index === 1 ? 6.5 : 5), 0, Math.PI * 2);
+        ctx.fillStyle = index === 1 ? colors.accent : (colors.surface || colors.halo);
+        ctx.fill();
+        ctx.stroke();
+      });
+    }
+    const p = overlay.preview;
+    if (p && p.vertex) {
+      const radius = overlay.markRadius || px(34);
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath();
+      ctx.arc(p.vertex.x, p.vertex.y, radius, p.start, p.end, false);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      // The reading sits by the pointer, where the eye already is, rather
+      // than in a panel the finger is covering or the tablet has shut.
+      const at = overlay.hover || engine.pointOnCircleAt(p.vertex, radius + px(18), p.start + engine.arcSweep(p.start, p.end) / 2);
+      drawLabel(ctx, p.text, { x: at.x + px(22), y: at.y - px(22) }, colors, 0);
+    }
     ctx.restore();
   }
 
@@ -474,6 +535,7 @@
     if (overlay?.preview) drawCompassPreview(ctx, overlay.preview, colors);
     if (overlay?.selected) drawSelection(ctx, overlay.selected, colors);
     if (angleOverlay?.firstPicked) drawPickedAngleSide(ctx, angleOverlay.firstPicked, colors);
+    if (angleOverlay) drawAngleAim(ctx, angleOverlay, colors);
     if (snap) drawSnapIndicator(ctx, snap, colors);
   }
 
@@ -484,5 +546,5 @@
     drawLabel(ctx, text, position, palette(), offsetPx);
   }
 
-  window.Inkyscib.ConstructionRender = { drawPath, drawOverlay, palette, drawLabelAt };
+  window.Inkyscib.ConstructionRender = { drawPath, drawOverlay, palette, drawLabelAt, formatDegrees };
 })();

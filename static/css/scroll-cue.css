@@ -1,0 +1,82 @@
+/* "There is more" (static/js/scroll-cue.js): a More chip and edge fades on
+ * every panel that scrolls, so options below the fold are visible as options. */
+
+.sc-scroller {
+  --sc-fade: 26px;
+  scroll-behavior: auto;
+}
+
+/* Fades at whichever edge has content past it. A mask, not an overlay, so it
+   takes no colour and suits every surface in both themes. */
+.sc-scroller.sc-below:not(.sc-above) {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--sc-fade)), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--sc-fade)), transparent);
+}
+.sc-scroller.sc-above:not(.sc-below) {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 var(--sc-fade));
+  mask-image: linear-gradient(to bottom, transparent, #000 var(--sc-fade));
+}
+.sc-scroller.sc-above.sc-below {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 var(--sc-fade), #000 calc(100% - var(--sc-fade)), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 var(--sc-fade), #000 calc(100% - var(--sc-fade)), transparent);
+}
+
+/* The chip sits at the bottom of the visible part of the panel. Sticky inside
+   the scroller, with a negative margin so it adds no height of its own. */
+.sc-cue {
+  position: sticky;
+  bottom: 8px;
+  z-index: 5;
+  display: flex;
+  /* In the corner, where it covers least of the controls it points past. */
+  justify-content: flex-end;
+  padding-right: 10px;
+  height: 0;
+  margin: 0;
+  pointer-events: none;
+}
+.sc-cue[hidden] { display: none; }
+
+.sc-more {
+  position: relative;
+  top: -54px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  /* 46, not 44: sub-pixel layout rounds a 44px chip to 43.99 on some zooms. */
+  min-height: 46px;
+  min-width: 46px;
+  padding: 0 14px 0 10px;
+  border: 2px solid #111111;
+  border-radius: 999px;
+  background: var(--brand-yellow, #FFD23F);
+  color: #111111;
+  box-shadow: 3px 3px 0 #111111;
+  font: 800 0.8rem / 1 var(--display, system-ui);
+  cursor: pointer;
+  pointer-events: auto;
+  /* The chip itself is never faded by the scroller's mask. */
+  -webkit-mask-image: none;
+  mask-image: none;
+  animation: scNudge 1.6s var(--ease-in-out, ease-in-out) 2;
+}
+.sc-more:hover { transform: translateY(-1px); box-shadow: 4px 4px 0 #111111; }
+.sc-more:active { transform: translateY(2px); box-shadow: 1px 1px 0 #111111; }
+.sc-more:focus-visible { outline: 3px solid var(--brand-blue, #5CC8FF); outline-offset: 2px; }
+.sc-arrow { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+@keyframes scNudge { 50% { transform: translateY(3px); } }
+
+/* A real, visible scrollbar on touch screens too: thin overlay bars that only
+   show mid-scroll were the reason nobody knew to scroll. */
+.sc-scroller { scrollbar-width: thin; scrollbar-color: var(--ui-line, rgba(127, 127, 127, 0.6)) transparent; }
+.sc-scroller::-webkit-scrollbar { width: 8px; }
+.sc-scroller::-webkit-scrollbar-track { background: transparent; }
+.sc-scroller::-webkit-scrollbar-thumb { background: var(--ui-line, rgba(127, 127, 127, 0.6)); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+@media (pointer: coarse) {
+  .sc-scroller::-webkit-scrollbar { width: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-more { animation: none; }
+  .sc-more:hover, .sc-more:active { transform: none; }
+}
