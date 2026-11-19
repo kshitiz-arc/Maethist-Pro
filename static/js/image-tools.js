@@ -17,13 +17,44 @@
   const MEDIA = new Set(["youtube-frame", "image"]);
   const PRESETS = {
     original: { label: "Original", values: {} },
-    scan: { label: "Scan", values: { grayscale: 1, contrast: 1.6, brightness: 1.12 } },
-    board: { label: "Board to paper", values: { invert: 1, grayscale: 1, contrast: 1.35, brightness: 1.04 } },
+    // The council's first pick for photos of notes: even light, levels, a
+    // little sharpening, then grey. It used to be contrast and brightness only,
+    // which brightened the shadow along with the paper.
+    scan: { label: "Clean scan", values: { clean: true, autoLevels: true, sharpen: 0.45, grayscale: 1, contrast: 1.1 } },
+    board: { label: "Board to paper", values: { invert: 1, grayscale: 1, contrast: 1.35, brightness: 1.04, sharpen: 0.3 } },
+    ink: { label: "Ink only", values: { clean: true, threshold: 0.45, clearPaper: 0.5 } },
     mono: { label: "Mono", values: { grayscale: 1 } },
     vivid: { label: "Vivid", values: { saturate: 1.45, contrast: 1.12 } },
     warm: { label: "Warm", values: { sepia: 0.28, saturate: 1.15 } }
   };
-  const FILTER_KEYS = ["brightness", "contrast", "saturate", "grayscale", "invert", "sepia"];
+  const FILTER_KEYS = ["brightness", "contrast", "saturate", "grayscale", "invert", "sepia", "hue",
+    "clean", "autoLevels", "sharpen", "threshold", "clearPaper", "blur"];
+  // Every slider in the sheet: key, label, range, the value that means "no
+  // change", how its reading is written, and the section it sits in.
+  const SLIDERS = [
+    ["brightness", "Brightness", 0.5, 1.5, 0.01, 1, "%", "light"],
+    ["contrast", "Contrast", 0.5, 2, 0.01, 1, "%", "light"],
+    ["saturate", "Saturation", 0, 2, 0.01, 1, "%", "light"],
+    ["hue", "Hue", -180, 180, 1, 0, "deg", "light"],
+    ["blur", "Blur", 0, 20, 0.1, 0, "", "light"],
+    ["opacity", "Opacity", 0.2, 1, 0.01, 1, "%", "light"],
+    ["fade", "Fade", 0, 0.9, 0.01, 0, "%", "bg"],
+    ["sharpen", "Sharpen", 0, 2, 0.05, 0, "%", "clean"],
+    ["threshold", "Black and white", 0, 1, 0.01, 0, "%", "clean"],
+    ["clearPaper", "Clear the paper", 0, 1, 0.01, 0, "%", "clean"],
+    ["straighten", "Straighten", -15, 15, 0.1, 0, "deg", "clean"]
+  ];
+  const NEUTRAL = Object.fromEntries(SLIDERS.map((row) => [row[0], row[5]]));
+  const TOGGLES = [["clean", "Even out light"], ["autoLevels", "Auto levels"]];
+  const FITS = [{ id: "cover", label: "Fill" }, { id: "contain", label: "Fit" }, { id: "tile", label: "Tile" }];
+
+  function formatValue(key, value) {
+    const row = SLIDERS.find((r) => r[0] === key);
+    if (!row) return String(value);
+    if (row[6] === "%") return Math.round(value * 100) + "%";
+    if (row[6] === "deg") return (value > 0 ? "+" : "") + (Math.round(value * 10) / 10) + "\u00b0";
+    return value ? String(Math.round(value * 10) / 10) : "Off";
+  }
   const BACKDROPS = [
     { id: "auto", label: "Theme" },
     { id: "paper", label: "Paper" },
@@ -246,7 +277,29 @@
         notify("That image could not be saved", "error");
       }
     },
-    edit() { openSheet(); }
+    edit() { openSheet(); },
+    // Read the picture with Image to text. It is sent at most 1600px on its
+    // long side (a 4K frame is several megabytes and reads no better), and a
+    // video frame starts on Text, a picture on Equation; the sheet switches.
+    toText() {
+      const found = selectedMedia();
+      const Ocr = window.Inkyscib?.Ocr;
+      if (!found || !Ocr) return;
+      const source = found.path.image;
+      const img = new Image();
+      img.onload = () => {
+        const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(img.naturalWidth * k));
+        c.height = Math.max(1, Math.round(img.naturalHeight * k));
+        const g = c.getContext("2d");
+        g.fillStyle = "#ffffff";
+        g.fillRect(0, 0, c.width, c.height);
+        g.drawImage(img, 0, 0, c.width, c.height);
+        Ocr.convertImage(c.toDataURL("image/jpeg", 0.92), found.path.tool === "youtube-frame" ? "text" : "math");
+      };
+      img.src = typeof source === "string" ? source : source?.src || "";
+    }
   };
 
   // The edited picture at its own resolution, for Save image.
@@ -308,6 +361,7 @@
       <button type="button" role="menuitem" data-act="toFront">${icon("lucide:bring-to-front")}<span>Bring to front</span></button>
       <button type="button" role="menuitem" data-act="toBack">${icon("lucide:send-to-back")}<span>Send behind ink</span></button>
       <button type="button" role="menuitem" data-act="toggleBadge" data-only="youtube-frame">${icon("lucide:eye-off")}<span class="img-badge-label">Hide the timestamp</span></button>
+      <button type="button" role="menuitem" data-act="toText">${icon("lucide:scan-text")}<span>Convert to text</span></button>
       <button type="button" role="menuitem" data-act="download">${icon("lucide:download")}<span>Save image</span></button>
       <button type="button" role="menuitem" data-act="reset">${icon("lucide:rotate-ccw")}<span>Reset all edits</span></button>`;
     document.body.append(bar, more);
@@ -484,11 +538,21 @@
           <div class="img-presets" role="group" aria-label="Looks">
             ${Object.entries(PRESETS).map(([id, p]) => `<button type="button" class="img-chip" data-preset="${id}">${p.label}</button>`).join("")}
           </div>
+          <div class="img-group img-bg-only" role="group" aria-label="Picture size">
+            <span class="img-group-label">Picture</span>
+            ${FITS.map((f) => `<button type="button" class="img-chip img-chip-sm" data-fit="${f.id}">${f.label}</button>`).join("")}
+            <label class="img-check"><input type="checkbox" data-grid> Grid over it</label>
+          </div>
+          <p class="img-section">Light and colour</p>
           <div class="img-sliders">
-            ${slider("brightness", "Brightness", 0.5, 1.5, 0.01)}
-            ${slider("contrast", "Contrast", 0.5, 2, 0.01)}
-            ${slider("saturate", "Colour", 0, 2, 0.01)}
-            ${slider("opacity", "Opacity", 0.2, 1, 0.01)}
+            ${SLIDERS.filter((r) => r[7] === "light" || r[7] === "bg").map((r) => slider(...r)).join("")}
+          </div>
+          <p class="img-section">Clean up</p>
+          <div class="img-toggles" role="group" aria-label="Clean up">
+            ${TOGGLES.map(([key, label]) => `<button type="button" class="img-chip" data-toggle="${key}" aria-pressed="false">${label}</button>`).join("")}
+          </div>
+          <div class="img-sliders">
+            ${SLIDERS.filter((r) => r[7] === "clean").map((r) => slider(...r)).join("")}
           </div>
           <div class="img-row">
             <div class="img-group" role="group" aria-label="Turn">
@@ -512,6 +576,7 @@
         </div>
         <div class="img-sheet-foot">
           <button type="button" class="img-ghost" data-sheet="reset">${icon("lucide:rotate-ccw")}<span>Reset</span></button>
+          <button type="button" class="img-ghost img-compare" data-compare aria-label="Hold to see the original">${icon("lucide:eye")}<span>Hold to compare</span></button>
           <span class="img-gap"></span>
           <button type="button" class="img-ghost" data-sheet="cancel">Cancel</button>
           <button type="button" class="img-apply" data-sheet="apply">${icon("lucide:check")}<span>Apply</span></button>
@@ -525,6 +590,16 @@
       if (!t) return;
       if (t.dataset.view) setView(t.dataset.view);
       else if (t.dataset.preset) applyPreset(t.dataset.preset);
+      else if (t.dataset.toggle) {
+        draft[t.dataset.toggle] = !draft[t.dataset.toggle];
+        sheet.querySelectorAll("[data-preset]").forEach((b) => b.setAttribute("aria-pressed", "false"));
+        syncSheet();
+        drawPreview();
+      } else if (t.dataset.fit) {
+        draft.fit = t.dataset.fit;
+        syncSheet();
+        drawPreview();
+      }
       else if (t.dataset.turn) {
         draft.rotate = (((draft.rotate || 0) + 90 * Number(t.dataset.turn)) % 360 + 360) % 360;
         drawPreview();
@@ -552,9 +627,12 @@
       const input = event.target.closest("[data-slider]");
       if (input) {
         draft[input.dataset.slider] = Number(input.value);
-        sheet.querySelector(`[data-out="${input.dataset.slider}"]`).textContent = Math.round(Number(input.value) * 100) + "%";
+        sheet.querySelector(`[data-out="${input.dataset.slider}"]`).textContent = formatValue(input.dataset.slider, Number(input.value));
         sheet.querySelectorAll("[data-preset]").forEach((b) => b.setAttribute("aria-pressed", "false"));
         drawPreview();
+      }
+      if (event.target.matches("[data-grid]")) {
+        draft.grid = event.target.checked;
       }
       if (event.target.matches("[data-badge]")) {
         draftHideBadge = !event.target.checked;
@@ -571,11 +649,21 @@
     ["pointerdown", "mousedown", "touchstart", "wheel"].forEach((type) =>
       sheet.addEventListener(type, (event) => event.stopPropagation(), { passive: type !== "pointerdown" }));
     bindCrop();
+    // Hold to compare: the original while the button is held.
+    const compare = sheet.querySelector("[data-compare]");
+    const showOriginal = (on) => { comparing = on; compare.classList.toggle("is-held", on); drawPreview(); };
+    compare.addEventListener("pointerdown", (event) => { event.preventDefault(); showOriginal(true); });
+    ["pointerup", "pointerleave", "pointercancel"].forEach((type) =>
+      compare.addEventListener(type, () => { if (comparing) showOriginal(false); }));
+    compare.addEventListener("keydown", (event) => { if (event.key === " " && !comparing) { event.preventDefault(); showOriginal(true); } });
+    compare.addEventListener("keyup", (event) => { if (event.key === " ") showOriginal(false); });
   }
 
-  function slider(key, label, min, max, step) {
-    return `<label class="img-slider"><span>${label} <output data-out="${key}">100%</output></span>
-      <input type="range" data-slider="${key}" min="${min}" max="${max}" step="${step}" value="1"></label>`;
+  let comparing = false;
+
+  function slider(key, label, min, max, step, neutral = 1, _unit = "%", group = "") {
+    return `<label class="img-slider${group === "bg" ? " img-bg-only" : ""}"><span>${label} <output data-out="${key}">${formatValue(key, neutral)}</output></span>
+      <input type="range" data-slider="${key}" min="${min}" max="${max}" step="${step}" value="${neutral}"></label>`;
   }
 
   function trapFocus(event) {
@@ -599,14 +687,21 @@
   }
 
   function syncSheet() {
-    ["brightness", "contrast", "saturate", "opacity"].forEach((key) => {
-      const value = draft[key] ?? 1;
+    SLIDERS.forEach(([key, , , , , neutral]) => {
+      const value = Number.isFinite(Number(draft[key])) ? Number(draft[key]) : neutral;
       const input = sheet.querySelector(`[data-slider="${key}"]`);
       input.value = value;
-      sheet.querySelector(`[data-out="${key}"]`).textContent = Math.round(value * 100) + "%";
+      sheet.querySelector(`[data-out="${key}"]`).textContent = formatValue(key, value);
     });
+    TOGGLES.forEach(([key]) => sheet.querySelector(`[data-toggle="${key}"]`).setAttribute("aria-pressed", String(!!draft[key])));
     const isFrame = editing?.path.tool === "youtube-frame";
+    const isBackground = editing?.kind === "background";
     sheet.querySelectorAll(".img-frame-only").forEach((el) => { el.hidden = !isFrame; });
+    sheet.querySelectorAll(".img-bg-only").forEach((el) => { el.hidden = !isBackground; });
+    sheet.querySelector("#imgSheetTitle").textContent = isBackground ? "Edit the background picture" : "Edit image";
+    sheet.querySelectorAll("[data-fit]").forEach((b) => b.setAttribute("aria-pressed", String((draft.fit || "cover") === b.dataset.fit)));
+    const grid = sheet.querySelector("[data-grid]");
+    if (grid) grid.checked = !!draft.grid;
     sheet.querySelectorAll("[data-backdrop]").forEach((b) =>
       b.setAttribute("aria-pressed", String((draft.backdrop || "auto") === b.dataset.backdrop)));
     const badge = sheet.querySelector("[data-badge]");
@@ -643,8 +738,8 @@
     ctx.clearRect(0, 0, cssW, cssH);
     const pad = 16;
     const shown = view === "crop"
-      ? { ...draft, crop: null, rotate: 0, flipX: false, flipY: false }
-      : draft;
+      ? { ...draft, crop: null, rotate: 0, flipX: false, flipY: false, straighten: 0 }
+      : comparing ? {} : draft;
     const sw = sourceImage.naturalWidth;
     const sh = sourceImage.naturalHeight;
     const crop = shown.crop || { x: 0, y: 0, w: 1, h: 1 };
@@ -668,6 +763,13 @@
       }
     }
     window.Inkyscib.MediaDraw.draw(ctx, sourceImage, x, y, w, h, shown);
+    if (editing?.kind === "background" && !comparing && Number(draft.fade) > 0.001 && view !== "crop") {
+      ctx.save();
+      ctx.globalAlpha = Math.min(0.9, Number(draft.fade));
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--canvas-ground").trim() || "#0A0D12";
+      ctx.fillRect(x, y, w, h);
+      ctx.restore();
+    }
   }
 
   // ---------- crop ----------
@@ -796,11 +898,16 @@
 
   let returnFocus = null;
 
-  function openSheet() {
-    const found = selectedMedia();
+  // target, when given, edits something that is not a selected picture (the
+  // picture background): { kind, image, edit, apply(edit) }.
+  function openSheet(target) {
+    const found = target && target.image
+      ? { path: { tool: "image", image: target.image, edit: target.edit || {} }, kind: target.kind, apply: target.apply }
+      : selectedMedia();
     if (!found) return;
     if (!sheet) buildSheet();
     editing = found;
+    comparing = false;
     draft = editOf(found.path);
     draftHideBadge = !!found.path.hideBadge;
     aspectId = "free";
@@ -826,8 +933,13 @@
       const edit = { ...draft, crop: draft.crop ? { ...draft.crop } : null };
       Object.keys(edit).forEach((k) => {
         if (edit[k] === undefined || edit[k] === null || edit[k] === false) delete edit[k];
-        else if (["brightness", "contrast", "saturate", "opacity"].includes(k) && Math.abs(edit[k] - 1) < 0.005) delete edit[k];
+        else if (k in NEUTRAL && Math.abs(edit[k] - NEUTRAL[k]) < 0.005) delete edit[k];
       });
+      if (typeof editing.apply === "function") {
+        editing.apply(edit);
+        editing = null;
+        return;
+      }
       const before = editOf(editing.path);
       const turned = (edit.rotate || 0) !== (before.rotate || 0);
       update((next) => {

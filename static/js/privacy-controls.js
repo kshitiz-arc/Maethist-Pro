@@ -15,7 +15,9 @@
   // at version 2 with the `records` and `documents` object stores. Read from
   // the code and confirmed against a live page rather than guessed -- a wrong
   // name here reaches the privacy policy, which is a representation.
-  var KNOWN_DATABASES = ["inkyscib_cache"];
+  // inkyscib_background (canvas-picture.js, 2.7.0) holds a picture chosen as
+  // the canvas background.
+  var KNOWN_DATABASES = ["inkyscib_cache", "inkyscib_background"];
 
   function listDatabases() {
     if (window.indexedDB && window.indexedDB.databases) {

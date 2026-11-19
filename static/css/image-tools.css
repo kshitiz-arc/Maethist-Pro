@@ -307,3 +307,15 @@
 /* The card scrolls when the screen is short; its sections never shrink into
    each other (the crop hint used to sit on top of Apply). */
 .img-sheet-card > * { flex-shrink: 0; }
+
+/* ---------- more edits (2.7.0) ---------- */
+/* Two sections of sliders now, so the Adjust panel scrolls on its own and
+   the preview and the Apply row stay put on a short tablet screen. */
+.img-panel[data-panel="adjust"] { max-height: min(40vh, 360px); overflow-y: auto; padding-right: 4px; overscroll-behavior: contain; }
+.img-section { margin: 4px 0 -4px; color: var(--ink-2); font: 700 var(--t-1) / 1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; }
+.img-toggles { display: flex; flex-wrap: wrap; gap: 6px; }
+.img-chip[aria-pressed="true"] { background: var(--brand-yellow, #FFD23F); color: #111111; border-color: #111111; }
+.img-bg-only[hidden] { display: none !important; }
+.img-compare { touch-action: none; user-select: none; -webkit-user-select: none; }
+.img-compare.is-held { background: var(--brand-blue); color: #111111; }
+@media (max-width: 560px) { .img-compare span { display: none; } }

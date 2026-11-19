@@ -283,8 +283,11 @@
         `<span class="canvas-pattern-swatch is-${pattern.id}" aria-hidden="true"></span>` +
         `<span>${pattern.label}</span></button>`
       ).join("") +
-      "</div>";
+      "</div>" +
+      // A picture of your own as the ground (static/js/canvas-picture.js).
+      '<div class="canvas-picture-slot"></div>';
     document.body.appendChild(pop);
+    document.dispatchEvent(new CustomEvent("inkyscib:canvas-pop-built", { detail: { pop } }));
 
     button.addEventListener("click", (event) => {
       event.stopPropagation();

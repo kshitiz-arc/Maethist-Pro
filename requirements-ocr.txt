@@ -1,0 +1,14 @@
+# Image to text (ocr_engine.py). Optional: without these the feature reports
+# itself unavailable and everything else works.
+-r requirements.txt
+
+# Equations: Pix2Text MFR 1.5 on ONNX Runtime (~120 MB of weights, no PyTorch).
+onnxruntime>=1.18
+tokenizers>=0.19
+huggingface_hub>=0.23
+
+# Handwriting: TrOCR base (~1.3 GB of weights) on PyTorch. Needs ~2 GB RAM.
+torch>=2.2
+transformers>=4.44
+sentencepiece>=0.2
+protobuf>=4

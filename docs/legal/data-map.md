@@ -63,3 +63,30 @@ watches real browser traffic and no longer carries a fonts exception.
 MAETHIST is the **controller** for rows 3, 4 and 5. For row 1 it is not a controller at
 all: the data never reaches it. For row 2 it is a controller for the seconds the file
 exists. Google and the hosting provider are **processors/third parties** as set out above.
+
+
+## Image to text (`/api/ocr`, added 2.7.0)
+
+| Data | Where it goes | How long |
+|---|---|---|
+| The image a visitor chooses to convert (a crop of their page, or a picture) | This server only, read in memory by Pix2Text MFR / TrOCR running in-process | The length of the request; never written to disk, logged or forwarded |
+| The resulting text or LaTeX | Back to the visitor's browser | Not kept server-side |
+
+## AR MAETHIST (camera hand tracking, disclosed 2.7.0)
+
+| Data | Where it goes | How long |
+|---|---|---|
+| The camera picture | Nowhere: MediaPipe Hands runs in the page (WebAssembly) and only the fingertip position is used | The frame being read |
+| The visitor's IP address, with a request for the hand-tracking library and model files (`@mediapipe/hands@0.4.1675469240`) | jsDelivr, a public CDN, only when the visitor starts AR | jsDelivr's own logs |
+
+This was in the code before 2.7.0 and missing from the policy; the privacy
+page's third-party table now lists it.
+
+## Picture background (added 2.7.0)
+
+| Data | Where it goes | How long |
+|---|---|---|
+| A picture the visitor chooses as the canvas background, shrunk to at most 2560px, and its edit settings | This browser only, IndexedDB `inkyscib_background` | Until the visitor removes it or clears site data; never uploaded |
+
+Edits to pictures (even out light, sharpen, black and white and the rest)
+run in the page on the visitor's device; nothing is sent anywhere.

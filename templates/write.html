@@ -57,6 +57,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/chrome-brutal.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/image-tools.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/scroll-cue.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quick-access.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ocr.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/motion.css') }}">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest', v='pwa-1') }}">
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/maethist-180.png', v='pwa-1') }}">
@@ -585,7 +587,7 @@
     <div id="arSection" class="ar-section">
       <button id="arBtn" class="ar-btn" type="button">
         <i class="fas fa-camera"></i>
-        <span>AR Inky</span>
+        <span>AR MAETHIST</span>
       </button>
     </div>
 
@@ -1653,6 +1655,7 @@
   <script src="{{ url_for('static', filename='js/manipulatives.js', v='algebra-tiles-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/tools/manipulative.js', v='algebra-tiles-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/empty-state.js', v='empty-1') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/image-process.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/canvas.js', v='pages-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/ppt-local-import.js') }}" defer></script>
   <!-- pdf.min.js is loaded on demand by pdf-local-import.js, not here: it is
@@ -1677,7 +1680,10 @@
   <script src="{{ url_for('static', filename='js/ar.js', v='smart-geometry-2') }}" defer></script>
   <script src="{{ url_for('static', filename='js/youtube.js', v='yt-capture-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/image-tools.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/canvas-picture.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/scroll-cue.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/quick-access.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/ocr.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/tour.js') }}" defer></script>
 
 

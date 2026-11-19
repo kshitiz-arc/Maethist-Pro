@@ -103,6 +103,8 @@ ICONS = {
         # image tools (image-tools.js)
         "crop", "ellipsis", "sun", "bring-to-front", "send-to-back", "eye-off",
         "square-split-horizontal", "square-split-vertical",
+        # rail toggle and the hold ring (rail-toggle.js, radial-menu.js)
+        "panel-left-close", "panel-left-open", "scan-text", "sun-dim", "eye", "image", "hand",
     ],
     "phosphor": [
         # Pomodoro

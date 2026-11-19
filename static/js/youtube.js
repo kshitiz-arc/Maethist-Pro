@@ -542,12 +542,19 @@
   // button is pressed. Measured: first capture 0.6s with this, 4.8s without.
   // Fire and forget -- a failure costs nothing, the capture tries again.
   const preparedVideos = new Set();
+  // The full frame's size, learnt when the video was warmed, so a preview can
+  // go on the page at the size the full frame will take, and not jump.
+  const preparedSizes = new Map();
+
   function prepareFrames(videoId) {
     if (preparedVideos.has(videoId)) return;
     preparedVideos.add(videoId);
     fetch(`/api/youtube/prepare?v=${encodeURIComponent(videoId)}`)
       .then((response) => (response.ok ? response.json() : null))
-      .then((body) => { if (!body?.ready) preparedVideos.delete(videoId); })
+      .then((body) => {
+        if (!body?.ready) preparedVideos.delete(videoId);
+        else if (body.width && body.height) preparedSizes.set(videoId, { width: body.width, height: body.height });
+      })
       .catch(() => preparedVideos.delete(videoId));
   }
 
@@ -779,13 +786,16 @@
   // screen. It takes a couple of seconds, which is what the ribbon's progress
   // chip is for.
 
-  async function requestFrame(videoId, videoTime) {
+  async function requestFrame(videoId, videoTime, options = {}) {
     let response;
+    const quality = options.preview ? "&quality=preview" : "";
     try {
       response = await fetch(
-        `/api/youtube/frame?v=${encodeURIComponent(videoId)}&t=${encodeURIComponent(videoTime.toFixed(3))}`
+        `/api/youtube/frame?v=${encodeURIComponent(videoId)}&t=${encodeURIComponent(videoTime.toFixed(3))}${quality}`,
+        { signal: options.signal }
       );
-    } catch (_) {
+    } catch (error) {
+      if (error?.name === "AbortError") throw error;
       throw new Error("Could not reach MAETHIST to get this frame");
     }
     let body = null;
@@ -915,21 +925,42 @@
     const captureVideoId = currentVideoId;
     const captureVideoTitle = currentVideoTitle;
     shutter();
-    const progress = window.Inkyscib?.RibbonProgress?.start?.("Importing YT frame");
-
-    try {
-      const captured = await requestFrame(captureVideoId, videoTime);
+    // Two requests at once. YouTube's own preview of that moment comes back
+    // in a fraction of a second and goes on the page straight away; the full
+    // frame, decoded from the video, replaces it in place when it lands. Stop
+    // on the chip abandons whatever has not arrived yet.
+    const controller = new AbortController();
+    let stopped = false;
+    const progress = window.Inkyscib?.RibbonProgress?.start?.("Importing YT frame", {
+      onCancel: () => {
+        stopped = true;
+        controller.abort();
+        captureInFlight = false;
+        syncCaptureButton();
+      }
+    });
+    let placed = null;
+    const place = (captured) => {
       if (typeof captured.image !== "string" || captured.image.length > MAX_FRAME_DATA_URL) {
         throw new Error("The captured frame is too large to store");
       }
-      addFrameToCanvas(
-        captured.image,
-        videoTime,
-        captured.frameTime ?? videoTime,
-        captureVideoTitle,
-        captured.dimensions,
-        captureVideoId
-      );
+      if (!placed) {
+        const size = captured.source === "video" ? captured.dimensions
+          : preparedSizes.get(captureVideoId) || captured.dimensions;
+        placed = addFrameToCanvas(captured.image, videoTime, captured.frameTime ?? videoTime,
+          captureVideoTitle, size, captureVideoId);
+        return;
+      }
+      upgradeFrame(placed, captured);
+    };
+    const preview = requestFrame(captureVideoId, videoTime, { preview: true, signal: controller.signal })
+      .then((captured) => { if (!stopped && !placed) place(captured); })
+      .catch(() => {});
+
+    try {
+      const captured = await requestFrame(captureVideoId, videoTime, { signal: controller.signal });
+      if (stopped) return;
+      place(captured);
       progress?.done?.();
       const at = formatVideoTime(videoTime);
       showToast(
@@ -938,13 +969,45 @@
           : `Saved YouTube's preview frame near ${at} - double-tap it to reopen`
       );
     } catch (error) {
-      progress?.fail?.();
-      console.error("YouTube frame capture error:", error);
-      showToast(error.message || "Could not save this frame", true);
+      if (stopped || error?.name === "AbortError") return;
+      await preview;
+      if (placed) {
+        // The preview made it; the full frame did not. Keep what is there.
+        progress?.done?.();
+        showToast(`Saved YouTube's preview frame near ${formatVideoTime(videoTime)}`);
+      } else {
+        progress?.fail?.();
+        console.error("YouTube frame capture error:", error);
+        showToast(error.message || "Could not save this frame", true);
+      }
     } finally {
-      captureInFlight = false;
-      syncCaptureButton();
+      if (!stopped) {
+        captureInFlight = false;
+        syncCaptureButton();
+      }
     }
+  }
+
+  // Swap the full frame into the preview's place: same centre, the size the
+  // full frame would have been placed at, no new undo step.
+  function upgradeFrame(path, captured) {
+    const state = window.appState;
+    if (!state?.paths?.includes(path)) return;
+    const width = Math.max(1, Number(captured.dimensions?.width) || 16);
+    const height = Math.max(1, Number(captured.dimensions?.height) || 9);
+    const size = canvasPlacement(Math.max(360, width), Math.max(360, width) * (height / width));
+    const [a, b] = path.points;
+    const cx = (a.x + b.x) / 2;
+    const cy = (a.y + b.y) / 2;
+    const w = size.right - size.left;
+    const h = size.bottom - size.top;
+    path.points = [{ x: cx - w / 2, y: cy - h / 2 }, { x: cx + w / 2, y: cy + h / 2 }];
+    path.image = captured.image;
+    path.aspectRatio = width / height;
+    path.frameTime = Math.max(0, Number(captured.frameTime) || path.frameTime || 0);
+    if (typeof window.invalidateCanvasDrawingCache === "function") window.invalidateCanvasDrawingCache();
+    if (typeof window.render === "function") window.render();
+    if (typeof window.saveDrawing === "function") window.saveDrawing();
   }
 
   // The click is answered on the same frame it lands: a brief shutter over

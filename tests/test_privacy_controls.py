@@ -54,6 +54,19 @@ async () => {
     };
     request.onerror = () => resolve();
   });
+  // The picture background's own database (2.7.0).
+  await new Promise((resolve) => {
+    const request = window.indexedDB.open('inkyscib_background', 1);
+    request.onupgradeneeded = () => request.result.createObjectStore('picture');
+    request.onsuccess = () => {
+      const db = request.result;
+      const tx = db.transaction('picture', 'readwrite');
+      tx.objectStore('picture').put({ src: 'data:image/png;base64,AA', edit: {} }, 'current');
+      tx.oncomplete = () => { db.close(); resolve(); };
+      tx.onerror = () => { db.close(); resolve(); };
+    };
+    request.onerror = () => resolve();
+  });
 }
 """
 
@@ -93,6 +106,7 @@ class PrivacyControlsTests(unittest.TestCase):
 
         self.assertGreater(inventory["localStorage"], 0)
         self.assertIn("inkyscib_cache", inventory["indexedDB"])
+        self.assertIn("inkyscib_background", inventory["indexedDB"])
         self.assertGreater(inventory["cookies"], 0)
 
     def test_export_returns_every_key_the_inventory_counted(self):

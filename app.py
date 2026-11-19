@@ -204,7 +204,7 @@ def add_static_version(endpoint, values):
     if token:
         values["v"] = token
 
-APP_VERSION = "2.6.0"
+APP_VERSION = "2.7.0"
 
 # Render sets RENDER=true on every service; INKYSCIB_ENV=production is the
 # switch for any other host. A random fallback is fine on a laptop, but under
@@ -1369,6 +1369,63 @@ def features():
     return render_template("features.html", nav_active="features")
 
 
+# ---------- image to text (ocr_engine.py) ----------
+#
+# Handwritten equations to LaTeX (Pix2Text MFR) and handwriting to text (TrOCR),
+# both run here. The image is read in memory and dropped when the request
+# ends; it is never written to disk, logged or sent anywhere else. The models
+# are optional (requirements-ocr.txt): without them the route answers 503 and
+# the editor says so.
+
+_OCR_NEEDS = {
+    # Equations: Pix2Text MFR on ONNX Runtime (no PyTorch).
+    "math": ("onnxruntime", "tokenizers", "huggingface_hub", "numpy"),
+    # Handwriting: TrOCR on PyTorch.
+    "text": ("torch", "transformers"),
+}
+
+
+def _ocr_available(kind=None):
+    import importlib.util
+
+    import ocr_engine
+
+    if not ocr_engine.enabled():
+        return False
+    kinds = (kind,) if kind else tuple(_OCR_NEEDS)
+    return all(importlib.util.find_spec(name) for k in kinds for name in _OCR_NEEDS[k])
+
+
+@app.route("/api/ocr/status")
+def ocr_status():
+    return jsonify({
+        "available": _ocr_available("math") or _ocr_available("text"),
+        "math": _ocr_available("math"),
+        "text": _ocr_available("text"),
+    })
+
+
+@app.route("/api/ocr", methods=["POST"])
+def ocr_convert():
+    import ocr_engine
+
+    body = request.get_json(silent=True) or {}
+    kind = "text" if body.get("kind") == "text" else "math"
+    if not _ocr_available(kind):
+        what = "equations" if kind == "math" else "handwriting"
+        return jsonify({"error": f"Reading {what} is not set up on this server yet."}), 503
+    try:
+        result = ocr_engine.convert(body.get("image"), kind)
+    except ocr_engine.OcrInputError as error:
+        return jsonify({"error": str(error)}), 400
+    except ocr_engine.OcrUnavailable as error:
+        return jsonify({"error": str(error)}), 503
+    except Exception:
+        app.logger.exception("image to text failed")
+        return jsonify({"error": "That image could not be converted. Try a tighter crop."}), 500
+    return jsonify(result)
+
+
 @app.route("/about")
 def about():
     return render_template(
@@ -1470,7 +1527,7 @@ def lab_ink():
     return render_template("lab_ink.html", config=config)
 
 
-LEGAL_UPDATED = "2026-11-15"
+LEGAL_UPDATED = "2026-11-19"
 
 
 @app.route("/legal/privacy")
@@ -1519,6 +1576,9 @@ RATE_LIMITS = {
     "export_pdf_onto_original": (20, 60),
     "export_pdf": (20, 60),
     "export_pptx": (20, 60),
+    # Image to text runs two neural models on this server's CPU.
+    "ocr_convert": (12, 60),
+    "ocr_status": (60, 60),
 }
 _RATE_BUCKETS = {}
 _RATE_LOCK = threading.Lock()
@@ -2335,10 +2395,13 @@ YOUTUBE_STREAM_CACHE_TTL = 4 * 3600  # signed stream URLs outlive this comfortab
 # memory one. 256 is far more than one server's worth of concurrently-watched
 # lectures, and eviction closes the connection rather than dropping it.
 YOUTUBE_STREAM_CACHE_MAX_ENTRIES = 256
-# 4K. YouTube serves 2160p as VP9 or AV1, never H.264, which is why the stream
-# choice below is by resolution rather than by codec. A host on a small
-# instance can lower this (1440 or 1080) to trade detail for decode time.
-YOUTUBE_FRAME_MAX_HEIGHT = int(os.environ.get("YOUTUBE_FRAME_MAX_HEIGHT", "2160"))
+# 1080p since 2.7.0 (it was 4K). The owner asked for a quick import, and a 4K
+# frame costs on every side: YouTube serves 2160p only as VP9 or AV1, a
+# software decode from the keyframe up to ten seconds back is several times
+# the work of 1080p, and the JPEG is several megabytes to send and store. At
+# 1080p H.264 is on offer, the fastest to decode, and is preferred on a tie.
+# Set YOUTUBE_FRAME_MAX_HEIGHT=2160 for 4K again.
+YOUTUBE_FRAME_MAX_HEIGHT = int(os.environ.get("YOUTUBE_FRAME_MAX_HEIGHT", "1080"))
 MAX_FRAME_WIDTH = YOUTUBE_FRAME_MAX_HEIGHT * 16 // 9
 # JPEG at 4:4:4 (no chroma subsampling) and quality 95: lecture frames are
 # mostly slides, text and thin coloured lines, which 4:2:0 smears. The frame is
@@ -2522,7 +2585,10 @@ def _youtube_stream(video_id):
             "/bestvideo/best"
         ),
         # Highest resolution first, then frame rate; codec only breaks ties.
-        "format_sort": [f"res:{YOUTUBE_FRAME_MAX_HEIGHT}", "fps"],
+        # Highest resolution under the ceiling first. Then H.264, which
+        # decodes fastest, and 30 fps over 60, which halves the frames
+        # between the keyframe and the moment asked for.
+        "format_sort": [f"res:{YOUTUBE_FRAME_MAX_HEIGHT}", "vcodec:h264", "fps:30"],
     }
     with yt_dlp.YoutubeDL(options) as ydl:
         info = ydl.extract_info(

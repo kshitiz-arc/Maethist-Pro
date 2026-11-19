@@ -28,7 +28,8 @@
         IndexedDB (the database <code>inkyscib_cache</code>, whose
         <code>records</code> store holds your notebooks and preferences and
         whose <code>documents</code> store holds any PDF or deck you
-        imported). None of it is uploaded, and there is no
+        imported), and a picture you choose as the canvas background, in the
+        database <code>inkyscib_background</code>. None of it is uploaded, and there is no
         endpoint on the server that could receive it. If you clear your browser
         storage, it is gone, and we cannot bring it back.
       </p>
@@ -48,6 +49,15 @@
           is never copied anywhere else, and the same is true of the original
           PDF when you export annotations back onto it. PowerPoint export never
           touches the disk at all.
+        </li>
+        <li>
+          <strong>An image you convert to text.</strong> When you use Image to
+          text, the part of the page you chose (or the picture you picked) is
+          sent to this server, which reads it with two open models running on
+          the server itself (Pix2Text MFR for equations, TrOCR for handwriting) and
+          sends the text back. The image is read in memory and dropped when the
+          request ends. It is never written to disk, logged, kept, or sent to
+          any other company.
         </li>
         <li>
           <strong>A lecture search.</strong> The words you type are sent to the
@@ -155,6 +165,11 @@
               <td>Your IP address and the player's own data, as Google's terms describe.</td>
               <td>Only when you open a lecture</td>
             </tr>
+            <tr>
+              <td>jsDelivr (a public code CDN) — AR MAETHIST's hand-tracking library</td>
+              <td>Your IP address and the request for the library and its model files. Never the camera picture: hand tracking runs on your device.</td>
+              <td>Only when you start AR MAETHIST</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -162,7 +177,8 @@
       <p>
         <strong>Google Fonts and Google Analytics have both been removed.</strong>
         The typefaces are served from this site and nothing measures visits, so
-        a visit with no lecture opened makes no third-party request at all.
+        a visit that opens no lecture and does not start AR MAETHIST makes no
+        third-party request at all.
       </p>
 
       <p>

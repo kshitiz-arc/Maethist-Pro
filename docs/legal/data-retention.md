@@ -56,3 +56,10 @@ can rewrite the whole chain from genesis. Making it tamper-proof is a hosting de
 write-once object storage, or shipping each line to an append-only external log sink — not
 something a Python module can do to a file it owns. Said plainly here so nobody reads
 "immutable audit trail" into a guarantee that is not being made.
+
+
+## Image to text (2.7.0)
+
+The image sent to `/api/ocr` is decoded in memory, read by the two models and
+discarded when the response is sent. No copy, no log line, no third party.
+Rate-limited like the other API routes, by the same minute-long, in-memory key.

@@ -239,7 +239,7 @@ class ImportErrorVisibilityTests(unittest.TestCase):
             ("a bad backup with My Notebooks closed",
              lambda p: p.evaluate("async () => { await window.Inkyscib.Library.importBackup(new File(['{}'], 'x.inky')); }"),
              "not a valid MAETHIST backup"),
-            ("the camera blocked for AR Inky",
+            ("the camera blocked for AR MAETHIST",
              lambda p: p.evaluate("async () => { navigator.mediaDevices.getUserMedia = () => Promise.reject(Object.assign(new Error('denied'), {name: 'NotAllowedError'})); await window.Inkyscib.AR.enterAR(); }"),
              "Camera access was blocked"),
         )

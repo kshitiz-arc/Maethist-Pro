@@ -266,3 +266,30 @@
   .file-rail-btn:active, .canvas-theme-pop [data-canvas-preset]:active, .file-command:active { transform: none !important; }
   .chrome-rail .tool-dock.is-enabled .tool-dock-frame { animation: none; }
 }
+
+/* ---------- ink first: no blur over the page while you write ---------- */
+/* A backdrop blur is redrawn whenever what is under it changes, and the page
+   changes on every pen sample. So nothing that stays over the canvas is
+   frosted: the bars are solid, and a sheet or dialog is frosted only while
+   it is open. A closed one sits at opacity 0, and Chrome still pays for its
+   blur (two of them were full-screen). */
+.chrome-rail .toolbar.is-topbar,
+.chrome-rail .tool-rail,
+.file-ribbon {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+@media (pointer: fine) {
+  .chrome-rail .toolbar.is-topbar,
+  .chrome-rail .tool-rail,
+  .file-ribbon { background: var(--surface) !important; }
+}
+.file-backstage-scrim:not(.is-open),
+.file-backstage:not(.is-open),
+.clear-confirm-modal:not(.active),
+.clear-confirm-modal:not(.active) *,
+.pomo-overlay:not(.active) .pomo-panel,
+#pomodoroModal:not(.active) .pomo-panel {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}

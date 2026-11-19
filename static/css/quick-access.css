@@ -1,0 +1,144 @@
+/* Quick access (static/js/quick-access.js): the rail toggle and the hold ring. */
+
+/* ---------- the rail toggle in the File ribbon ---------- */
+.file-ribbon-railtoggle {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  margin-right: 4px;
+  border: 2px solid var(--ui-line, #111111);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color var(--dur-1, 120ms) var(--ease-out, ease-out), transform var(--dur-1, 120ms) var(--ease-out, ease-out);
+}
+.file-ribbon-railtoggle svg.icon { width: 20px; height: 20px; }
+.file-ribbon-railtoggle:hover { background: var(--brand-yellow); color: #111111; border-color: #111111; }
+.file-ribbon-railtoggle[aria-pressed="true"] { background: var(--brand-yellow); color: #111111; border-color: #111111; box-shadow: 2px 2px 0 #111111; }
+.file-ribbon-railtoggle:active { transform: scale(0.94); }
+.file-ribbon-railtoggle:focus-visible { outline: 3px solid var(--brand-blue); outline-offset: 2px; }
+@media (pointer: coarse) { .file-ribbon-railtoggle { width: 44px; height: 44px; } }
+
+/* ---------- the rail, hidden ---------- */
+/* The rail slides out and its width goes to zero, so the docked panel and the
+   canvas edge move left with it. */
+body.rail-hidden.chrome-rail { --rail-w: 0px; }
+.chrome-rail .tool-rail { transition: transform var(--dur-3, 320ms) var(--ease-out, ease-out), opacity var(--dur-2, 180ms) var(--ease-out, ease-out); }
+body.rail-hidden .chrome-rail .tool-rail,
+body.rail-hidden.chrome-rail .tool-rail {
+  transform: translateX(calc(-100% - 32px));
+  opacity: 0;
+  pointer-events: none;
+}
+/* On a tablet the tools are the second bar; it goes the same way. */
+@media (max-width: 1179px) {
+  body.rail-hidden .toolbar { display: none !important; }
+}
+
+/* ---------- the hold ring ---------- */
+.qa-ring {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 9990;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.qa-ring[hidden] { display: none; }
+
+.qa-progress {
+  position: absolute;
+  left: -60px;
+  top: -60px;
+  width: 120px;
+  height: 120px;
+  transform: rotate(-90deg);
+  opacity: 0;
+}
+.qa-progress circle {
+  fill: rgba(255, 255, 255, 0.05);
+  stroke: var(--brand-yellow);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+/* The hold is 0.7s; the arc appears at 0.2s and fills the rest. */
+.qa-ring.is-charging .qa-progress { opacity: 1; transition: opacity 120ms ease-out; }
+.qa-ring.is-charging .qa-progress circle { animation: qaCharge 500ms linear forwards; }
+@keyframes qaCharge { to { stroke-dashoffset: 0; } }
+
+.qa-hub {
+  position: absolute;
+  left: -28px;
+  top: -28px;
+  width: 56px;
+  height: 56px;
+  border: 2px solid #111111;
+  border-radius: 50%;
+  background: var(--brand-yellow);
+  box-shadow: 3px 3px 0 #111111;
+  opacity: 0;
+  transform: scale(0.4);
+}
+/* Keyframes, not transitions: the ring comes out of display:none, where a
+   transition has no "before" to start from and would just appear. */
+.qa-ring.is-open .qa-hub { opacity: 1; transform: none; pointer-events: auto; animation: qaHubPop 240ms var(--ease-spring, ease-out) both; }
+@keyframes qaHubPop { from { opacity: 0; transform: scale(0.3); } 60% { opacity: 1; transform: scale(1.12); } to { opacity: 1; transform: none; } }
+.qa-ring.is-open .qa-progress { opacity: 0; }
+
+.qa-slices { position: absolute; left: 0; top: 0; }
+.qa-slice {
+  position: absolute;
+  left: -32px;
+  top: -32px;
+  display: grid;
+  place-items: center;
+  gap: 1px;
+  width: 64px;
+  height: 64px;
+  padding: 4px 0 2px;
+  border: 2px solid var(--ui-line, #111111);
+  border-radius: 50%;
+  background: var(--frost-strong, var(--surface));
+  -webkit-backdrop-filter: var(--frost-blur);
+  backdrop-filter: var(--frost-blur);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--nb-shadow-c, #111111);
+  cursor: pointer;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(0, 0) scale(0.4);
+}
+.qa-ring.is-open .qa-slice {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translate(var(--x), var(--y));
+  animation: qaSlicePop 300ms var(--ease-spring, cubic-bezier(.34,1.56,.64,1)) calc(var(--i) * 22ms) both;
+  transition: transform 140ms var(--ease-out, ease-out), background-color 120ms ease-out;
+}
+@keyframes qaSlicePop {
+  from { opacity: 0; transform: translate(0, 0) scale(0.3) rotate(-30deg); }
+  70% { opacity: 1; transform: translate(calc(var(--x) * 1.08), calc(var(--y) * 1.08)) scale(1.06); }
+  to { opacity: 1; transform: translate(var(--x), var(--y)); }
+}
+.qa-slice svg.icon { width: 22px; height: 22px; }
+.qa-label { font: 800 0.62rem / 1 var(--display); letter-spacing: 0.02em; }
+.qa-swatch { width: 24px; height: 24px; border: 2px solid #111111; border-radius: 50%; }
+.qa-slice.is-active { background: var(--brand-yellow); color: #111111; border-color: #111111; }
+.qa-slice.is-hover, .qa-slice:hover, .qa-slice:focus-visible {
+  background: var(--brand-blue);
+  color: #111111;
+  border-color: #111111;
+  outline: none;
+}
+.qa-ring.is-open .qa-slice.is-hover { transform: translate(var(--x), var(--y)) scale(1.12); }
+
+@media (prefers-reduced-motion: reduce) {
+  .qa-ring.is-charging .qa-progress circle { animation-duration: 0s; stroke-dashoffset: 0.5; }
+  .qa-ring.is-open .qa-slice, .qa-ring.is-open .qa-hub { animation: none; transition: none; }
+}

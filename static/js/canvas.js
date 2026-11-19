@@ -1499,17 +1499,32 @@ function __mediaFilter(edit) {
     add('brightness', edit.brightness, 1);
     add('contrast', edit.contrast, 1);
     add('saturate', edit.saturate, 1);
+    add('hue-rotate', edit.hue, 0, 'deg');
     return parts.length ? parts.join(' ') : 'none';
 }
 
 function __drawMediaImage(ctx, image, left, top, width, height, edit) {
-    const sourceWidth = image.naturalWidth || image.width || 0;
-    const sourceHeight = image.naturalHeight || image.height || 0;
-    if (sourceWidth <= 0 || sourceHeight <= 0) return;
     if (!edit) {
         __drawImageContained(ctx, image, left, top, width, height);
         return;
     }
+    const naturalWidth = image.naturalWidth || image.width || 0;
+    const naturalHeight = image.naturalHeight || image.height || 0;
+    if (naturalWidth <= 0 || naturalHeight <= 0) return;
+    // Edits that need pixels (clean, sharpen, black and white, clear paper,
+    // blur) are baked once by image-process.js at about the size the picture
+    // is shown, and the bake is what is drawn.
+    const processor = window.Inkyscib && window.Inkyscib.ImageProcess;
+    if (processor && processor.hasPixelOps(edit)) {
+        const m = typeof ctx.getTransform === 'function' ? ctx.getTransform() : { a: 1, b: 0 };
+        const zoom = Math.hypot(m.a, m.b) || 1;
+        const cropW = Math.max(0.02, Number(edit.crop?.w) || 1);
+        const cropH = Math.max(0.02, Number(edit.crop?.h) || 1);
+        const want = Math.max(width / cropW, height / cropH) * zoom;
+        image = processor.process(image, edit, want);
+    }
+    const sourceWidth = image.naturalWidth || image.width || 0;
+    const sourceHeight = image.naturalHeight || image.height || 0;
 
     const raw = edit.crop || {};
     const cx = Math.max(0, Math.min(0.98, Number(raw.x) || 0));
@@ -1533,6 +1548,18 @@ function __drawMediaImage(ctx, image, left, top, width, height, edit) {
     ctx.translate(left + width / 2, top + height / 2);
     if (rotation) ctx.rotate((rotation * Math.PI) / 180);
     ctx.scale(edit.flipX ? -1 : 1, edit.flipY ? -1 : 1);
+    // Straighten: a small turn, with the picture grown just enough to fill
+    // its own frame, and clipped to it, so no corner shows the page behind.
+    const straighten = Math.max(-45, Math.min(45, Number(edit.straighten) || 0));
+    if (Math.abs(straighten) > 0.05) {
+        const t = Math.abs(straighten) * Math.PI / 180;
+        const grow = Math.cos(t) + Math.sin(t) * Math.max(drawWidth / drawHeight, drawHeight / drawWidth);
+        ctx.beginPath();
+        ctx.rect(-drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+        ctx.clip();
+        ctx.rotate(straighten * Math.PI / 180);
+        ctx.scale(grow, grow);
+    }
     const filter = __mediaFilter(edit);
     if (filter !== 'none' && 'filter' in ctx) ctx.filter = filter;
     if (Number.isFinite(Number(edit.opacity))) {
@@ -1914,7 +1941,11 @@ function __renderBackgroundLayer(state, canvas) {
         } else if (state.notebook?.active && typeof window.renderNotebookBackground === 'function') {
             window.renderNotebookBackground(patternCtx, canvas);
         } else {
-            __drawInfinitePattern(patternCtx, canvas);
+            // A picture of the student's own, if one is set, under the grid
+            // (the grid only if they asked for it over the picture).
+            const picture = window.Inkyscib && window.Inkyscib.CanvasPicture;
+            const drewPicture = !!(picture && picture.active() && picture.draw(patternCtx, canvas));
+            if (!drewPicture || picture.showGrid()) __drawInfinitePattern(patternCtx, canvas);
         }
     }
 

@@ -1,5 +1,92 @@
 # Changelog
 
+## 2.7.0 — 2026-11-19
+
+### Fixed
+
+- **Writing is instant again.** Closed panels were still blurring what was
+  under them: the File sheet's backdrop and the Clear dialog, both full
+  screen, the focus timer, plus the frosted top bar and tool rail. A
+  backdrop blur is redrawn whenever the page under it changes, which while
+  writing is every pen sample. Nothing over the canvas is frosted now; a
+  sheet or dialog is frosted only while it is open.
+
+### Added
+
+- **Hide the tool rail.** A button beside Home in the ribbon hides the
+  left tool rail completely, so the page gets the full width, and brings
+  it back. On a tablet it hides the tool row instead. The choice is
+  remembered on the device.
+- **Hold for the quick ring.** Press and hold still on the page for 0.7s
+  and a ring of the eight most-used tools pops open around the pointer:
+  Pen, Colour, Line, Eraser, Select, Pan, Redo and Undo, clockwise from the
+  top. An LLM council chose them
+  (`docs/council/council-quick-ring-2026-11-19.md`). An arc fills from
+  0.2s, so the hold is visible. Moving, a second finger or lifting early
+  cancels it, and the press leaves no mark. Still holding, slide toward a
+  tool and let go to pick it; or lift and tap one. A tap anywhere off the
+  ring, or Esc, closes it without drawing. Colour opens a ring of the pen's
+  swatches. The ring is not armed for the eraser or the compass, which
+  already use a long press of their own.
+- **Image to text** (Tools, or Convert to text in a picture's More menu).
+  Drag a box around writing on the page, or pick a photo, and it is read
+  into text you can edit: equations as LaTeX (Pix2Text MFR 1.5) and
+  handwriting as plain text (TrOCR). Copy the result, or place it on the
+  page as a card in the pen colour, with the LaTeX written out readably
+  (x², √(x+1), (a+b)/2, 60°). The models run on this server: the image is
+  read in memory, then dropped, and never goes to another company. The bar
+  that says what to do sits under the toolbars, where it can be seen. An
+  empty box is refused, because the equation reader answers a blank picture
+  with nonsense. A server without the optional models
+  (`requirements-ocr.txt`) says so as soon as the tool opens.
+- **A picture of your own as the canvas background.** In the Canvas
+  popover, beside the themes and grids: Use a picture, from the device.
+  It stays in this browser. Edit it in the same sheet as pictures on the
+  page, with Fill, Fit or Tile, Fade (washes it toward the canvas colour,
+  so ink stays readable), and the grid over it or not. It is drawn on its
+  own layer, so it costs nothing while you write.
+- **More image edits**, for pictures, video frames and the background,
+  chosen by an LLM council (`docs/council/council-image-edits-2026-11-19.md`):
+  Even out light (removes a phone's shadow across a page), Auto levels,
+  Sharpen, Black and white, Clear the paper (the paper goes transparent and
+  the ink stays), Straighten (±15°), Hue and Blur, and Hold to compare
+  against the original. Scan is now **Clean scan** (even light, levels,
+  sharpen, grey), and **Ink only** is new. These edits are baked once into a
+  bitmap at the size the picture is shown, never redone per frame.
+- **AR MAETHIST** (was AR Inky). Pinch thumb and finger to draw in the air,
+  open them to lift the pen, where "index finger up" used to draw a line every
+  time you moved to start somewhere new. A bar shows what the camera sees
+  ("Show your hand", "Pinch to draw", "Drawing") and holds Undo, Dim the
+  camera and Exit; Esc exits too. Before this, once AR was on there was no
+  visible way out.
+
+### Changed
+
+- **YouTube frames import much faster.** YouTube's own preview of the
+  moment goes on the page at once, and the full frame replaces it in place
+  when it arrives. Frames are cut at up to 1080p (was 4K) from the stream
+  that decodes fastest (H.264, 30 fps). `YOUTUBE_FRAME_MAX_HEIGHT=2160`
+  brings 4K back. The "Importing YT frame" chip has a Stop button.
+
+### Fixed (AR)
+
+- The finger dot sat beside the finger: the camera picture is cropped to
+  fill the screen, and the mapping ignored the crop.
+- One dropped camera frame stopped hand tracking for good.
+- Jitter. A One Euro filter now smooths hard while the hand is still and
+  hardly at all while it moves.
+
+### Privacy
+
+- The privacy policy, the data map and the retention notes describe where
+  an image you convert goes, and that a background picture is kept only in
+  this browser (the database `inkyscib_background`, which Export and Erase
+  everything now include).
+- **jsDelivr is now listed.** AR has always fetched its hand-tracking library
+  from jsDelivr when started, and the policy never said so. The third-party
+  table now names it. The camera picture never leaves the device.
+
+
 ## 2.6.0 — 2026-11-18
 
 ### Changed

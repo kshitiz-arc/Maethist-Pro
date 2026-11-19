@@ -24,15 +24,15 @@ services:
       # It drives canonical URLs, the sitemap and social cards.
       - key: SITE_ORIGIN
         sync: false
-      # Saved video moments, cut at the source's own resolution up to 4K.
-      # A 4K decode needs real CPU: on the free plan (0.1 CPU) the first frame
-      # of a 4K video can take a minute. Either move to a paid plan or lower
-      # YOUTUBE_FRAME_MAX_HEIGHT to 1080. Set YOUTUBE_FULL_FRAMES to "false"
-      # to fall back to YouTube's low-resolution preview images.
+      # Saved video moments, cut at the source's own resolution up to 1080p
+      # (quick to decode, even on the free plan). 2160 brings back 4K, which
+      # needs real CPU: on the free plan (0.1 CPU) the first 4K frame can take
+      # a minute. Set YOUTUBE_FULL_FRAMES to "false" to use only YouTube's
+      # low-resolution preview images.
       - key: YOUTUBE_FULL_FRAMES
         value: "true"
       - key: YOUTUBE_FRAME_MAX_HEIGHT
-        value: "2160"
+        value: "1080"
       - key: YOUTUBE_FRAME_CONCURRENCY
         value: "2"
       # Remote off switch for the offline app shell. Set to "off" and redeploy

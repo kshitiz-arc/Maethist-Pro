@@ -622,8 +622,10 @@ class FrameCaptureBrowserTests(unittest.TestCase):
         self.assertEqual(thumbnails, [], "a thumbnail must never stand in for the frame")
 
     def test_the_servers_frame_is_placed_at_the_moment_asked_for(self):
-        """One request, carrying the exact playhead time, and the image is
-        placed byte for byte."""
+        """One full-frame request, carrying the exact playhead time, and the
+        image is placed byte for byte. A quick preview request goes out beside
+        it (since 2.7.0) so the page has something at once; the full frame
+        replaces it."""
         page = self.open_player()
         path = self.capture(page)
 
@@ -633,13 +635,32 @@ class FrameCaptureBrowserTests(unittest.TestCase):
         self.assertEqual(path["videoId"], VIDEO_ID)
         self.assertAlmostEqual(path["videoTime"], 61.3, places=2)
 
-        self.assertEqual(len(self.frame_requests), 1, self.frame_requests)
-        request = self.frame_requests[0]
+        full = [url for url in self.frame_requests if "quality=preview" not in url]
+        previews = [url for url in self.frame_requests if "quality=preview" in url]
+        self.assertEqual(len(full), 1, self.frame_requests)
+        self.assertEqual(len(previews), 1, self.frame_requests)
+        request = full[0]
         self.assertIn(f"v={VIDEO_ID}", request)
         # The timestamp goes out at full precision: the frame saved has to be
         # the frame that was on screen, not the nearest second.
         self.assertIn("t=61.3", request)
         self.assert_never_used_a_thumbnail()
+        self.assertEqual(self.errors, [])
+
+    def test_a_slow_import_can_be_stopped_from_the_chip(self):
+        page = self.open_player()
+        held = []
+        # Registered last, so it wins: the server never answers.
+        page.route("**/api/youtube/frame?**", lambda route: held.append(route))
+        page.evaluate("() => { window.Inkyscib.YouTube.saveCurrentFrame(); }")
+        page.wait_for_selector(".file-ribbon-progress-stop:not([hidden])", state="attached")
+        page.evaluate("() => document.querySelector('.file-ribbon-progress-stop').click()")
+        page.wait_for_timeout(150)
+        state = page.evaluate("""() => ({
+          frames: window.appState.paths.filter((p) => p.tool === 'youtube-frame').length,
+          label: document.querySelector('.file-ribbon-progress-label').textContent,
+          canCapture: !document.getElementById('ytSaveFrame').disabled })""")
+        self.assertEqual(state, {"frames": 0, "label": "Stopped", "canCapture": True})
         self.assertEqual(self.errors, [])
 
     def test_nothing_ever_asks_to_share_the_screen(self):
@@ -650,7 +671,7 @@ class FrameCaptureBrowserTests(unittest.TestCase):
         self.capture(page)
 
         self.assertEqual(page.evaluate("() => window.__displayMediaCalls"), 0)
-        self.assertEqual(len(self.frame_requests), 2)
+        self.assertEqual(len([u for u in self.frame_requests if "quality=preview" not in u]), 2)
         self.assertEqual(self.errors, [])
 
     def test_the_player_is_not_resized_to_take_the_shot(self):
@@ -884,7 +905,8 @@ class FrameCaptureBrowserTests(unittest.TestCase):
 
 class FullResolutionDefaultTests(unittest.TestCase):
     """Since 2.0.1 a saved moment is cut from the video itself, at the source's
-    own resolution up to 4K, unless the host switches it off."""
+    own resolution up to a ceiling (1080p since 2.7.0, for speed; 4K before),
+    unless the host switches it off."""
 
     def setUp(self):
         self.client = app.test_client()
@@ -892,12 +914,13 @@ class FullResolutionDefaultTests(unittest.TestCase):
     def test_full_capture_is_on_unless_the_host_switches_it_off(self):
         source = (Path(app.root_path) / "app.py").read_text(encoding="utf-8")
         self.assertIn('os.environ.get("YOUTUBE_FULL_FRAMES", "true")', source)
-        self.assertEqual(app_module.YOUTUBE_FRAME_MAX_HEIGHT, 2160)
-        self.assertEqual(app_module.MAX_FRAME_WIDTH, 3840)
+        self.assertEqual(app_module.YOUTUBE_FRAME_MAX_HEIGHT, 1080)
+        self.assertEqual(app_module.MAX_FRAME_WIDTH, 1920)
 
-    def test_the_stream_is_chosen_by_resolution_not_by_codec(self):
-        """4K exists on YouTube only as VP9 or AV1. Asking for H.264 capped
-        every frame at 1080p."""
+    def test_the_stream_is_chosen_by_resolution_then_decode_speed(self):
+        """Resolution decides. The codec is never a filter (4K exists only
+        as VP9 or AV1, and a host may raise the ceiling); H.264 and 30 fps only
+        break ties, because they are the quickest to decode."""
         captured = {}
 
         class FakeYDL:
@@ -912,7 +935,7 @@ class FullResolutionDefaultTests(unittest.TestCase):
 
             def extract_info(self, url, download=False):
                 return {"url": "https://example.googlevideo.com/v", "format_id": "315",
-                        "width": 3840, "height": 2160, "duration": 600}
+                        "width": 1920, "height": 1080, "duration": 600}
 
         fake_module = type(sys)("yt_dlp")
         fake_module.YoutubeDL = FakeYDL
@@ -921,10 +944,10 @@ class FullResolutionDefaultTests(unittest.TestCase):
             entry = app_module._youtube_stream("abcdefghijk")
         app_module.YOUTUBE_STREAM_CACHE.pop("abcdefghijk", None)
         self.assertNotIn("avc1", captured["format"])
-        self.assertIn("height<=2160", captured["format"])
+        self.assertIn("height<=1080", captured["format"])
         self.assertIn("dynamic_range=SDR", captured["format"])
-        self.assertEqual(captured["format_sort"][0], "res:2160")
-        self.assertEqual((entry["width"], entry["height"]), (3840, 2160))
+        self.assertEqual(captured["format_sort"], ["res:1080", "vcodec:h264", "fps:30"])
+        self.assertEqual((entry["width"], entry["height"]), (1920, 1080))
 
     def test_frames_are_encoded_at_quality_95_without_chroma_subsampling(self):
         from PIL import Image as PILImage

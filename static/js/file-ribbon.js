@@ -59,7 +59,7 @@
     video: "tv-minimal-play", camera: "camera", guide: "map", open: "folder-open",
     save: "save", saveAs: "save-all", plus: "plus", pdf: "file-text", slides: "presentation",
     image: "image", package: "package", backup: "hard-drive-download", book: "book-open",
-    trash: "trash", rename: "pencil-line"
+    trash: "trash", rename: "pencil-line", ocr: "scan-text"
   };
   const ICONS = {};
   Object.keys(ICON_REFS).forEach((key) => {
@@ -291,6 +291,16 @@
       }
     },
 
+    ocr: {
+      title: "Image to text",
+      note: "Box handwriting on the page, or pick a photo, and get it back as LaTeX or text.",
+      icon: "ocr",
+      run: async () => {
+        close();
+        window.Inkyscib?.Ocr?.start?.();
+      }
+    },
+
     youtube: {
       title: "YouTube",
       note: "A movable player you can take a frame from onto the page.",
@@ -302,8 +312,8 @@
     },
 
     arInky: {
-      title: "AR Inky",
-      note: "Draw over what the camera sees.",
+      title: "AR MAETHIST",
+      note: "Pinch to draw in the air over what the camera sees.",
       icon: "camera",
       run: async () => {
         close();
@@ -564,7 +574,7 @@
       icon: "tools",
       heading: "Extra tools",
       blurb: "The things that sit beside the drawing rather than on it. Each one opens over the canvas and closes again.",
-      commands: ["planner", "pomodoro", "youtube", "arInky", "featureTour"]
+      commands: ["ocr", "planner", "pomodoro", "youtube", "arInky", "featureTour"]
     },
     recent: {
       label: "Recent",
@@ -1006,6 +1016,8 @@
       ' aria-live="polite" hidden>' +
       '<span class="file-ribbon-progress-spinner" aria-hidden="true"></span>' +
       '<span class="file-ribbon-progress-label"></span>' +
+      '<button type="button" class="file-ribbon-progress-stop" aria-label="Stop" title="Stop" hidden>' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg></button>' +
       "</span>" +
       '<span class="file-ribbon-sep" aria-hidden="true"></span>' +
       '<span class="file-ribbon-doc">' +
@@ -1122,17 +1134,28 @@
   function progressElements() {
     const host = document.getElementById("fileRibbonProgress");
     return host
-      ? { host, label: host.querySelector(".file-ribbon-progress-label") }
+      ? { host, label: host.querySelector(".file-ribbon-progress-label"), stop: host.querySelector(".file-ribbon-progress-stop") }
       : null;
   }
 
-  function startProgress(text) {
+  // options.onCancel puts a Stop button on the chip: a job you can walk away
+  // from (a frame import) should never hold the ribbon hostage.
+  function startProgress(text, options = {}) {
     const parts = progressElements();
     if (!parts) return null;
     const token = ++progressToken;
     parts.label.textContent = text || "Working";
     parts.host.dataset.tone = "busy";
     parts.host.hidden = false;
+    if (parts.stop) {
+      parts.stop.hidden = typeof options.onCancel !== "function";
+      parts.stop.onclick = parts.stop.hidden ? null : () => {
+        if (token !== progressToken) return;
+        parts.stop.hidden = true;
+        options.onCancel();
+        finish("done", "Stopped");
+      };
+    }
 
     const finish = (tone, held) => {
       // A later job has taken the chip; leave it to that one.
@@ -1140,6 +1163,7 @@
       const current = progressElements();
       if (!current) return;
       current.host.dataset.tone = tone;
+      if (current.stop) { current.stop.hidden = true; current.stop.onclick = null; }
       if (!held) {
         current.host.hidden = true;
         return;

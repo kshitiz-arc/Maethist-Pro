@@ -25,7 +25,7 @@ changes too. `templates/legal/*` describes the code as it runs; start at
 `VERSION` and `APP_VERSION` in `app.py` must agree. `render.yaml` deploys to
 Render with `gunicorn wsgi:app --config gunicorn.conf.py`; production refuses
 to start without `SECRET_KEY`. YouTube frames are cut at the source's own
-resolution up to `YOUTUBE_FRAME_MAX_HEIGHT` (2160), JPEG 95 at 4:4:4; the
+resolution up to `YOUTUBE_FRAME_MAX_HEIGHT` (1080 since 2.7.0, for speed; 2160 brings 4K back), JPEG 95 at 4:4:4; the
 browser-side ceiling is 12 MB per frame in `storage.js` and `youtube.js`, and
 `app.py`'s `YOUTUBE_FRAME_MAX_DATA_URL` must stay under it.
 `YOUTUBE_FULL_FRAMES=false` falls back to storyboard previews. The offline
@@ -33,6 +33,15 @@ shell is `/sw.js` (`templates/sw.js`): it precaches every file under `static/`
 that the pages load, so a new asset type needs adding to `_OFFLINE_SUFFIXES`.
 `OFFLINE_SHELL=off` is its remote off switch (`templates/sw-off.js`).
 `docs/V2-REVIEW.md` is the launch review, with the measurements.
+
+Image to text (`ocr_engine.py`, `/api/ocr`) is optional per server. Without
+`requirements-ocr.txt` it reports itself unavailable and the tool says so on
+opening; `render.yaml` installs only `requirements.txt`, so production has it
+off. The equation reader (Pix2Text MFR on ONNX Runtime) is about 120 MB of
+weights; the handwriting reader (TrOCR on PyTorch) needs about 2 GB of RAM,
+more than Render's free plan. `OCR=off` is its switch. Models load from the
+Hugging Face cache before the network (a hub ETag check once hung the first
+request), and `OCR_MODEL_TESTS=1` runs the tests that use the real models.
 
 ## Icons
 
@@ -74,8 +83,8 @@ python -c "import os; os.environ.setdefault('SECRET_KEY','dev'); from app import
 python -m pytest tests/ -q
 ```
 
-**Baseline is 484 passed / 0 failed, 1,457 subtests, about 10 minutes
-(2026-11-15, version 2).** Before that it was 497 passed / 1 failed, 906 subtests, about 10 minutes
+**Baseline is 605 passed / 0 failed / 1 skipped, 2,285 subtests, about 13 minutes
+(2026-11-19, version 2.7.0).** Before that, 484 / 0 / 1,457 subtests (2026-11-15, version 2). Before that it was 497 passed / 1 failed, 906 subtests, about 10 minutes
 (2026-09-21), after the tool-panel and shape-assist work (TODOS item 19) added
 `test_tool_panel_layout.py` and nine tests to `test_write_assist.py`. Before
 that, 474 / 1 / 814 the same day after the production-readiness pass (item 18). It was 447 / 0 / 723 on 2026-09-20 and 319 / 244 on

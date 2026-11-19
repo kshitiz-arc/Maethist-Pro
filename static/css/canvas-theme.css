@@ -167,3 +167,33 @@ html[data-canvas] .workspace-stage {
     transition: none;
   }
 }
+
+/* A picture of your own (static/js/canvas-picture.js). */
+.canvas-picture-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.canvas-picture-thumb {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 2px solid var(--ui-line, #111111);
+  border-radius: 10px;
+  background: center / cover no-repeat;
+}
+.canvas-picture-thumb[hidden] { display: none; }
+.canvas-picture-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 2px solid var(--ui-line, #111111);
+  border-radius: 999px;
+  background: var(--surface-2, var(--surface));
+  color: var(--ink);
+  font: 700 var(--t-2) / 1 var(--display);
+  cursor: pointer;
+}
+.canvas-picture-btn[hidden] { display: none; }
+.canvas-picture-btn svg.icon { width: 18px; height: 18px; }
+.canvas-picture-btn:hover { background: var(--brand-yellow, #FFD23F); color: #111111; }
+.canvas-picture-btn:focus-visible { outline: 3px solid var(--brand-blue); outline-offset: 2px; }
+.canvas-picture-btn[data-picture="remove"] { width: 44px; padding: 0; justify-content: center; }
