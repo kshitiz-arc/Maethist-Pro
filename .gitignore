@@ -58,3 +58,4 @@ graphify-out/
 *.bak
 tools/*introspection*
 data/
+brag-output/

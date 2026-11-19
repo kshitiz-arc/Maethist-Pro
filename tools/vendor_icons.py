@@ -112,7 +112,7 @@ ICONS = {
         "coffee", "cloud-rain", "waves", "couch", "fire", "brain", "target", "speaker-high",
         "speaker-x", "clock", "timer", "minus", "plus", "hourglass",
         # Planner
-        "calendar-check", "calendar-blank", "caret-left", "caret-right", "caret-down", "bell",
+        "calendar-check", "calendar-blank", "download-simple", "upload-simple", "caret-left", "caret-right", "caret-down", "bell",
         "bell-slash", "check-circle", "list-checks", "pencil-simple", "trash", "sun", "moon",
         "notepad", "flag",
         # tour

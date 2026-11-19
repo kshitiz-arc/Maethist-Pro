@@ -1,5 +1,38 @@
 # Changelog
 
+## 2.8.0 — 2026-11-19
+
+### The Planner, overhauled
+
+Neo-brutal like the rest of the app, with the features an LLM council chose
+for students revising maths (`docs/council/council-planner-2026-11-19.md`).
+
+- **Focus from a task.** Every open task has a Focus button: it starts the
+  focus timer for that task, and when the session ends its minutes are logged
+  against the task ("25 min focused") and the day.
+- **Exams that count down.** Add a test or board paper with its date; it
+  counts the days and turns red inside a week. List the chapters to revise,
+  or fill in a whole class's CBSE chapters (9, 10, 11 or 12) with one tap, and
+  the Planner spreads one "Revise:" task per chapter over the days before it.
+- **Streak and This week.** How many days in a row you have finished
+  something, and the seven days of this week with how much of each is done,
+  the week's totals and its focus time. Tap a day to open it.
+- **Topic and notebook on a task.** Tag a task with its chapter (the CBSE
+  chapters are suggested) and link it to a notebook; Open notebook takes you
+  straight there.
+- **Back up and Restore** the whole plan as a file. Restore only adds what is
+  missing, so it never duplicates.
+- **The look:** ink outlines, hard shadows, a yellow primary, striped
+  progress, chapter chips in blue, focus in green, the exam that is close in
+  red; big display numbers; 44px targets on a tablet.
+
+Plans saved before 2.8.0 open unchanged.
+
+### Fixed
+
+- Image to text: the result box ran past the right edge of its sheet.
+
+
 ## 2.7.1 — 2026-11-19
 
 ### Added

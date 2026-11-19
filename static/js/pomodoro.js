@@ -911,6 +911,18 @@
             return running ? Math.max(0, endAt - Date.now()) : remainingMs;
         }
 
+        // What this focus session is for, when the Planner started it.
+        let focusLabel = '';
+
+        // Start a focus session from elsewhere (the Planner): focus mode, the
+        // timer running, the pill showing what it is for.
+        function startFocus(label) {
+            focusLabel = String(label || '').slice(0, 120);
+            setMode('focus');
+            start();
+            if (focusLabel) toast('Focusing on ' + focusLabel);
+        }
+
         function start() {
             if (running) return;
             requestNotificationPermission();
@@ -958,6 +970,12 @@
 
             if (finishedFocus) {
                 recordFocusSession(settings.focus);
+                // The Planner logs this session against the task it was
+                // started from (planner.js, "Start focus").
+                document.dispatchEvent(new CustomEvent('inkyscib:focus-complete', {
+                    detail: { minutes: settings.focus, label: focusLabel }
+                }));
+                focusLabel = '';
                 confettiBurst();
             }
             chime(finishedFocus ? 'focus-end' : 'break-end');
@@ -1536,6 +1554,7 @@
         window.Inkyscib.Pomodoro = {
             open: openModal,
             close: closeModal,
+            startFocus,
             renderAmbient,
             SOUNDS: SOUNDS.map((sound) => sound.id),
             BEDS: BED_IDS.slice(),

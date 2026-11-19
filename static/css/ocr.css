@@ -92,6 +92,9 @@
 @keyframes ocrSpin { to { transform: rotate(360deg); } }
 .ocr-result-label { color: var(--ink-2); font: 700 var(--t-1) / 1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; }
 .ocr-result {
+  /* border-box: a 100% width plus padding and border ran past the card's
+     right edge (seen in the launch-video capture). */
+  box-sizing: border-box;
   width: 100%;
   min-height: 96px;
   padding: 10px 12px;

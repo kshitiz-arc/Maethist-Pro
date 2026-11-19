@@ -18,6 +18,28 @@
   const REMINDER_SCAN_FALLBACK_MS = 5 * 60 * 1000;
   const DEVICE_CALENDAR_CATCHUP_MS = 5 * 60 * 1000;
 
+  // The CBSE mathematics chapters for classes 9 to 12 (NCERT, rationalised),
+  // offered as topics for a task and as the chapters an exam plan spreads.
+  const CBSE_CHAPTERS = {
+    '9': ['Number Systems', 'Polynomials', 'Coordinate Geometry', 'Linear Equations in Two Variables',
+      "Introduction to Euclid's Geometry", 'Lines and Angles', 'Triangles', 'Quadrilaterals', 'Circles',
+      "Heron's Formula", 'Surface Areas and Volumes', 'Statistics'],
+    '10': ['Real Numbers', 'Polynomials', 'Pair of Linear Equations in Two Variables', 'Quadratic Equations',
+      'Arithmetic Progressions', 'Triangles', 'Coordinate Geometry', 'Introduction to Trigonometry',
+      'Some Applications of Trigonometry', 'Circles', 'Areas Related to Circles', 'Surface Areas and Volumes',
+      'Statistics', 'Probability'],
+    '11': ['Sets', 'Relations and Functions', 'Trigonometric Functions', 'Complex Numbers and Quadratic Equations',
+      'Linear Inequalities', 'Permutations and Combinations', 'Binomial Theorem', 'Sequences and Series',
+      'Straight Lines', 'Conic Sections', 'Introduction to Three Dimensional Geometry', 'Limits and Derivatives',
+      'Statistics', 'Probability'],
+    '12': ['Relations and Functions', 'Inverse Trigonometric Functions', 'Matrices', 'Determinants',
+      'Continuity and Differentiability', 'Application of Derivatives', 'Integrals', 'Application of Integrals',
+      'Differential Equations', 'Vector Algebra', 'Three Dimensional Geometry', 'Linear Programming', 'Probability']
+  };
+  const MAX_EXAMS = 40;
+  const MAX_PLAN_CHAPTERS = 60;
+  const FOCUS_KEY = 'inkyscib-planner-focus';
+
   const RECURRENCE_LABELS = {
     none: 'One time',
     daily: 'Every day',
@@ -126,6 +148,57 @@
           </div>
         </header>
 
+        <section class="planner-study" aria-label="Study at a glance">
+          <div class="planner-study-card planner-exams" aria-labelledby="plannerExamsTitle">
+            <div class="planner-study-head">
+              <h3 id="plannerExamsTitle">Exams</h3>
+              <button id="plannerAddExamBtn" class="planner-chip-btn" type="button" aria-expanded="false" aria-controls="plannerExamForm">
+                ${phIcon('phosphor:plus')}<span>Add exam</span>
+              </button>
+            </div>
+            <ol id="plannerExamList" class="planner-exam-list"></ol>
+            <p id="plannerExamEmpty" class="planner-study-empty">Add a test or a board paper and see the days count down.</p>
+            <form id="plannerExamForm" class="planner-exam-form" hidden novalidate>
+              <label class="planner-field"><span>Exam</span>
+                <input id="plannerExamName" type="text" maxlength="60" placeholder="e.g. Maths board exam" autocomplete="off"></label>
+              <label class="planner-field"><span>Date</span>
+                <input id="plannerExamDate" type="date"></label>
+              <label class="planner-field planner-exam-chapters"><span>Chapters to revise <small>(optional, one per line)</small></span>
+                <textarea id="plannerExamChapters" rows="3" placeholder="Leave empty for just a countdown"></textarea></label>
+              <div class="planner-exam-fill" role="group" aria-label="Fill in a class's chapters">
+                <span>Fill in:</span>
+                <button type="button" class="planner-chip-btn" data-fill-class="9">Class 9</button>
+                <button type="button" class="planner-chip-btn" data-fill-class="10">Class 10</button>
+                <button type="button" class="planner-chip-btn" data-fill-class="11">Class 11</button>
+                <button type="button" class="planner-chip-btn" data-fill-class="12">Class 12</button>
+              </div>
+              <p id="plannerExamError" class="planner-form-error" role="alert" hidden></p>
+              <div class="planner-composer-actions">
+                <button id="plannerExamCancel" class="planner-secondary-btn" type="button">Cancel</button>
+                <button class="planner-save-task-btn" type="submit"><span>Save exam</span></button>
+              </div>
+            </form>
+          </div>
+          <div class="planner-study-card planner-streak" aria-live="polite">
+            <span class="planner-study-kicker">Streak</span>
+            <strong id="plannerStreakValue" class="planner-big-number">0</strong>
+            <span id="plannerStreakMeta" class="planner-study-meta">days in a row with something done</span>
+          </div>
+          <div class="planner-study-card planner-week" aria-labelledby="plannerWeekTitle">
+            <div class="planner-study-head">
+              <h3 id="plannerWeekTitle">This week</h3>
+              <span id="plannerWeekMeta" class="planner-study-meta"></span>
+            </div>
+            <div id="plannerWeekStrip" class="planner-week-strip" role="group" aria-label="This week's days"></div>
+          </div>
+          <div class="planner-study-card planner-backup">
+            <span class="planner-study-kicker">Your plan</span>
+            <button id="plannerBackupBtn" class="planner-chip-btn" type="button">${phIcon('phosphor:download-simple')}<span>Back up</span></button>
+            <button id="plannerRestoreBtn" class="planner-chip-btn" type="button">${phIcon('phosphor:upload-simple')}<span>Restore</span></button>
+            <input id="plannerRestoreInput" type="file" accept=".json,application/json" hidden>
+          </div>
+        </section>
+
         <div class="planner-layout">
           <section class="planner-calendar-pane" aria-label="Planner calendar">
             <div class="planner-calendar-toolbar">
@@ -194,6 +267,18 @@
                 <span>What needs your attention?</span>
                 <input id="plannerTaskTitle" type="text" maxlength="120" autocomplete="off" placeholder="e.g. Finish physics notes" required>
               </label>
+
+              <div class="planner-link-fields">
+                <label class="planner-field">
+                  <span>Topic <small>(optional)</small></span>
+                  <input id="plannerTaskTopic" type="text" maxlength="60" list="plannerTopicList" autocomplete="off" placeholder="e.g. Quadratic Equations">
+                  <datalist id="plannerTopicList"></datalist>
+                </label>
+                <label class="planner-field">
+                  <span>Notebook <small>(optional)</small></span>
+                  <select id="plannerTaskNotebook"><option value="">None</option></select>
+                </label>
+              </div>
 
               <div class="planner-reminder-card">
                 <div class="planner-reminder-copy">
@@ -317,6 +402,25 @@
       taskList: root.querySelector('#plannerTaskList'),
       emptyState: root.querySelector('#plannerEmptyState'),
       emptyAddBtn: root.querySelector('#plannerEmptyAddBtn'),
+      taskTopic: root.querySelector('#plannerTaskTopic'),
+      topicList: root.querySelector('#plannerTopicList'),
+      taskNotebook: root.querySelector('#plannerTaskNotebook'),
+      addExamBtn: root.querySelector('#plannerAddExamBtn'),
+      examForm: root.querySelector('#plannerExamForm'),
+      examName: root.querySelector('#plannerExamName'),
+      examDate: root.querySelector('#plannerExamDate'),
+      examChapters: root.querySelector('#plannerExamChapters'),
+      examError: root.querySelector('#plannerExamError'),
+      examCancel: root.querySelector('#plannerExamCancel'),
+      examList: root.querySelector('#plannerExamList'),
+      examEmpty: root.querySelector('#plannerExamEmpty'),
+      streakValue: root.querySelector('#plannerStreakValue'),
+      streakMeta: root.querySelector('#plannerStreakMeta'),
+      weekStrip: root.querySelector('#plannerWeekStrip'),
+      weekMeta: root.querySelector('#plannerWeekMeta'),
+      backupBtn: root.querySelector('#plannerBackupBtn'),
+      restoreBtn: root.querySelector('#plannerRestoreBtn'),
+      restoreInput: root.querySelector('#plannerRestoreInput'),
       toastHost: document.getElementById('plannerToastHost')
     };
   }
@@ -367,8 +471,13 @@
         deleteTask(taskId);
       } else if (action.dataset.plannerAction === 'device-calendar') {
         promptDeviceCalendar(taskId, occurrenceDate);
+      } else if (action.dataset.plannerAction === 'focus') {
+        startTaskFocus(taskId, occurrenceDate);
+      } else if (action.dataset.plannerAction === 'notebook') {
+        openTaskNotebook(taskId);
       }
     });
+    bindStudyEvents();
 
     ui.notifyBtn.addEventListener('click', () => {
       requestNotificationAccess({ sendTest: true });
@@ -609,6 +718,7 @@
   }
 
   function renderAll() {
+    renderStudy();
     refreshDateBounds();
     selectedDate = clampDateKey(selectedDate, bounds.min, bounds.max);
     clampViewMonth();
@@ -779,6 +889,29 @@
     if (task.recurrence !== 'none') {
       meta.appendChild(makeTaskMeta(RECURRENCE_LABELS[task.recurrence], 'repeat'));
     }
+    if (task.topic) meta.prepend(makeTaskMeta(task.topic, 'topic'));
+    if (task.focusMinutes) meta.appendChild(makeTaskMeta(formatMinutes(task.focusMinutes) + ' focused', 'focus'));
+    if (!completed) {
+      const focus = document.createElement('button');
+      focus.type = 'button';
+      focus.className = 'planner-task-action is-focus';
+      focus.dataset.plannerAction = 'focus';
+      focus.dataset.taskId = task.id;
+      focus.dataset.occurrenceDate = record.occurrenceDate;
+      focus.setAttribute('aria-label', 'Start a focus session for ' + task.title);
+      focus.innerHTML = phIcon('phosphor:timer') + '<span>Focus</span>';
+      meta.appendChild(focus);
+    }
+    if (task.notebookId) {
+      const open = document.createElement('button');
+      open.type = 'button';
+      open.className = 'planner-task-action is-notebook';
+      open.dataset.plannerAction = 'notebook';
+      open.dataset.taskId = task.id;
+      open.setAttribute('aria-label', 'Open the notebook for ' + task.title);
+      open.innerHTML = phIcon('phosphor:notebook') + '<span>Open notebook</span>';
+      meta.appendChild(open);
+    }
     if (!completed) {
       const deviceAlert = document.createElement('button');
       deviceAlert.type = 'button';
@@ -858,7 +991,29 @@
     if (monthOrdinal(viewMonth) > monthOrdinal(maxMonth)) viewMonth = maxMonth;
   }
 
+  function fillComposerChoices() {
+    if (ui.topicList && !ui.topicList.childElementCount) {
+      const seen = new Set();
+      Object.values(CBSE_CHAPTERS).flat().forEach((chapter) => {
+        if (seen.has(chapter)) return;
+        seen.add(chapter);
+        const option = document.createElement('option');
+        option.value = chapter;
+        ui.topicList.appendChild(option);
+      });
+    }
+    const library = window.Inkyscib && window.Inkyscib.Library;
+    if (!library || typeof library.listDocuments !== 'function' || !ui.taskNotebook) return;
+    library.listDocuments().then((listing) => {
+      const keep = ui.taskNotebook.value;
+      ui.taskNotebook.replaceChildren(new Option('None', ''));
+      (listing.documents || []).forEach((doc) => ui.taskNotebook.appendChild(new Option(doc.name || 'Untitled', doc.id)));
+      ui.taskNotebook.value = keep && [...ui.taskNotebook.options].some((o) => o.value === keep) ? keep : '';
+    }).catch(() => {});
+  }
+
   function openComposer() {
+    fillComposerChoices();
     if (composerOpen) return;
     composerOpen = true;
     resetComposer();
@@ -881,6 +1036,8 @@
   }
 
   function resetComposer() {
+    if (ui.taskTopic) ui.taskTopic.value = '';
+    if (ui.taskNotebook) ui.taskNotebook.value = '';
     ui.taskForm.reset();
     ui.formError.hidden = true;
     ui.formError.textContent = '';
@@ -1007,6 +1164,9 @@
       reminderTime,
       createdAt: Date.now(),
       completed: {},
+      topic: (ui.taskTopic.value || '').trim().slice(0, 60),
+      notebookId: ui.taskNotebook.value || '',
+      focusMinutes: 0,
       notified: {
         reminder: {},
         auto: {}
@@ -2380,10 +2540,280 @@
     }, 220);
   }
 
+  // ---------------------------------------------------------------------
+  // Study: exams, streak, this week, focus and notebooks, backup.
+  // Chosen by an LLM council (docs/council/council-planner-2026-11-19.md).
+  // ---------------------------------------------------------------------
+
+  function normalizeExams(raw) {
+    if (!Array.isArray(raw)) return [];
+    return raw.slice(0, MAX_EXAMS).map((exam) => {
+      if (!exam || typeof exam !== 'object' || !isDateKey(exam.date)) return null;
+      const name = typeof exam.name === 'string' ? exam.name.trim().slice(0, 60) : '';
+      if (!name) return null;
+      return { id: typeof exam.id === 'string' && exam.id ? exam.id.slice(0, 100) : makeId(), name, date: exam.date };
+    }).filter(Boolean);
+  }
+
+  function formatMinutes(total) {
+    const minutes = Math.max(0, Math.round(total));
+    if (minutes < 60) return minutes + ' min';
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+    return hours + ' h' + (rest ? ' ' + rest + ' min' : '');
+  }
+
+  function completedDateKeys() {
+    const keys = new Set();
+    store.tasks.forEach((task) => Object.keys(task.completed || {}).forEach((key) => keys.add(key)));
+    return keys;
+  }
+
+  // Days in a row, ending today, with at least one thing ticked off. Today
+  // not done yet does not break it: the run up to yesterday still counts.
+  function currentStreak() {
+    const done = completedDateKeys();
+    let day = parseDateKey(toDateKey(new Date()));
+    if (!done.has(toDateKey(day))) day = addCalendarDays(day, -1);
+    let streak = 0;
+    while (done.has(toDateKey(day)) && streak < 3660) {
+      streak += 1;
+      day = addCalendarDays(day, -1);
+    }
+    return streak;
+  }
+
+  function weekDays() {
+    const today = parseDateKey(toDateKey(new Date()));
+    const monday = addCalendarDays(today, -((today.getDay() + 6) % 7));
+    return Array.from({ length: 7 }, (_, i) => toDateKey(addCalendarDays(monday, i)));
+  }
+
+  function renderStudy() {
+    if (!ui.examList) return;
+    const todayKey = toDateKey(new Date());
+    const exams = (store.exams || []).filter((exam) => exam.date >= todayKey).sort((a, b) => a.date.localeCompare(b.date));
+    ui.examList.replaceChildren(...exams.map((exam) => {
+      const days = calendarDayDifference(todayKey, exam.date);
+      const item = document.createElement('li');
+      item.className = 'planner-exam' + (days <= 7 ? ' is-soon' : '');
+      item.innerHTML = '<span class="planner-exam-days"><b></b><small></small></span><span class="planner-exam-copy"><strong></strong><small></small></span>' +
+        '<button type="button" class="planner-icon-btn planner-exam-delete">' + phIcon('phosphor:trash') + '</button>';
+      item.querySelector('b').textContent = days === 0 ? 'Today' : String(days);
+      item.querySelector('.planner-exam-days small').textContent = days === 0 ? '' : (days === 1 ? 'day' : 'days');
+      item.querySelector('strong').textContent = exam.name;
+      item.querySelector('.planner-exam-copy small').textContent = compactDateFormatter.format(parseDateKey(exam.date));
+      const remove = item.querySelector('.planner-exam-delete');
+      remove.dataset.examId = exam.id;
+      remove.setAttribute('aria-label', 'Remove the exam ' + exam.name);
+      return item;
+    }));
+    ui.examEmpty.hidden = exams.length > 0;
+
+    const streak = currentStreak();
+    ui.streakValue.textContent = String(streak);
+    ui.streakMeta.textContent = streak === 1 ? 'day with something done' : 'days in a row with something done';
+
+    const days = weekDays();
+    let planned = 0;
+    let done = 0;
+    let minutes = 0;
+    ui.weekStrip.replaceChildren(...days.map((key) => {
+      const records = key >= bounds.min && key <= bounds.max ? getOccurrencesForDate(key) : [];
+      const finished = records.filter((r) => isTaskCompleted(r.task, r.occurrenceDate)).length;
+      planned += records.length;
+      done += finished;
+      minutes += Number((store.focusDays || {})[key]) || 0;
+      const day = document.createElement('button');
+      day.type = 'button';
+      day.className = 'planner-week-day';
+      day.dataset.weekDate = key;
+      day.disabled = key < bounds.min || key > bounds.max;
+      day.classList.toggle('is-today', key === todayKey);
+      day.classList.toggle('is-selected', key === selectedDate);
+      day.classList.toggle('is-complete', records.length > 0 && finished === records.length);
+      const date = parseDateKey(key);
+      day.innerHTML = '<span></span><b></b><i aria-hidden="true"></i>';
+      day.querySelector('span').textContent = weekdayFormatter.format(date);
+      day.querySelector('b').textContent = String(date.getDate());
+      day.querySelector('i').style.setProperty('--fill', records.length ? (finished / records.length) : 0);
+      day.setAttribute('aria-label', longDateFormatter.format(date) + ': ' + finished + ' of ' + records.length + ' done');
+      return day;
+    }));
+    ui.weekMeta.textContent = done + ' of ' + planned + ' done' + (minutes ? ' · ' + formatMinutes(minutes) + ' focused' : '');
+  }
+
+  function bindStudyEvents() {
+    ui.addExamBtn.addEventListener('click', () => {
+      const open = ui.examForm.hidden;
+      ui.examForm.hidden = !open;
+      ui.addExamBtn.setAttribute('aria-expanded', String(open));
+      if (open) {
+        ui.examDate.min = bounds.min;
+        ui.examDate.max = bounds.max;
+        ui.examError.hidden = true;
+        ui.examName.focus();
+      }
+    });
+    ui.examCancel.addEventListener('click', closeExamForm);
+    ui.examForm.addEventListener('click', (event) => {
+      const fill = event.target.closest('[data-fill-class]');
+      if (fill) ui.examChapters.value = CBSE_CHAPTERS[fill.dataset.fillClass].join('\n');
+    });
+    ui.examForm.addEventListener('submit', saveExam);
+    ui.examList.addEventListener('click', (event) => {
+      const remove = event.target.closest('[data-exam-id]');
+      if (!remove) return;
+      store.exams = (store.exams || []).filter((exam) => exam.id !== remove.dataset.examId);
+      persistStore();
+      renderStudy();
+    });
+    ui.weekStrip.addEventListener('click', (event) => {
+      const day = event.target.closest('[data-week-date]');
+      if (day && !day.disabled) selectDay(day.dataset.weekDate);
+    });
+    ui.backupBtn.addEventListener('click', backupPlanner);
+    ui.restoreBtn.addEventListener('click', () => ui.restoreInput.click());
+    ui.restoreInput.addEventListener('change', restorePlanner);
+    document.addEventListener('inkyscib:focus-complete', logFocusSession);
+  }
+
+  function closeExamForm() {
+    ui.examForm.hidden = true;
+    ui.addExamBtn.setAttribute('aria-expanded', 'false');
+    ui.examForm.reset();
+    ui.addExamBtn.focus();
+  }
+
+  // Save an exam, and if chapters were listed, spread one revision task per
+  // chapter over the days between now and the day before the exam.
+  function saveExam(event) {
+    event.preventDefault();
+    const name = ui.examName.value.trim().replace(/\s+/g, ' ').slice(0, 60);
+    const date = ui.examDate.value;
+    const fail = (message) => { ui.examError.textContent = message; ui.examError.hidden = false; };
+    if (!name) return fail('Give the exam a name.');
+    if (!isDateKey(date) || date < bounds.min || date > bounds.max) return fail('Pick a date between today and a year from now.');
+    if ((store.exams || []).length >= MAX_EXAMS) return fail('That is a lot of exams. Remove a past one first.');
+    store.exams = (store.exams || []).concat({ id: makeId(), name, date });
+
+    const chapters = ui.examChapters.value.split('\n').map((line) => line.trim()).filter(Boolean).slice(0, MAX_PLAN_CHAPTERS);
+    let planned = 0;
+    if (chapters.length) {
+      const first = toDateKey(new Date());
+      const span = Math.max(1, calendarDayDifference(first, date));
+      chapters.forEach((chapter, i) => {
+        if (store.tasks.length >= MAX_TASKS) return;
+        const offset = Math.min(span - 1, Math.floor((i * span) / chapters.length));
+        const day = toDateKey(addCalendarDays(parseDateKey(first), Math.max(0, offset)));
+        store.tasks.push({
+          id: makeId(), title: ('Revise: ' + chapter).slice(0, 120), startDate: day, recurrence: 'none',
+          reminderTime: null, createdAt: Date.now(), completed: {}, topic: chapter.slice(0, 60), notebookId: '',
+          focusMinutes: 0, notified: { reminder: {}, auto: {} }
+        });
+        planned += 1;
+      });
+    }
+    persistStore();
+    closeExamForm();
+    renderAll();
+    showToast({
+      title: 'Exam added',
+      message: planned
+        ? name + ': ' + planned + ' revision task' + (planned === 1 ? '' : 's') + ' spread over the days before it.'
+        : name + ' is on the countdown.',
+      kind: 'success'
+    });
+  }
+
+  function startTaskFocus(taskId, occurrenceDate) {
+    const task = store.tasks.find((item) => item.id === taskId);
+    const pomodoro = window.Inkyscib && window.Inkyscib.Pomodoro;
+    if (!task || !pomodoro || typeof pomodoro.startFocus !== 'function') return;
+    try {
+      window.sessionStorage.setItem(FOCUS_KEY, JSON.stringify({ taskId, occurrenceDate }));
+    } catch (error) { /* storage blocked: the minutes still go to the day */ }
+    closePlanner();
+    pomodoro.startFocus(task.title);
+  }
+
+  // A finished focus session from the timer: its minutes go to the day, and
+  // to the task it was started from, if any.
+  function logFocusSession(event) {
+    const minutes = Math.max(0, Math.round(Number(event.detail && event.detail.minutes) || 0));
+    if (!minutes) return;
+    const today = toDateKey(new Date());
+    store.focusDays = store.focusDays || {};
+    store.focusDays[today] = (Number(store.focusDays[today]) || 0) + minutes;
+    let linked = null;
+    try { linked = JSON.parse(window.sessionStorage.getItem(FOCUS_KEY) || 'null'); } catch (error) { linked = null; }
+    const task = linked && store.tasks.find((item) => item.id === linked.taskId);
+    if (task) task.focusMinutes = (task.focusMinutes || 0) + minutes;
+    try { window.sessionStorage.removeItem(FOCUS_KEY); } catch (error) { /* nothing to clear */ }
+    persistStore();
+    if (plannerOpen) renderAll();
+  }
+
+  function openTaskNotebook(taskId) {
+    const task = store.tasks.find((item) => item.id === taskId);
+    const library = window.Inkyscib && window.Inkyscib.Library;
+    if (!task || !task.notebookId || !library) return;
+    closePlanner();
+    Promise.resolve(library.openDocument(task.notebookId)).catch(() => {
+      showToast({ title: 'Notebook not found', message: 'It may have been deleted.', kind: 'warning' });
+    });
+  }
+
+  function backupPlanner() {
+    const payload = JSON.stringify({
+      app: 'maethist-planner',
+      version: STORE_VERSION,
+      exportedAt: new Date().toISOString(),
+      tasks: store.tasks,
+      exams: store.exams || [],
+      focusDays: store.focusDays || {}
+    }, null, 2);
+    const url = URL.createObjectURL(new Blob([payload], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'maethist-planner-' + toDateKey(new Date()) + '.json';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast({ title: 'Plan backed up', message: 'Keep the file somewhere safe; Restore brings it back.', kind: 'success' });
+  }
+
+  // Restore adds what is not already here (by id), so restoring twice, or
+  // onto a planner with new tasks, never duplicates or loses anything.
+  function restorePlanner() {
+    const file = ui.restoreInput.files && ui.restoreInput.files[0];
+    ui.restoreInput.value = '';
+    if (!file) return;
+    file.text().then((text) => {
+      const data = JSON.parse(text);
+      if (!data || data.app !== 'maethist-planner' || !Array.isArray(data.tasks)) throw new Error('not a planner backup');
+      const have = new Set(store.tasks.map((task) => task.id));
+      const incoming = data.tasks.map(normalizeTask).filter((task) => task && !have.has(task.id));
+      store.tasks = store.tasks.concat(incoming).slice(0, MAX_TASKS);
+      const examIds = new Set((store.exams || []).map((exam) => exam.id));
+      store.exams = (store.exams || []).concat(normalizeExams(data.exams).filter((exam) => !examIds.has(exam.id))).slice(0, MAX_EXAMS);
+      const days = sanitizeDateStateMap(data.focusDays);
+      store.focusDays = Object.assign({}, days, store.focusDays || {});
+      persistStore();
+      renderAll();
+      showToast({ title: 'Plan restored', message: incoming.length + ' task' + (incoming.length === 1 ? '' : 's') + ' added.', kind: 'success' });
+    }).catch(() => {
+      showToast({ title: 'That file is not a planner backup', message: 'Choose a file made with Back up.', kind: 'warning' });
+    });
+  }
+
   function persistStore() {
     const payload = JSON.stringify({
       version: STORE_VERSION,
-      tasks: store.tasks
+      tasks: store.tasks,
+      exams: store.exams || [],
+      focusDays: store.focusDays || {}
     });
     try {
       if (typeof window.safeSetItem === 'function') {
@@ -2422,15 +2852,20 @@
       raw = null;
     }
 
-    if (!raw) return { version: STORE_VERSION, tasks: [] };
+    if (!raw) return { version: STORE_VERSION, tasks: [], exams: [], focusDays: {} };
     try {
       const parsed = JSON.parse(raw);
       const tasks = Array.isArray(parsed && parsed.tasks)
         ? parsed.tasks.slice(0, MAX_TASKS).map(normalizeTask).filter(Boolean)
         : [];
-      return { version: STORE_VERSION, tasks };
+      return {
+        version: STORE_VERSION,
+        tasks,
+        exams: normalizeExams(parsed && parsed.exams),
+        focusDays: sanitizeDateStateMap(parsed && parsed.focusDays)
+      };
     } catch (error) {
-      return { version: STORE_VERSION, tasks: [] };
+      return { version: STORE_VERSION, tasks: [], exams: [], focusDays: {} };
     }
   }
 
@@ -2453,6 +2888,9 @@
       reminderTime,
       createdAt,
       completed: sanitizeDateStateMap(raw.completed),
+      topic: typeof raw.topic === 'string' ? raw.topic.trim().slice(0, 60) : '',
+      notebookId: typeof raw.notebookId === 'string' ? raw.notebookId.slice(0, 100) : '',
+      focusMinutes: Number.isFinite(Number(raw.focusMinutes)) ? Math.max(0, Math.round(Number(raw.focusMinutes))) : 0,
       notified: {
         reminder: sanitizeDateStateMap(notified.reminder),
         auto: sanitizeDateStateMap(notified.auto)
