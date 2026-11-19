@@ -363,7 +363,7 @@
     }
 
     // Reads the active document's saved records without writing anything.
-    // .inkydoc builds on this so a save writes what is on screen rather than
+    // .maedoc builds on this so a save writes what is on screen rather than
     // whatever the last autosave happened to catch.
     async function readActiveWorkspace() {
         const [drawing, notebook, ppt] = await Promise.all([
@@ -380,7 +380,7 @@
     }
 
     // Loads a workspace snapshot that came from outside the library — an
-    // opened .inkydoc — into a notebook of its own.
+    // opened .maedoc — into a notebook of its own.
     //
     // Deliberately a new entry rather than an overwrite: opening a file must
     // never be the thing that loses the work already on screen.
@@ -634,7 +634,7 @@
     function backupFilename() {
         const now = new Date();
         const pad = (value) => String(value).padStart(2, '0');
-        return `maethist-backup-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.inky`;
+        return `maethist-backup-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.mae`;
     }
 
     function downloadBlob(blob, filename) {
@@ -695,7 +695,7 @@
             document.dispatchEvent(new CustomEvent('inkyscibBackupSaved'));
 
             const count = documents.length;
-            setStatus(`Backup saved · ${count} notebook${count === 1 ? '' : 's'}. Keep the .inky file somewhere safe.`, 'success');
+            setStatus(`Backup saved · ${count} notebook${count === 1 ? '' : 's'}. Keep the .mae file somewhere safe.`, 'success');
         });
     }
 
@@ -829,15 +829,15 @@
                         <i class="fa-plus"></i>
                         <span>New notebook</span>
                     </button>
-                    <button id="libraryExportBtn" class="library-action-btn" type="button" title="Download all notebooks as one .inky file">
+                    <button id="libraryExportBtn" class="library-action-btn" type="button" title="Download all notebooks as one .mae file">
                         <i class="fa-download"></i>
                         <span>Export backup</span>
                     </button>
-                    <button id="libraryImportBtn" class="library-action-btn" type="button" title="Restore notebooks from a .inky file">
+                    <button id="libraryImportBtn" class="library-action-btn" type="button" title="Restore notebooks from a .mae file">
                         <i class="fa-upload"></i>
                         <span>Import backup</span>
                     </button>
-                    <input id="libraryImportInput" type="file" accept=".inky,.json,application/json" hidden>
+                    <input id="libraryImportInput" type="file" accept=".mae,.json,application/json" hidden>
                 </div>
                 <div id="libraryStatus" class="library-status" data-tone="muted" aria-live="polite"></div>
                 <div id="libraryGrid" class="library-grid"></div>

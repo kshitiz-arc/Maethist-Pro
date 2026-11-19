@@ -1,5 +1,62 @@
 # Changelog
 
+## 2.7.1 — 2026-11-19
+
+### Added
+
+- **Search everything with Ctrl+K** (or "/", or a double-click on empty
+  canvas with Select). One box over every tool and every File, Insert,
+  Export and Tools command, each with its key; type a few letters in order
+  ("imtx" finds Image to text), arrows to move, Enter to run. After
+  shadcn/ui's Command and ComfyUI's double-click search.
+- **"?" opens the keyboard shortcuts**, grouped into Tools, Edit, View and
+  Touch and pen.
+- **Tooltips that say the key.** Hover a tool, or reach it with the
+  keyboard, and a label shows its name and shortcut. It replaces the
+  browser's own title bubble, which was slow, never showed on keyboard focus
+  and never named the key. Moving along a toolbar, the next one opens at once.
+- **Move the background picture.** Canvas, then Picture, then Move: drag to
+  place it against the grid (shown while you place it), scroll or pinch to
+  size it, then Done. Esc puts it back.
+- **Drag the whole triangle** in the homepage demo, not just its corners.
+- **Frame quality: HD or MAX.** Video frames come in HD (1080p) by default,
+  which is quick. The HD button beside the camera turns to MAX: every frame
+  after that is the best the video has, up to 4K. The choice is remembered.
+- **The quick ring has the MAETHIST mark at its centre**, on its paper tile.
+
+### Changed
+
+- **Sora Sketch** is the new name for AR MAETHIST (*sora*: sky).
+- **Files are `.maedoc` and `.mae`.** A document saved from MAETHIST is now a
+  `.maedoc` (was `.inkydoc`), and a library backup a `.mae` (was `.inky`).
+  Files in the old formats no longer open.
+- The homepage construction draws itself in about a second (it took three)
+  and gives way at once if you grab it.
+- **About: new type.** The name is a large Bricolage Grotesque whose letters
+  rise in; the lead line is bigger, with "a way of seeing" in an Instrument
+  Serif italic over a marker stroke that draws in; the bio is a size up and
+  darker. Both fonts are self-hosted (SIL Open Font License).
+- About: 600+ students taught, and 180+ faculty in one session on his
+  Institutional Solver.
+
+### Fixed
+
+- **Room under the bars.** The File and Tools sheets, the Canvas popover,
+  tool panels and the YouTube player all opened against the bottom of the
+  ribbon. Each now sits 14px clear of the bar it opens from, on a laptop and
+  a tablet.
+- **"Start writing" no longer opens the Pen panel.** The pen is in hand; its
+  panel waits until you ask for it.
+- **The homepage altitude stops in mid-air no more.** With A dragged past B
+  or C, the foot of the perpendicular falls on BC produced, beyond the
+  triangle; that part of the line is now drawn, dashed, as in a textbook.
+- The homepage and the privacy policy still said video frames come in 4K;
+  since 2.7.0 they are up to 1080p ("HD lecture frames").
+- The pen size box had no label for a screen reader, the footer links were
+  under the 24px minimum target size, and three controls showed no focus
+  ring.
+
+
 ## 2.7.0 — 2026-11-19
 
 ### Fixed
@@ -53,7 +110,7 @@
   against the original. Scan is now **Clean scan** (even light, levels,
   sharpen, grey), and **Ink only** is new. These edits are baked once into a
   bitmap at the size the picture is shown, never redone per frame.
-- **AR MAETHIST** (was AR Inky). Pinch thumb and finger to draw in the air,
+- **Sora Sketch** (was AR Inky). Pinch thumb and finger to draw in the air,
   open them to lift the pen, where "index finger up" used to draw a line every
   time you moved to start somewhere new. A bar shows what the camera sees
   ("Show your hand", "Pinch to draw", "Drawing") and holds Undo, Dim the

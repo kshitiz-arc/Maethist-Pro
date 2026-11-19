@@ -72,7 +72,7 @@
           <div class="nb-window">
             <div class="nb-window-bar" aria-hidden="true">
               <span class="nb-window-dots"><i></i><i></i><i></i></span>
-              <span class="nb-window-title">geometry.inkydoc</span>
+              <span class="nb-window-title">geometry.maedoc</span>
             </div>
 
             <div class="toolbar" role="group" aria-label="Preview tools">
@@ -95,6 +95,9 @@
                   <line class="geo draw d3" id="gAC" pathLength="1" x1="250" y1="65" x2="380" y2="285" />
                   <line class="geo draw d4" id="gBC" pathLength="1" x1="120" y1="285" x2="380" y2="285" />
                   <path class="geo arc draw d5" id="gArc" pathLength="1" d="M120 285 Q250 105 380 285" />
+                  {# BC carried on, dashed, when the foot of the altitude falls
+                     outside the triangle (an obtuse angle at B or C). #}
+                  <line class="geo dash ext" id="gExt" x1="120" y1="285" x2="120" y2="285" style="display:none" />
                   <line class="geo dash draw d6" id="gAlt" pathLength="1" x1="250" y1="65" x2="250" y2="285" />
                   <path class="geo" id="gRight" d="M250 262 L272 262 L272 285" />
                   <g id="demoInk"></g>
@@ -106,7 +109,7 @@
                   <text class="label" data-label="C" x="388" y="312">C</text>
                 </svg>
               </div>
-              <p class="nb-demo-hint" id="demoHint" aria-live="polite">Drag A, B or C. The circle and the altitude follow.</p>
+              <p class="nb-demo-hint" id="demoHint" aria-live="polite">Drag A, B or C, or the whole triangle. The circle and the altitude follow.</p>
             </div>
 
             <div class="zoom">
@@ -126,7 +129,7 @@
       <div class="nb-marquee" aria-hidden="true">
         <div class="nb-marquee-track">
           {% for _ in range(2) %}
-          <span>Live geometry</span><span>Write on PDFs</span><span>Algebra tiles</span><span>Offline first</span><span>4K lecture frames</span><span>Vector PDF export</span><span>Notebook library</span><span>Focus timer</span>
+          <span>Live geometry</span><span>Write on PDFs</span><span>Algebra tiles</span><span>Offline first</span><span>HD lecture frames</span><span>Vector PDF export</span><span>Notebook library</span><span>Focus timer</span>
           {% endfor %}
         </div>
       </div>
@@ -172,7 +175,7 @@
           <a class="nb-tile span-2" href="{{ url_for('features') }}#material">
             <span class="nb-tile-icon is-purple">{{ icon("remix:play-circle-line") }}</span>
             <h3>Lectures beside notes</h3>
-            <p>Watch a YouTube lecture in a floating player and save any moment onto the page, at up to 4K.</p>
+            <p>Watch a YouTube lecture in a floating player and save any moment onto the page in full HD.</p>
             <span class="nb-tile-more">See the player {{ icon("remix:arrow-right-line") }}</span>
           </a>
           <a class="nb-tile span-3" href="{{ url_for('features') }}#focus">

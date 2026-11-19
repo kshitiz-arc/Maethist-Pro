@@ -6452,7 +6452,7 @@ input[type="range"] {
   @container ytplayer (max-width: 420px) { .yt-tbtn { min-width: 40px; height: 40px; } }
 }
 
-/* ---------- AR MAETHIST (static/js/ar.js) ---------- */
+/* ---------- Sora Sketch (static/js/ar.js) ---------- */
 /* The bar says what the camera sees and is the way out; the cursor sits on
    the pinch, hollow while hovering, filled in the pen colour while drawing.
    Solid, not frosted: the camera repaints under it every frame. */
@@ -6525,3 +6525,12 @@ body.ar-dim #arVideo.active { opacity: 0.35; }
 .ar-cursor[hidden] { display: none; }
 .ar-cursor.is-down { background: var(--ar-ink, #ffffff); }
 @media (prefers-reduced-motion: reduce) { .ar-hud { animation: none; } }
+
+/* Frame quality, beside the camera: HD by default, MAX for the best there is. */
+.yt-ctrl-btn.yt-quality {
+  min-width: 46px;
+  padding: 0 8px;
+  font: 800 0.72rem / 1 var(--mono);
+  letter-spacing: 0.06em;
+}
+.yt-ctrl-btn.yt-quality[aria-pressed="true"] { background: var(--brand-yellow, #FFD23F); color: #111111; border-color: #111111; }

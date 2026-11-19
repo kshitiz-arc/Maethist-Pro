@@ -237,9 +237,9 @@ class ImportErrorVisibilityTests(unittest.TestCase):
             ("wrong file in the image picker", lambda p: p.set_input_files("#imageInsertInput", str(self.text_file)), "That file is not an image"),
             ("a damaged image", lambda p: p.set_input_files("#imageInsertInput", str(damaged_png)), "could not be read"),
             ("a bad backup with My Notebooks closed",
-             lambda p: p.evaluate("async () => { await window.Inkyscib.Library.importBackup(new File(['{}'], 'x.inky')); }"),
+             lambda p: p.evaluate("async () => { await window.Inkyscib.Library.importBackup(new File(['{}'], 'x.mae')); }"),
              "not a valid MAETHIST backup"),
-            ("the camera blocked for AR MAETHIST",
+            ("the camera blocked for Sora Sketch",
              lambda p: p.evaluate("async () => { navigator.mediaDevices.getUserMedia = () => Promise.reject(Object.assign(new Error('denied'), {name: 'NotAllowedError'})); await window.Inkyscib.AR.enterAR(); }"),
              "Camera access was blocked"),
         )

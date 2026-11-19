@@ -63,6 +63,9 @@ class ArcColourTestBase(unittest.TestCase):
         page.wait_for_function("window.appState?.storageReady === true", timeout=30000)
 
     def use_tool(self, page, tool):
+        # Since 2.7.1 no panel opens on load, so the tool already in hand is
+        # picked up again: the way a person opens its controls.
+        page.evaluate("window.setTool(window.appState.currentTool === %r ? 'select' : window.appState.currentTool)" % tool)
         page.evaluate("window.setTool(%r)" % tool)
         page.wait_for_timeout(300)
 

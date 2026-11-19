@@ -89,7 +89,7 @@
   /**
    * Accepts whatever the caller happens to be holding.
    *
-   * An import has a File; opening a .inkydoc has the raw bytes unpacked from
+   * An import has a File; opening a .maedoc has the raw bytes unpacked from
    * the archive. Both are the same document, and only one of them has an
    * .arrayBuffer() method.
    */

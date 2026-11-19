@@ -22,7 +22,7 @@
   let pts = { A: { ...START.A }, B: { ...START.B }, C: { ...START.C } };
   const BOUNDS = { minX: 14, maxX: 486, minY: 14, maxY: 406 };
   const HINTS = {
-    select: "Drag A, B or C. The circle and the altitude follow.",
+    select: "Drag A, B or C, or the whole triangle. The circle and the altitude follow.",
     pen: "Write anywhere on the paper.",
     line: "Drag to draw a line.",
     circle: "Drag from the centre outward.",
@@ -73,6 +73,19 @@
     const t = ((A.x - B.x) * bc.x + (A.y - B.y) * bc.y) / Math.max(1e-6, bc.x * bc.x + bc.y * bc.y);
     const F = add(B, mul(bc, t));
     set($("gAlt"), { x1: A.x, y1: A.y, x2: F.x, y2: F.y });
+    // Past B or past C, the foot is on BC produced: draw that part, dashed,
+    // so the altitude meets a line rather than stopping in mid-air.
+    const ext = $("gExt");
+    if (ext) {
+      const outside = t < 0 || t > 1;
+      ext.style.display = outside ? "" : "none";
+      if (outside) {
+        const from = t < 0 ? B : C;
+        const u0 = mul(bc, 1 / Math.max(1e-6, len(bc)));
+        const beyond = mul(u0, t < 0 ? -10 : 10);
+        set(ext, { x1: from.x, y1: from.y, x2: F.x + beyond.x, y2: F.y + beyond.y });
+      }
+    }
 
     // The right-angle mark: a small square at F, along BC and up toward A.
     const u = mul(bc, 1 / Math.max(1e-6, len(bc)));
@@ -122,6 +135,24 @@
     return best;
   }
 
+  // Inside the triangle, or on one of its sides: grabbing the shape itself
+  // moves all three corners together.
+  function onTriangle(p) {
+    const { A, B, C } = pts;
+    const side = (u, v, w) => (w.x - v.x) * (u.y - v.y) - (w.y - v.y) * (u.x - v.x);
+    const d1 = side(p, A, B);
+    const d2 = side(p, B, C);
+    const d3 = side(p, C, A);
+    const inside = !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+    if (inside) return true;
+    const near = (a, b) => {
+      const ab = { x: b.x - a.x, y: b.y - a.y };
+      const t = clamp(((p.x - a.x) * ab.x + (p.y - a.y) * ab.y) / (ab.x * ab.x + ab.y * ab.y || 1), 0, 1);
+      return Math.hypot(p.x - (a.x + ab.x * t), p.y - (a.y + ab.y * t)) < 14;
+    };
+    return near(A, B) || near(B, C) || near(C, A);
+  }
+
   function el(tag, cls, attrs) {
     const node = document.createElementNS(NS, tag);
     node.setAttribute("class", cls);
@@ -137,9 +168,13 @@
     const tool = currentTool();
     const p = toSvg(event);
     if (tool === "select") {
+      // A grab during the intro ends it at once, so nothing animates under
+      // the finger.
+      svg.classList.remove("is-drawing");
       const name = nearestPoint(p);
-      if (!name) return;
-      action = { tool, name };
+      if (name) action = { tool, name };
+      else if (onTriangle(p)) action = { tool, whole: true, from: p, start: { A: { ...pts.A }, B: { ...pts.B }, C: { ...pts.C } } };
+      else return;
       svg.classList.add("is-dragging");
     } else if (tool === "pen") {
       action = { tool, points: [p], node: el("path", "geo ink-stroke", { d: `M${p.x.toFixed(1)} ${p.y.toFixed(1)}` }) };
@@ -159,12 +194,32 @@
 
   function move(event) {
     if (!action) {
-      if (currentTool() === "select") svg.classList.toggle("is-over-point", !!nearestPoint(toSvg(event)));
+      if (currentTool() === "select") {
+        const at = toSvg(event);
+        const overPoint = !!nearestPoint(at);
+        svg.classList.toggle("is-over-point", overPoint);
+        svg.classList.toggle("is-over-shape", !overPoint && onTriangle(at));
+      }
       return;
     }
     const p = toSvg(event);
     const q = { x: clamp(p.x, BOUNDS.minX, BOUNDS.maxX), y: clamp(p.y, BOUNDS.minY, BOUNDS.maxY) };
-    if (action.tool === "select") {
+    if (action.tool === "select" && action.whole) {
+      // The whole triangle, kept inside the paper as one piece.
+      const s = action.start;
+      let dx = p.x - action.from.x;
+      let dy = p.y - action.from.y;
+      const xs = [s.A.x, s.B.x, s.C.x];
+      const ys = [s.A.y, s.B.y, s.C.y];
+      dx = clamp(dx, BOUNDS.minX - Math.min(...xs), BOUNDS.maxX - Math.max(...xs));
+      dy = clamp(dy, BOUNDS.minY - Math.min(...ys), BOUNDS.maxY - Math.max(...ys));
+      pts = {
+        A: { x: s.A.x + dx, y: s.A.y + dy },
+        B: { x: s.B.x + dx, y: s.B.y + dy },
+        C: { x: s.C.x + dx, y: s.C.y + dy }
+      };
+      update();
+    } else if (action.tool === "select") {
       pts[action.name] = q;
       update();
     } else if (action.tool === "pen") {

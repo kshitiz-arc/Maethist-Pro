@@ -112,8 +112,8 @@
   if (svg && svg.querySelector(".draw") && !reduceMotion.matches) {
     window.requestAnimationFrame(() => window.setTimeout(() => {
       svg.classList.add("is-drawing");
-      window.setTimeout(() => svg.classList.remove("is-drawing"), 3400);
-    }, 350));
+      window.setTimeout(() => svg.classList.remove("is-drawing"), 1300);
+    }, 120));
   }
 
 })();

@@ -72,7 +72,7 @@ exists. Google and the hosting provider are **processors/third parties** as set 
 | The image a visitor chooses to convert (a crop of their page, or a picture) | This server only, read in memory by Pix2Text MFR / TrOCR running in-process | The length of the request; never written to disk, logged or forwarded |
 | The resulting text or LaTeX | Back to the visitor's browser | Not kept server-side |
 
-## AR MAETHIST (camera hand tracking, disclosed 2.7.0)
+## Sora Sketch (camera hand tracking, disclosed 2.7.0)
 
 | Data | Where it goes | How long |
 |---|---|---|

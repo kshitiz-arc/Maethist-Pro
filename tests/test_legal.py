@@ -68,7 +68,7 @@ class LegalPageTests(unittest.TestCase):
 
     def test_the_privacy_policy_names_every_third_party_that_receives_data(self):
         html = self.html["/legal/privacy"]
-        # jsDelivr serves AR MAETHIST's hand-tracking library; it was fetched
+        # jsDelivr serves Sora Sketch's hand-tracking library; it was fetched
         # for years before the policy named it (found 2.7.0).
         for processor in ("The hosting provider", "YouTube", "jsDelivr"):
             with self.subTest(processor=processor):

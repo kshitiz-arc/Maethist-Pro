@@ -140,11 +140,11 @@
 
     open: {
       title: "Open",
-      note: "Open a .inkydoc document or restore a .inky library backup.",
+      note: "Open a .maedoc document or restore a .mae library backup.",
       key: "Ctrl+O",
       icon: "open",
       run: async () => {
-        const file = await pickFile(".inkydoc,.inky,.json");
+        const file = await pickFile(".maedoc,.mae,.json");
         if (!file) return;
 
         if (window.Inkyscib?.Inkydoc?.isInkydocName(file.name)) {
@@ -175,7 +175,7 @@
 
     saveAs: {
       title: "Save as",
-      note: "One .inkydoc file holding the original document and every stroke, still editable when reopened.",
+      note: "One .maedoc file holding the original document and every stroke, still editable when reopened.",
       key: "Ctrl+Shift+S",
       icon: "saveAs",
       run: async () => {
@@ -229,7 +229,7 @@
 
     backup: {
       title: "Back up everything",
-      note: "Download every notebook as a single .inky file.",
+      note: "Download every notebook as a single .mae file.",
       icon: "backup",
       run: async () => {
         setStatus("Building backup…", "loading");
@@ -312,7 +312,7 @@
     },
 
     arInky: {
-      title: "AR MAETHIST",
+      title: "Sora Sketch",
       note: "Pinch to draw in the air over what the camera sees.",
       icon: "camera",
       run: async () => {
@@ -377,7 +377,7 @@
     },
 
     exportInkydoc: {
-      title: ".inkydoc",
+      title: ".maedoc",
       note: "Keeps everything editable. The format to use if you will come back to this.",
       icon: "package",
       run: () => COMMANDS.saveAs.run()
@@ -537,7 +537,7 @@
 
   function pageFilename(base, pageNumber) {
     const cleaned = String(base || "MAETHIST")
-      .replace(/\.(pdf|pptx?|inkydoc)$/i, "")
+      .replace(/\.(pdf|pptx?|maedoc)$/i, "")
       .replace(/[\\/:*?"<>|]+/g, " ")
       .replace(/\s+/g, " ")
       .trim() || "MAETHIST";
@@ -607,13 +607,13 @@
     if (mode() === "pages") {
       return {
         tone: "warn",
-        text: "Pages still export as images inside a PDF. PNG export is lossless at 300 DPI, and .inkydoc keeps every stroke editable."
+        text: "Pages still export as images inside a PDF. PNG export is lossless at 300 DPI, and .maedoc keeps every stroke editable."
       };
     }
 
     return {
       tone: "ok",
-      text: "Nothing on this canvas is compressed. PNG exports at 300 DPI, cropped to your work; .inkydoc keeps it all editable."
+      text: "Nothing on this canvas is compressed. PNG exports at 300 DPI, cropped to your work; .maedoc keeps it all editable."
     };
   }
 
@@ -1192,6 +1192,7 @@
   window.Inkyscib = window.Inkyscib || {};
   window.Inkyscib.RibbonProgress = { start: startProgress };
   window.Inkyscib.FileRibbon = {
+    commands: () => Object.entries(COMMANDS).map(([id, c]) => ({ id, title: c.title, note: c.note, key: c.key || "", icon: c.icon })),
     open,
     close,
     runCommand,

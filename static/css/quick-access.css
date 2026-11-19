@@ -80,7 +80,11 @@ body.rail-hidden.chrome-rail .tool-rail {
   height: 56px;
   border: 2px solid #111111;
   border-radius: 50%;
-  background: var(--brand-yellow);
+  /* The mark is full colour with black outlines, so it sits on its paper
+     tile (DESIGN.md), never straight on yellow or the dark sheet. */
+  display: grid;
+  place-items: center;
+  background: #F3F7FB;
   box-shadow: 3px 3px 0 #111111;
   opacity: 0;
   transform: scale(0.4);
@@ -142,3 +146,5 @@ body.rail-hidden.chrome-rail .tool-rail {
   .qa-ring.is-charging .qa-progress circle { animation-duration: 0s; stroke-dashoffset: 0.5; }
   .qa-ring.is-open .qa-slice, .qa-ring.is-open .qa-hub { animation: none; transition: none; }
 }
+
+.qa-mark { width: 34px; height: 34px; display: block; pointer-events: none; }

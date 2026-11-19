@@ -162,8 +162,13 @@ class ToolPanelLayoutTests(unittest.TestCase):
                 self.tap_tool(page, "pen")
                 self.assertTrue(self.shown(page, "pen"))
 
-    def test_the_desktop_dock_still_shows_the_panel_on_load(self):
+    def test_the_desktop_dock_waits_to_be_asked_on_load(self):
+        """Owner request (2.7.1): "Start writing" opened with the Pen panel
+        showing. The pen is in hand; its panel opens when a tool is picked."""
         page = self.open_page(DESKTOP)
+        page.wait_for_timeout(SETTLE_MS)
+        self.assertFalse(self.shown(page, "pen"), "nothing opens unasked")
+        page.evaluate("() => { window.setTool('select'); window.setTool('pen'); }")
         page.wait_for_timeout(SETTLE_MS)
         self.assertTrue(self.shown(page, "pen"), "the dock is a column, not an overlay")
 

@@ -46,7 +46,7 @@
   /* The sheet opens under BOTH bars, so the tool row stays visible and
      reachable while a menu is open, and stops short of the footer links. */
   .file-backstage {
-    --sheet-top: calc(var(--compact-chrome-h) + 6px);
+    --sheet-top: calc(var(--compact-chrome-h) + 15px); /* 14px clear of the bar, --chrome-gap */
     left: var(--compact-gap);
     max-height: calc(100vh - var(--sheet-top) - 44px);
     max-height: calc(100dvh - var(--sheet-top) - 44px);
@@ -54,7 +54,7 @@
 
   /* Toolbar at the bottom: the sheet has the whole middle of the screen. */
   body.toolbar-location-down .file-backstage {
-    --sheet-top: calc(var(--compact-gap) + var(--compact-doc-h) + 6px);
+    --sheet-top: calc(var(--compact-gap) + var(--compact-doc-h) + 15px);
     max-height: calc(100vh - var(--sheet-top) - var(--compact-tools-h) - 52px);
     max-height: calc(100dvh - var(--sheet-top) - var(--compact-tools-h) - 52px);
   }

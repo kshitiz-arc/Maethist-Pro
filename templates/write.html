@@ -59,6 +59,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/scroll-cue.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/quick-access.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/ocr.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ui-kit.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/motion.css') }}">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest', v='pwa-1') }}">
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/maethist-180.png', v='pwa-1') }}">
@@ -587,7 +588,7 @@
     <div id="arSection" class="ar-section">
       <button id="arBtn" class="ar-btn" type="button">
         <i class="fas fa-camera"></i>
-        <span>AR MAETHIST</span>
+        <span>Sora Sketch</span>
       </button>
     </div>
 
@@ -656,7 +657,7 @@
           <span>Size</span>
           <div class="tool-size-controls">
             <input type="range" id="penSize" min="1" max="200" value="2">
-            <input type="number" id="penSizeInput" min="1" max="200" step="any" value="2">
+            <input type="number" id="penSizeInput" aria-label="Pen size" min="1" max="200" step="any" value="2">
           </div>
         </label>
       </div>
@@ -1456,6 +1457,10 @@
         <span class="yt-player-title">YouTube</span>
       </div>
       <div class="yt-player-controls">
+        {# Frame quality: HD (1080p) by default, MAX for the best the video has
+           (up to 4K). Remembered on this device (youtube.js). #}
+        <button class="yt-ctrl-btn yt-quality" id="ytFrameQuality" type="button" aria-pressed="false"
+          aria-label="Frame quality: HD. Press for the best quality available">HD</button>
         <button class="yt-ctrl-btn yt-save-frame" id="ytSaveFrame" title="Save frame to canvas locally" type="button"
           aria-label="Save current YouTube frame to canvas" disabled>
           {{ icon("lucide:camera", "yt-control-icon yt-capture-icon") }}
@@ -1684,6 +1689,7 @@
   <script src="{{ url_for('static', filename='js/scroll-cue.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/quick-access.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/ocr.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/ui-kit.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/tour.js') }}" defer></script>
 
 

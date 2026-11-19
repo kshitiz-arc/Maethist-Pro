@@ -161,24 +161,34 @@
     delete look.fit;
     delete look.fade;
     delete look.grid;
+    delete look.offsetX;
+    delete look.offsetY;
+    delete look.zoom;
     const W = canvas.width;
     const H = canvas.height;
     const a = aspect(edit);
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     const fit = edit.fit || "cover";
+    // Where it was placed with Move: a shift as a share of the window, and a
+    // scale on top of the fit.
+    const zoom = Math.max(0.2, Math.min(6, Number(edit.zoom) || 1));
+    const dx = (Number(edit.offsetX) || 0) * W;
+    const dy = (Number(edit.offsetY) || 0) * H;
     if (fit === "tile") {
       const ratio = window.devicePixelRatio || 1;
-      const th = Math.min(H, 360 * ratio);
+      const th = Math.min(H, 360 * ratio) * zoom;
       const tw = th * a;
-      for (let y = 0; y < H; y += th) {
-        for (let x = 0; x < W; x += tw) window.Inkyscib.MediaDraw.draw(ctx, picture.image, x, y, tw, th, look);
+      const x0 = (((dx % tw) + tw) % tw) - tw;
+      const y0 = (((dy % th) + th) % th) - th;
+      for (let y = y0; y < H; y += th) {
+        for (let x = x0; x < W; x += tw) window.Inkyscib.MediaDraw.draw(ctx, picture.image, x, y, tw, th, look);
       }
     } else {
-      const s = fit === "contain" ? Math.min(W / a, H) : Math.max(W / a, H);
+      const s = (fit === "contain" ? Math.min(W / a, H) : Math.max(W / a, H)) * zoom;
       const h = s;
       const w = s * a;
-      window.Inkyscib.MediaDraw.draw(ctx, picture.image, (W - w) / 2, (H - h) / 2, w, h, look);
+      window.Inkyscib.MediaDraw.draw(ctx, picture.image, (W - w) / 2 + dx, (H - h) / 2 + dy, w, h, look);
     }
     const fade = Math.max(0, Math.min(0.9, Number(edit.fade) || 0));
     if (fade > 0.001) {
@@ -188,6 +198,110 @@
     }
     ctx.restore();
     return true;
+  }
+
+  // ---------- Move: placing the picture against the grid ----------
+  //
+  // A mode over the canvas: drag to slide the picture, the wheel or a pinch to
+  // scale it, with the grid drawn on top meanwhile so it can be lined up.
+  // Nothing on the page is touched while it is on.
+
+  let mover = null;
+
+  function snapshot(pointers) {
+    return {
+      pts: new Map(pointers),
+      offsetX: Number(picture.edit.offsetX) || 0,
+      offsetY: Number(picture.edit.offsetY) || 0,
+      zoom: Number(picture.edit.zoom) || 1
+    };
+  }
+
+  function startMove() {
+    if (!picture || mover) return;
+    document.getElementById("canvasThemePop")?.setAttribute("hidden", "");
+    const before = { ...picture.edit };
+    const wasGrid = !!picture.edit.grid;
+    picture.edit = { ...picture.edit, grid: true };
+    refresh();
+    mover = document.createElement("div");
+    mover.className = "canvas-picture-mover";
+    mover.id = "canvasPictureMover";
+    mover.dataset.iconSet = "lucide";
+    mover.innerHTML =
+      '<div class="canvas-picture-mover-bar" role="toolbar" aria-label="Place the picture">' +
+      icon("lucide:move") + "<span>Drag to place the picture. Scroll or pinch to size it.</span>" +
+      '<button type="button" data-move="reset">Reset</button>' +
+      '<button type="button" data-move="cancel">Cancel</button>' +
+      '<button type="button" class="is-primary" data-move="done">' + icon("lucide:check") + "<span>Done</span></button>" +
+      "</div>";
+    document.body.appendChild(mover);
+    const pointers = new Map();
+    let start = null;
+    const apply = (next) => {
+      picture.edit = { ...picture.edit, ...next };
+      window.invalidateCanvasBackground?.();
+      window.render?.();
+    };
+    const onKey = (event) => {
+      if (event.key === "Escape") { event.stopPropagation(); finish(false); }
+      else if (event.key === "Enter") { event.stopPropagation(); finish(true); }
+    };
+    const finish = (keep) => {
+      picture.edit = keep ? { ...picture.edit, grid: wasGrid } : before;
+      mover.remove();
+      mover = null;
+      document.removeEventListener("keydown", onKey, true);
+      refresh();
+      if (keep) store({ src: picture.src, edit: picture.edit }).catch(() => {});
+    };
+    document.addEventListener("keydown", onKey, true);
+    mover.addEventListener("click", (event) => {
+      const act = event.target.closest("[data-move]")?.dataset.move;
+      if (act === "done") finish(true);
+      else if (act === "cancel") finish(false);
+      else if (act === "reset") apply({ offsetX: 0, offsetY: 0, zoom: 1 });
+    });
+    mover.addEventListener("pointerdown", (event) => {
+      if (event.target.closest(".canvas-picture-mover-bar")) return;
+      event.preventDefault();
+      mover.setPointerCapture?.(event.pointerId);
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      start = snapshot(pointers);
+    });
+    mover.addEventListener("pointermove", (event) => {
+      if (!pointers.has(event.pointerId) || !start) return;
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      const now = [...pointers.values()];
+      const was = [...start.pts.values()];
+      if (now.length !== was.length) return;
+      const mid = (list) => ({
+        x: list.reduce((t, q) => t + q.x, 0) / list.length,
+        y: list.reduce((t, q) => t + q.y, 0) / list.length
+      });
+      const a = mid(now);
+      const b = mid(was);
+      const next = {
+        offsetX: start.offsetX + (a.x - b.x) / window.innerWidth,
+        offsetY: start.offsetY + (a.y - b.y) / window.innerHeight
+      };
+      if (now.length >= 2) {
+        const spread = (list) => Math.hypot(list[0].x - list[1].x, list[0].y - list[1].y) || 1;
+        next.zoom = Math.max(0.2, Math.min(6, start.zoom * spread(now) / spread(was)));
+      }
+      apply(next);
+    });
+    const lift = (event) => {
+      pointers.delete(event.pointerId);
+      start = pointers.size ? snapshot(pointers) : null;
+    };
+    mover.addEventListener("pointerup", lift);
+    mover.addEventListener("pointercancel", lift);
+    mover.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      const zoom = Math.max(0.2, Math.min(6, (Number(picture.edit.zoom) || 1) * Math.exp(-event.deltaY * 0.0015)));
+      apply({ zoom });
+    }, { passive: false });
   }
 
   // ---------- the popover row ----------
@@ -201,6 +315,7 @@
       '<span class="canvas-picture-thumb" aria-hidden="true"></span>' +
       `<button type="button" class="canvas-picture-btn" data-picture="choose">${icon("lucide:image")}<span>Use a picture</span></button>` +
       `<button type="button" class="canvas-picture-btn" data-picture="edit">${icon("lucide:sliders-horizontal")}<span>Edit</span></button>` +
+      `<button type="button" class="canvas-picture-btn" data-picture="move">${icon("lucide:move")}<span>Move</span></button>` +
       `<button type="button" class="canvas-picture-btn" data-picture="remove" aria-label="Remove the picture">${icon("lucide:trash")}</button>` +
       "</div>";
     slot.addEventListener("click", (event) => {
@@ -209,6 +324,7 @@
       const act = button.dataset.picture;
       if (act === "choose") choose();
       else if (act === "edit") edit();
+      else if (act === "move") startMove();
       else if (act === "remove") remove();
     });
     syncSlot();
@@ -222,6 +338,7 @@
     thumb.style.backgroundImage = has ? `url("${picture.src}")` : "";
     slot.querySelector('[data-picture="choose"] span').textContent = has ? "Change" : "Use a picture";
     slot.querySelector('[data-picture="edit"]').hidden = !has;
+    slot.querySelector('[data-picture="move"]').hidden = !has;
     slot.querySelector('[data-picture="remove"]').hidden = !has;
   }
 
@@ -241,6 +358,8 @@
     draw,
     choose,
     edit,
+    move: startMove,
+    moving: () => !!mover,
     remove,
     use: (src, editValue) => use(src, editValue || { fit: "cover" }),
     get: () => (picture ? { src: picture.src, edit: { ...picture.edit } } : null)

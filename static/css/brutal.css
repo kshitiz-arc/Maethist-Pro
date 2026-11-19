@@ -363,14 +363,19 @@ header {
 /* The construction draws itself: every stroke has pathLength="1". */
 .nb-paper .draw { stroke-dasharray: 1 1; stroke-dashoffset: 0; }
 .nb-paper .geo.dash.draw { stroke-dasharray: 1 1; }
-#geometrySvg.is-drawing .draw { animation: nbDraw 900ms cubic-bezier(.55,.1,.25,1) both; }
-#geometrySvg.is-drawing .draw:nth-of-type(1) { animation-delay: 0ms; }
-#geometrySvg.is-drawing .d2 { animation-delay: 650ms; }
-#geometrySvg.is-drawing .d3 { animation-delay: 1050ms; }
-#geometrySvg.is-drawing .d4 { animation-delay: 1450ms; }
-#geometrySvg.is-drawing .d5 { animation-delay: 1900ms; }
-#geometrySvg.is-drawing .d6 { animation-delay: 2350ms; }
-#geometrySvg.is-drawing .point, #geometrySvg.is-drawing .label { animation: nbPop 420ms cubic-bezier(.2,1.6,.4,1) both; animation-delay: 2700ms; }
+/* About 1.1s from first stroke to points, overlapping like a confident
+   hand (it was 3.1s, one stroke politely after another). */
+#geometrySvg.is-drawing .draw { animation: nbDraw 520ms cubic-bezier(.65,0,.25,1) both; }
+#geometrySvg.is-drawing .draw:nth-of-type(1) { animation-delay: 0ms; animation-duration: 600ms; }
+#geometrySvg.is-drawing .d2 { animation-delay: 160ms; }
+#geometrySvg.is-drawing .d3 { animation-delay: 240ms; }
+#geometrySvg.is-drawing .d4 { animation-delay: 320ms; }
+#geometrySvg.is-drawing .d5 { animation-delay: 460ms; }
+#geometrySvg.is-drawing .d6 { animation-delay: 540ms; }
+#geometrySvg.is-drawing .point, #geometrySvg.is-drawing .label { animation: nbPop 380ms cubic-bezier(.2,1.6,.4,1) both; }
+#geometrySvg.is-drawing .point[data-pt="A"], #geometrySvg.is-drawing .label[data-label="A"] { animation-delay: 700ms; }
+#geometrySvg.is-drawing .point[data-pt="B"], #geometrySvg.is-drawing .label[data-label="B"] { animation-delay: 770ms; }
+#geometrySvg.is-drawing .point[data-pt="C"], #geometrySvg.is-drawing .label[data-label="C"] { animation-delay: 840ms; }
 
 @keyframes nbDraw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 @keyframes nbPop { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1); } }
@@ -815,6 +820,10 @@ a.nb-tile:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--n
 #geometrySvg { user-select: none; -webkit-user-select: none; }
 #geometrySvg[data-tool="select"] { cursor: default; }
 #geometrySvg[data-tool="select"].is-over-point, #geometrySvg.is-dragging { cursor: grab; }
+#geometrySvg[data-tool="select"].is-over-shape { cursor: move; }
+#geometrySvg[data-tool="select"].is-over-shape #gAB,
+#geometrySvg[data-tool="select"].is-over-shape #gAC,
+#geometrySvg[data-tool="select"].is-over-shape #gBC { stroke-width: 4.5; }
 #geometrySvg.is-dragging { cursor: grabbing; }
 #geometrySvg:not([data-tool="select"]) { cursor: crosshair; }
 .nb-paper .point { cursor: grab; touch-action: none; transition: r 160ms var(--ease-out, ease-out); }
@@ -1228,4 +1237,99 @@ a.card:active, a.nb-tile:not(.is-slab):active, a.panel:active {
 }
 @media (prefers-reduced-motion: reduce) {
   a.card:hover, a.nb-tile:hover, a.panel:hover, a.card:active, a.nb-tile:active, a.panel:active { transform: none; }
+}
+
+/* =========================================================================
+   About: display type (2.7.0). Asked for "super cool" type, resized, with
+   motion. The name is a big Bricolage Grotesque whose letters rise in one
+   after another (about half a second in all); the lead is larger, with the
+   idea itself in an Instrument Serif italic over a marker stroke that draws
+   in; the bio is a size up and darker, so it reads as text rather than grey.
+   ========================================================================= */
+.nb-portfolio .profile-tier {
+  display: inline-flex;
+  gap: 10px;
+  color: var(--nb-ink);
+  font: 700 0.78rem / 1 var(--mono);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.nb-portfolio .pf-name {
+  margin: 6px 0 14px;
+  font-family: "Bricolage Grotesque", var(--display);
+  font-size: clamp(2.6rem, 6.2vw, 4.9rem);
+  font-weight: 800;
+  font-variation-settings: "opsz" 96;
+  line-height: 0.92;
+  letter-spacing: -0.05em;
+  color: var(--nb-ink);
+  text-wrap: balance;
+}
+.pf-word { display: inline-block; white-space: nowrap; }
+.pf-ch {
+  display: inline-block;
+  transform-origin: 50% 100%;
+  animation: pfRise 520ms cubic-bezier(.2, .9, .2, 1.15) both;
+  animation-delay: calc(var(--i) * 22ms);
+}
+@keyframes pfRise {
+  from { opacity: 0; transform: translateY(0.45em) rotate(6deg) scale(0.9); filter: blur(4px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+/* A pass of the pen across the name on hover. */
+.nb-portfolio .pf-name:hover .pf-ch { animation: pfWave 600ms ease-in-out both; animation-delay: calc(var(--i) * 18ms); }
+@keyframes pfWave { 40% { transform: translateY(-0.12em); color: var(--brand-blue); } }
+
+.nb-portfolio .profile-role { font: 700 clamp(1.02rem, 1.6vw, 1.2rem) / 1.3 var(--display); }
+
+.nb-lead {
+  margin: 14px 0 10px;
+  max-width: 22ch;
+  font-family: "Bricolage Grotesque", var(--display);
+  font-size: clamp(1.8rem, 3.8vw, 2.9rem);
+  font-weight: 700;
+  font-variation-settings: "opsz" 72;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+}
+.nb-lead span {
+  background: none;
+  position: relative;
+  white-space: nowrap;
+}
+.nb-lead em {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.14em;
+  letter-spacing: -0.01em;
+}
+.nb-lead span::after {
+  content: "";
+  position: absolute;
+  left: -0.06em;
+  right: -0.06em;
+  bottom: 0.06em;
+  z-index: -1;
+  height: 0.38em;
+  border-radius: 0.2em;
+  background: var(--brand-yellow);
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation: pfMarker 520ms cubic-bezier(.6, 0, .2, 1) 420ms forwards;
+}
+@keyframes pfMarker { to { transform: scaleX(1); } }
+
+.nb-portfolio .profile-bio {
+  max-width: 60ch;
+  color: color-mix(in srgb, var(--nb-ink) 82%, transparent);
+  font-size: clamp(1.04rem, 1.25vw, 1.14rem);
+  line-height: 1.72;
+}
+.nb-portfolio .profile-bio:first-of-type::first-line { font-weight: 600; color: var(--nb-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-ch, .nb-portfolio .pf-name:hover .pf-ch { animation: none; }
+  .nb-lead span::after { animation: none; transform: none; }
 }

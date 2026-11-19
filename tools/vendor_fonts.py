@@ -45,6 +45,10 @@ FAMILIES = (
     "JetBrains+Mono:wght@400..800",
     # The handwritten line under the owner's name on About.
     "Gochi+Hand",
+    # About's display type (2.7.0): a grotesque with real character for the
+    # name, and a serif italic for the one phrase that carries the idea.
+    "Bricolage+Grotesque:opsz,wght@12..96,400..800",
+    "Instrument+Serif:ital@0;1",
 )
 
 CSS_URL = (

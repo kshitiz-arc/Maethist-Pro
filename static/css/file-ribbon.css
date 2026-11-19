@@ -304,7 +304,7 @@
      52px) while max-height kept the old top's arithmetic, so on a 960x600
      tablet the sheet ended at 709px and "Clear canvas" sat at 664px -- below
      the window, with nothing that scrolled to it. */
-  --sheet-top: calc(1.2rem + 52px);
+  --sheet-top: calc(1.2rem + 52px + 9px);
   top: var(--sheet-top);
   left: 1.2rem;
   z-index: 9995;

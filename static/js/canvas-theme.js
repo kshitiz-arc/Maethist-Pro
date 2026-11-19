@@ -217,7 +217,11 @@
       Math.max(margin, window.innerWidth - width - margin)
     );
     pop.style.left = `${Math.round(left)}px`;
-    pop.style.top = `${Math.round(rect.bottom + 8)}px`;
+    // A clear gap under the bar the button sits in, not under the button: the
+    // bar's padding and hard shadow made 8px read as touching (DESIGN.md,
+    // --chrome-gap).
+    const bar = button.closest(".toolbar, .file-ribbon")?.getBoundingClientRect() || rect;
+    pop.style.top = `${Math.round(Math.max(rect.bottom, bar.bottom) + 14)}px`;
   }
 
   function isOpen() {

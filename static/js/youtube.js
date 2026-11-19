@@ -15,6 +15,29 @@
   const ytSearchResults = document.getElementById("ytSearchResults");
   const ytBackBtn = document.getElementById("ytBackBtn");
   const ytSaveFrame = document.getElementById("ytSaveFrame");
+  const ytFrameQuality = document.getElementById("ytFrameQuality");
+  // HD is the preset: 1080p, quick. MAX asks for the best the video has (up to
+  // 4K), which takes longer and is several megabytes a frame.
+  const BEST_KEY = "inkyscib-yt-frame-best";
+  let bestQuality = false;
+  try { bestQuality = localStorage.getItem(BEST_KEY) === "1"; } catch (_) { /* storage blocked */ }
+  function syncQualityButton() {
+    if (!ytFrameQuality) return;
+    ytFrameQuality.textContent = bestQuality ? "MAX" : "HD";
+    ytFrameQuality.setAttribute("aria-pressed", String(bestQuality));
+    ytFrameQuality.setAttribute("aria-label", bestQuality
+      ? "Frame quality: best available, up to 4K. Press for HD"
+      : "Frame quality: HD. Press for the best quality available");
+    ytFrameQuality.dataset.tip = bestQuality ? "Frames at the best quality there is (up to 4K)" : "Frames in HD (1080p). Press for the best quality";
+  }
+  if (ytFrameQuality) {
+    ytFrameQuality.addEventListener("click", () => {
+      bestQuality = !bestQuality;
+      try { localStorage.setItem(BEST_KEY, bestQuality ? "1" : "0"); } catch (_) { /* storage blocked */ }
+      syncQualityButton();
+    });
+    syncQualityButton();
+  }
 
   if (!ytPlayer || !ytToggleBtn || !ytEmbedSlot) return;
 
@@ -144,7 +167,8 @@
   // screen wins -- a player you cannot see the bottom of is worse.
   function minPlayerTop(height) {
     const margin = 8;
-    const wanted = chromeFloor() + margin;
+    // A clear gap under the bars (--chrome-gap), not 8px that read as touching.
+    const wanted = chromeFloor() + 14;
     return Math.max(margin, Math.min(wanted, window.innerHeight - height - margin));
   }
 
@@ -788,7 +812,7 @@
 
   async function requestFrame(videoId, videoTime, options = {}) {
     let response;
-    const quality = options.preview ? "&quality=preview" : "";
+    const quality = options.preview ? "&quality=preview" : bestQuality ? "&quality=best" : "";
     try {
       response = await fetch(
         `/api/youtube/frame?v=${encodeURIComponent(videoId)}&t=${encodeURIComponent(videoTime.toFixed(3))}${quality}`,
@@ -963,9 +987,10 @@
       place(captured);
       progress?.done?.();
       const at = formatVideoTime(videoTime);
+      const size = captured.dimensions?.height ? ` (${captured.dimensions.height}p)` : "";
       showToast(
         captured.source === "video"
-          ? `Frame saved at ${at} - double-tap it to reopen`
+          ? `Frame saved at ${at}${size} - double-tap it to reopen`
           : `Saved YouTube's preview frame near ${at} - double-tap it to reopen`
       );
     } catch (error) {

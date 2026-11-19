@@ -1,4 +1,4 @@
-// AR MAETHIST: draw in the air over what the camera sees.
+// Sora Sketch: draw in the air over what the camera sees.
 //
 // The camera picture never leaves the device: MediaPipe Hands runs in this
 // page (WebAssembly) and only the fingertip position is used. The library and
@@ -15,7 +15,7 @@
     if (window.Inkyscib && window.Inkyscib.notify) window.Inkyscib.notify(message, { tone: tone || "error" });
   }
 
-  var NAME = "AR MAETHIST";
+  var NAME = "Sora Sketch";
   // Pinned, so the code that runs is the code that was tested.
   var HANDS_VERSION = "0.4.1675469240";
   var HANDS_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/hands@" + HANDS_VERSION + "/";

@@ -197,3 +197,44 @@ html[data-canvas] .workspace-stage {
 .canvas-picture-btn:hover { background: var(--brand-yellow, #FFD23F); color: #111111; }
 .canvas-picture-btn:focus-visible { outline: 3px solid var(--brand-blue); outline-offset: 2px; }
 .canvas-picture-btn[data-picture="remove"] { width: 44px; padding: 0; justify-content: center; }
+
+/* Move: placing the background picture (canvas-picture.js). The layer takes
+   the pointer, so nothing on the page is drawn on while it is open. */
+.canvas-picture-mover { position: fixed; inset: 0; z-index: 9986; cursor: move; touch-action: none; }
+.canvas-picture-mover-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 24px);
+  padding: 6px 6px 6px 14px;
+  border: 2px solid #111111;
+  border-radius: 999px;
+  background: var(--brand-yellow, #FFD23F);
+  color: #111111;
+  box-shadow: 4px 4px 0 #111111;
+  font: 700 var(--t-2) / 1.2 var(--display);
+  transform: translateX(-50%);
+  cursor: default;
+}
+.canvas-picture-mover-bar svg.icon { width: 18px; height: 18px; flex: none; }
+.canvas-picture-mover-bar > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.canvas-picture-mover-bar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 2px solid #111111;
+  border-radius: 999px;
+  background: #FFF6E5;
+  color: #111111;
+  font: 800 var(--t-1) / 1 var(--display);
+  cursor: pointer;
+}
+.canvas-picture-mover-bar button.is-primary { background: #111111; color: #ffffff; }
+.canvas-picture-mover-bar button:focus-visible { outline: 3px solid var(--brand-blue); outline-offset: 2px; }
+@media (pointer: coarse) { .canvas-picture-mover-bar button { min-height: 44px; } }
+@media (max-width: 640px) { .canvas-picture-mover-bar > span { display: none; } }

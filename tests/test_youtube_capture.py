@@ -309,6 +309,31 @@ class FrameEndpointTests(unittest.TestCase):
         self.assertFalse([url for url in hostile.urls if "evil.example" in url])
 
 
+
+class FrameQualityTests(unittest.TestCase):
+    """HD (1080p) is the preset; quality=best asks for the most the video has,
+    up to YOUTUBE_FRAME_BEST_HEIGHT, cached apart from the HD stream."""
+
+    def setUp(self):
+        self.client = app.test_client()
+
+    def test_best_asks_for_the_higher_ceiling(self):
+        seen = []
+
+        def fake(video_id, seconds, max_height=None):
+            seen.append(max_height)
+            return {"image": "data:image/jpeg;base64,AA", "width": 16, "height": 9, "quality": 95, "frameTime": seconds}
+
+        with patch("app._video_frame", side_effect=fake), patch.object(app_module, "YOUTUBE_FULL_FRAMES", True):
+            self.client.get("/api/youtube/frame?v=abcdefghijk&t=3")
+            self.client.get("/api/youtube/frame?v=abcdefghijk&t=3&quality=best")
+        self.assertEqual(seen, [app_module.YOUTUBE_FRAME_MAX_HEIGHT, app_module.YOUTUBE_FRAME_BEST_HEIGHT])
+        self.assertEqual(app_module.YOUTUBE_FRAME_BEST_HEIGHT, 2160)
+
+    def test_each_ceiling_has_its_own_stream(self):
+        self.assertEqual(app_module._stream_key("abcdefghijk", app_module.YOUTUBE_FRAME_MAX_HEIGHT), "abcdefghijk")
+        self.assertEqual(app_module._stream_key("abcdefghijk", 2160), "abcdefghijk@2160")
+
 class ResourceCeilingTests(unittest.TestCase):
     """Nothing keyed by a caller-supplied video id may grow without bound.
 
@@ -662,6 +687,16 @@ class FrameCaptureBrowserTests(unittest.TestCase):
           canCapture: !document.getElementById('ytSaveFrame').disabled })""")
         self.assertEqual(state, {"frames": 0, "label": "Stopped", "canCapture": True})
         self.assertEqual(self.errors, [])
+
+    def test_the_quality_toggle_asks_for_the_best_and_is_remembered(self):
+        page = self.open_player()
+        self.assertEqual(page.inner_text("#ytFrameQuality"), "HD")
+        page.evaluate("() => document.getElementById('ytFrameQuality').click()")
+        self.assertEqual(page.inner_text("#ytFrameQuality"), "MAX")
+        self.capture(page)
+        full = [u for u in self.frame_requests if "quality=preview" not in u]
+        self.assertTrue(full and "quality=best" in full[-1], self.frame_requests)
+        self.assertEqual(page.evaluate("() => localStorage.getItem('inkyscib-yt-frame-best')"), "1")
 
     def test_nothing_ever_asks_to_share_the_screen(self):
         """The whole point of moving this to the server. Two captures, so a

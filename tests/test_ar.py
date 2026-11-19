@@ -1,4 +1,4 @@
-"""AR MAETHIST (static/js/ar.js): drawing in the air over the camera.
+"""Sora Sketch (static/js/ar.js): drawing in the air over the camera.
 
 No camera or model in a test browser, so the camera is a canvas stream and
 MediaPipe's results are fed in by hand through Inkyscib.AR._results, the
@@ -49,12 +49,12 @@ HAND = """(args) => {
 
 
 class ArSourceTests(unittest.TestCase):
-    def test_it_is_called_ar_maethist_everywhere_a_person_reads(self):
+    def test_it_is_called_sora_sketch_everywhere_a_person_reads(self):
         for name in ("static/js/ar.js", "static/js/file-ribbon.js", "templates/write.html", "templates/features.html"):
             text = (ROOT / name).read_text(encoding="utf-8")
             with self.subTest(name=name):
                 self.assertNotIn("AR Inky", text)
-        self.assertIn('title: "AR MAETHIST"', (ROOT / "static/js/file-ribbon.js").read_text(encoding="utf-8"))
+        self.assertIn('title: "Sora Sketch"', (ROOT / "static/js/file-ribbon.js").read_text(encoding="utf-8"))
 
     def test_the_library_is_pinned(self):
         source = (ROOT / "static/js/ar.js").read_text(encoding="utf-8")
@@ -159,11 +159,11 @@ class ArBrowserTests(unittest.TestCase):
             page.evaluate("() => [window.appState.transform.scale, window.appState.transform.offsetX, window.appState.transform.offsetY]"),
             [1.7, -120, 40])
 
-    def test_the_tools_pane_calls_it_ar_maethist(self):
+    def test_the_tools_pane_calls_it_sora_sketch(self):
         page = self.new_page()
         page.click('.file-ribbon-tab[data-ribbon-tab="tools"]')
         page.wait_for_selector(".file-backstage.is-open")
-        self.assertIn("AR MAETHIST", page.inner_text(".file-backstage"))
+        self.assertIn("Sora Sketch", page.inner_text(".file-backstage"))
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-// The .inkydoc container.
+// The .maedoc container.
 //
 // One shareable file that holds a document and the work done on top of it,
 // with the two kept apart: the original upload goes in byte-for-byte, and the
@@ -8,7 +8,7 @@
 //
 // Layout (a ZIP):
 //
-//   mimetype                 application/vnd.inkyscib.document, stored first
+//   mimetype                 application/vnd.maethist.document, stored first
 //   manifest.json            format version, title, mode, source descriptor
 //   document.json            the workspace snapshot: drawing, notebook, ppt
 //   original/<sha256>.pdf    the upload, unmodified and uncompressed
@@ -21,10 +21,10 @@
 (function () {
   "use strict";
 
-  const FORMAT = "inkydoc";
+  const FORMAT = "maedoc";
   const FORMAT_VERSION = 1;
-  const MIMETYPE = "application/vnd.inkyscib.document";
-  const EXTENSION = ".inkydoc";
+  const MIMETYPE = "application/vnd.maethist.document";
+  const EXTENSION = ".maedoc";
 
   // ---------- bytes ----------
 
@@ -279,13 +279,13 @@
       return out;
     } catch (error) {
       // A thumbnail is a convenience; never let it stop a save.
-      console.warn("Could not capture a preview for the .inkydoc:", error);
+      console.warn("Could not capture a preview for the .maedoc:", error);
       return null;
     }
   }
 
   /**
-   * Build a .inkydoc from the live workspace.
+   * Build a .maedoc from the live workspace.
    *
    * Returns { blob, filename, includedOriginal }.
    */
@@ -301,7 +301,7 @@
     const snapshot = await library.readActiveWorkspace();
 
     const title = (options.title || snapshot?.ppt?.name || "MAETHIST document")
-      .replace(/\.(pdf|pptx?|inkydoc)$/i, "")
+      .replace(/\.(pdf|pptx?|maedoc)$/i, "")
       .trim();
     const docId = typeof snapshot?.ppt?.docId === "string" ? snapshot.ppt.docId : null;
 
@@ -372,7 +372,7 @@
   }
 
   /**
-   * Parse a .inkydoc without touching the workspace.
+   * Parse a .maedoc without touching the workspace.
    *
    * Returns { manifest, document, original }.
    */
@@ -411,7 +411,7 @@
   }
 
   /**
-   * Open a .inkydoc into the live workspace.
+   * Open a .maedoc into the live workspace.
    *
    * The embedded original is put back into the document store first. Because
    * ids are content hashes, it lands under the same id the annotations already
@@ -435,7 +435,7 @@
         // Without the original the annotations still open and still render
         // from their stored pages; only re-rendering and lossless export lose
         // their source. Worth saying out loud rather than failing the open.
-        console.warn("Could not restore the original from the .inkydoc:", error);
+        console.warn("Could not restore the original from the .maedoc:", error);
       }
     }
 

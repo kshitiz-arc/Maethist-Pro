@@ -200,7 +200,7 @@
     // same formula core.js uses for the dock's top inset. The hamburger used
     // to be a second candidate here, in case it hung lower than the bar; it
     // no longer exists, so the bar is the only thing to clear.
-    const chromeTop = Math.max(0, Math.round(bar.bottom + 10));
+    const chromeTop = Math.max(0, Math.round(bar.bottom + 14));
 
     document.body.style.setProperty("--chrome-top", chromeTop + "px");
 

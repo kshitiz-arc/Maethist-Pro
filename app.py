@@ -204,7 +204,7 @@ def add_static_version(endpoint, values):
     if token:
         values["v"] = token
 
-APP_VERSION = "2.7.0"
+APP_VERSION = "2.7.1"
 
 # Render sets RENDER=true on every service; INKYSCIB_ENV=production is the
 # switch for any other host. A random fallback is fine on a laptop, but under
@@ -2403,6 +2403,17 @@ YOUTUBE_STREAM_CACHE_MAX_ENTRIES = 256
 # Set YOUTUBE_FRAME_MAX_HEIGHT=2160 for 4K again.
 YOUTUBE_FRAME_MAX_HEIGHT = int(os.environ.get("YOUTUBE_FRAME_MAX_HEIGHT", "1080"))
 MAX_FRAME_WIDTH = YOUTUBE_FRAME_MAX_HEIGHT * 16 // 9
+# "Always the best quality" in the player (quality=best): the highest the video
+# has, up to this. Slower, and several megabytes a frame, so it is opt-in.
+YOUTUBE_FRAME_BEST_HEIGHT = max(
+    YOUTUBE_FRAME_MAX_HEIGHT, int(os.environ.get("YOUTUBE_FRAME_BEST_HEIGHT", "2160"))
+)
+
+
+def _stream_key(video_id, max_height):
+    """The cache key for a video at a quality ceiling. The default ceiling keeps
+    the bare id, so everything that already used it is unchanged."""
+    return video_id if max_height == YOUTUBE_FRAME_MAX_HEIGHT else f"{video_id}@{max_height}"
 # JPEG at 4:4:4 (no chroma subsampling) and quality 95: lecture frames are
 # mostly slides, text and thin coloured lines, which 4:2:0 smears. The frame is
 # already lossy at the source, so PNG would only multiply the size. If a 4K
@@ -2554,7 +2565,7 @@ def _patch_ytdlp_ssl():
     _YTDLP_SSL_PATCHED = True
 
 
-def _youtube_stream(video_id):
+def _youtube_stream(video_id, max_height=None):
     """The highest-resolution video stream, cached until its URL expires.
 
     Chosen by resolution, up to YOUTUBE_FRAME_MAX_HEIGHT, then frame rate, in
@@ -2565,7 +2576,9 @@ def _youtube_stream(video_id):
 
     Call with the video's lock held.
     """
-    cached = YOUTUBE_STREAM_CACHE.get(video_id)
+    max_height = max_height or YOUTUBE_FRAME_MAX_HEIGHT
+    key = _stream_key(video_id, max_height)
+    cached = YOUTUBE_STREAM_CACHE.get(key)
     if cached and cached["expires"] > time.time():
         return cached
 
@@ -2580,15 +2593,15 @@ def _youtube_stream(video_id):
         # Not a flag but a compat option: it is what drives prefer_system_certs.
         "compat_opts": {"no-certifi"},
         "format": (
-            f"bestvideo[dynamic_range=SDR][height<={YOUTUBE_FRAME_MAX_HEIGHT}]"
-            f"/bestvideo[height<={YOUTUBE_FRAME_MAX_HEIGHT}]"
+            f"bestvideo[dynamic_range=SDR][height<={max_height}]"
+            f"/bestvideo[height<={max_height}]"
             "/bestvideo/best"
         ),
         # Highest resolution first, then frame rate; codec only breaks ties.
         # Highest resolution under the ceiling first. Then H.264, which
         # decodes fastest, and 30 fps over 60, which halves the frames
         # between the keyframe and the moment asked for.
-        "format_sort": [f"res:{YOUTUBE_FRAME_MAX_HEIGHT}", "vcodec:h264", "fps:30"],
+        "format_sort": [f"res:{max_height}", "vcodec:h264", "fps:30"],
     }
     with yt_dlp.YoutubeDL(options) as ydl:
         info = ydl.extract_info(
@@ -2609,9 +2622,9 @@ def _youtube_stream(video_id):
         "conn": None,
         "expires": time.time() + YOUTUBE_STREAM_CACHE_TTL,
     }
-    YOUTUBE_STREAM_CACHE[video_id] = entry
-    YOUTUBE_STREAM_CACHE.move_to_end(video_id)
-    _evict_stream_cache(video_id)
+    YOUTUBE_STREAM_CACHE[key] = entry
+    YOUTUBE_STREAM_CACHE.move_to_end(key)
+    _evict_stream_cache(key)
     return entry
 
 
@@ -2791,11 +2804,13 @@ def _encode_frame(image):
     )
 
 
-def _video_frame(video_id, seconds):
+def _video_frame(video_id, seconds, max_height=None):
     """Decode the frame at ``seconds``, or None if the video cannot be read."""
+    max_height = max_height or YOUTUBE_FRAME_MAX_HEIGHT
+    max_width = max_height * 16 // 9
     with _video_lock(video_id):
         try:
-            stream_info = _youtube_stream(video_id)
+            stream_info = _youtube_stream(video_id, max_height)
         except Exception:
             logger.info("Could not resolve a stream for %s", video_id, exc_info=True)
             return None
@@ -2839,9 +2854,9 @@ def _video_frame(video_id, seconds):
                 return None
 
             image = _frame_to_rgb(picked)
-            if image.width > MAX_FRAME_WIDTH:
-                height = round(image.height * MAX_FRAME_WIDTH / image.width)
-                image = image.resize((MAX_FRAME_WIDTH, height), Image.LANCZOS)
+            if image.width > max_width:
+                height = round(image.height * max_width / image.width)
+                image = image.resize((max_width, height), Image.LANCZOS)
 
             data_url, quality = _encode_frame(image)
             return {
@@ -2854,7 +2869,7 @@ def _video_frame(video_id, seconds):
         except Exception:
             logger.info("Could not cut a frame from %s", video_id, exc_info=True)
             # A broken connection or an expired URL: start clean next time.
-            YOUTUBE_STREAM_CACHE.pop(video_id, None)
+            YOUTUBE_STREAM_CACHE.pop(_stream_key(video_id, max_height), None)
             return None
         finally:
             if container is not None:
@@ -2904,10 +2919,12 @@ def youtube_frame():
     # sheet's interval, so they are a poor frame but better than none.
     source = "video"
     frame = None
-    if YOUTUBE_FULL_FRAMES and request.args.get("quality") != "preview":
+    quality = request.args.get("quality")
+    if YOUTUBE_FULL_FRAMES and quality != "preview":
+        ceiling = YOUTUBE_FRAME_BEST_HEIGHT if quality == "best" else YOUTUBE_FRAME_MAX_HEIGHT
         try:
             with _youtube_frame_slot():
-                frame = _video_frame(video_id, seconds)
+                frame = _video_frame(video_id, seconds, ceiling)
         except _Busy:
             # The storyboard path below is cheap -- a small sprite sheet and a
             # crop -- so a busy server still answers with a usable frame

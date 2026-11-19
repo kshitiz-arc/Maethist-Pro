@@ -195,8 +195,9 @@ class KeyboardShortcutTest(EditorFixture, unittest.TestCase):
                 page.keyboard.press("Control+e")
                 self.assertEqual(self.current_tool(page), "pen")
 
-                # Typing in a field is text, not a command.
-                page.evaluate("window.setTool('pen')")
+                # Typing in a field is text, not a command. (The panel opens
+                # when the pen is picked up; since 2.7.1 it is closed on load.)
+                page.evaluate("window.setTool('select'); window.setTool('pen')")
                 page.evaluate("document.getElementById('penSizeInput').focus()")
                 page.keyboard.press("e")
                 self.assertEqual(self.current_tool(page), "pen")

@@ -167,7 +167,7 @@ class EffectTests(unittest.TestCase):
         self.assertEqual(beam, "none")
         self.assertEqual(underline, "0s")
         # Untouched markup: the number, exactly as the template wrote it.
-        self.assertEqual(odometer, "390+")
+        self.assertEqual(odometer, "600+")
 
     def test_the_odometer_lands_on_the_real_digits(self):
         """A strip that stops between two digits shows a number that is simply
@@ -231,7 +231,7 @@ class EffectTests(unittest.TestCase):
             context.close()
 
         # The accessibility tree sees the number and nothing else.
-        self.assertEqual(state["exposed"], "390+")
+        self.assertEqual(state["exposed"], "600+")
         self.assertTrue(state["stripsHidden"])
         # aria-label on a bare span is a prohibited attribute; the real text
         # carries the meaning instead.

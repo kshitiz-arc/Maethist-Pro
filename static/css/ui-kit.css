@@ -1,0 +1,175 @@
+/* The editor's shared interaction parts (static/js/ui-kit.js): tooltips, the
+ * command search and the keyboard sheet, plus the audit fixes they came with.
+ * Core tokens only (DESIGN.md). Solid surfaces, never frosted: all three can
+ * sit over live ink. */
+
+/* ---------- keys ---------- */
+.ui-kbd-row { display: inline-flex; gap: 3px; flex: none; }
+.ui-kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1.5px solid currentColor;
+  border-bottom-width: 2.5px;
+  border-radius: 6px;
+  font: 700 0.68rem / 1 var(--mono);
+  opacity: 0.85;
+}
+
+/* ---------- tooltip ---------- */
+.ui-tooltip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 10000;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 260px;
+  padding: 6px 9px;
+  border: 2px solid #111111;
+  border-radius: 9px;
+  background: #111111;
+  color: #ffffff;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);
+  font: 700 var(--t-1) / 1.25 var(--display);
+  pointer-events: none;
+  will-change: transform;
+}
+.ui-tooltip[hidden] { display: none; }
+[data-theme="light"] .ui-tooltip { box-shadow: 3px 3px 0 var(--brand-yellow, #FFD23F); }
+.ui-tooltip.is-in { animation: uiTipIn 140ms var(--ease-out, ease-out) both; }
+@keyframes uiTipIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- command search and keyboard sheet ---------- */
+.ui-palette {
+  position: fixed;
+  inset: 0;
+  z-index: 9995;
+  display: grid;
+  justify-items: center;
+  align-items: start;
+  padding: min(14vh, 120px) 16px 16px;
+  background: rgba(8, 10, 20, 0.45);
+}
+.ui-palette[hidden] { display: none; }
+.ui-palette-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(620px, 100%);
+  max-height: min(70vh, 560px);
+  overflow: hidden;
+  border: 2px solid var(--ui-line, #111111);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 6px 6px 0 var(--nb-shadow-c, #111111);
+  animation: uiPaletteIn 200ms var(--ease-spring, cubic-bezier(.34,1.56,.64,1)) both;
+}
+@keyframes uiPaletteIn { from { opacity: 0; transform: translateY(-10px) scale(0.97); } to { opacity: 1; transform: none; } }
+.ui-palette-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 2px solid var(--ui-line, #111111);
+}
+.ui-palette-search svg.icon { width: 20px; height: 20px; flex: none; color: var(--ink-2); }
+.ui-palette-search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 600 var(--t-3) / 1.3 var(--display);
+  outline: none;
+}
+.ui-palette-search input::placeholder { color: var(--ink-2); }
+.ui-palette-list { overflow-y: auto; padding: 6px; overscroll-behavior: contain; }
+.ui-palette-group {
+  margin: 8px 10px 4px;
+  color: var(--ink-2);
+  font: 700 var(--t-1) / 1 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ui-palette-item {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.ui-palette-item[aria-selected="true"] { border-color: #111111; background: var(--brand-yellow, #FFD23F); color: #111111; }
+.ui-palette-icon { display: grid; place-items: center; }
+.ui-palette-icon svg { width: 20px; height: 20px; }
+.ui-palette-text { display: grid; min-width: 0; }
+.ui-palette-title { font: 700 var(--t-2) / 1.25 var(--display); }
+.ui-palette-note { overflow: hidden; color: var(--ink-2); font-size: var(--t-1); text-overflow: ellipsis; white-space: nowrap; }
+.ui-palette-item[aria-selected="true"] .ui-palette-note { color: #333333; }
+.ui-palette-empty { margin: 18px; color: var(--ink-2); text-align: center; }
+.ui-palette-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 8px 14px;
+  border-top: 2px solid var(--ui-line, #111111);
+  color: var(--ink-2);
+  font-size: var(--t-1);
+}
+.ui-palette-foot span { display: inline-flex; align-items: center; gap: 6px; }
+@media (pointer: coarse) { .ui-palette-foot { display: none; } }
+
+.ui-keys-card { grid-template-rows: auto minmax(0, 1fr); width: min(760px, 100%); }
+.ui-keys-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 2px solid var(--ui-line, #111111); }
+.ui-keys-head h2 { display: flex; align-items: center; gap: 8px; margin: 0; font: 800 var(--t-4, 1.25rem) / 1.2 var(--display); }
+.ui-keys-close {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--ui-line, #111111);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.ui-keys-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px 22px; overflow-y: auto; padding: 10px 16px 16px; }
+.ui-keys-grid h3 { margin: 10px 0 4px; color: var(--ink-2); font: 700 var(--t-1) / 1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; }
+.ui-keys-grid ul { margin: 0; padding: 0; list-style: none; }
+.ui-keys-grid li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; border-bottom: 1px dashed color-mix(in srgb, var(--ink-2) 35%, transparent); font-size: var(--t-2); }
+
+/* ---------- audit fixes ---------- */
+/* WCAG 2.2 target size (24px minimum): the footer links were 22px tall. */
+.footer-credit-link, .editor-footer a, footer a { display: inline-flex; align-items: center; min-height: 24px; }
+/* Every control shows where keyboard focus is; these three showed nothing. */
+.tool:focus-visible,
+.tool-panel-close:focus-visible,
+.zoom-level:focus-visible,
+.ui-keys-close:focus-visible,
+.ui-palette-item:focus-visible {
+  outline: 3px solid var(--brand-blue);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-tooltip.is-in, .ui-palette-card { animation: none; }
+}
+
+/* ---------- breathing room under the bars ---------- */
+/* Reported: "there is no spacing between the header ribbon and the
+   sub-dialogue box". Everything that opens from a bar now sits a clear
+   --chrome-gap below it (measured from the bar's edge; the bar's own 4px
+   hard shadow sits inside that gap, so 14px reads as about 10). */
+:root { --chrome-gap: 14px; }
+/* With the rail, the sheet hangs from the top bar, whose edge is 8px lower
+   than the ribbon inside it. Set through --sheet-top, never a margin, so the
+   sheet's height (derived from it) still stops short of the footer. */
+.chrome-rail .file-backstage { --sheet-top: calc(1.2rem + 52px + 17px); }

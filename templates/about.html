@@ -107,7 +107,16 @@
 
         <div>
           <span class="profile-tier">Educator · Founder · Researcher</span>
-          <h3 class="profile-name">Kshitiz Kumar Sinha</h3>
+          {# Letters rise in one after another (brutal.css, "About: display
+             type"). The name is read once, from aria-label. #}
+          {% set ns = namespace(i=0) %}
+          <h3 class="profile-name pf-name" aria-label="Kshitiz Kumar Sinha">
+            {%- for word in "Kshitiz Kumar Sinha".split(" ") -%}
+            <span class="pf-word" aria-hidden="true">
+              {%- for ch in word -%}<span class="pf-ch" style="--i:{{ ns.i }}">{{ ch }}</span>{% set ns.i = ns.i + 1 %}{%- endfor -%}
+            </span>{{ " " if not loop.last }}
+            {%- endfor -%}
+          </h3>
           <p class="nb-ink-quote"><span class="nb-ink-line">Starting is the <mark>heaviest rep</mark>.</span></p>
           <p class="profile-role">
             <span class="visually-hidden">Mathematics educator · Founder of Tungston Theory and HYPERION · Ph.D. scholar in applied ML</span>
@@ -118,7 +127,7 @@
             </span>
           </p>
 
-          <p class="nb-lead">Mathematics, to him, is not a subject. It is <span>a way of seeing</span>.</p>
+          <p class="nb-lead">Mathematics, to him, is not a subject. It is <span><em>a way of seeing</em></span>.</p>
 
           <p class="profile-bio">
             He teaches CBSE mathematics at Sarala Birla Public School in Ranchi,
@@ -168,12 +177,12 @@
 
           <div class="profile-stats">
             <div class="profile-stat">
-              <b>390+</b>
+              <b>600+</b>
               <span>STUDENTS TAUGHT</span>
             </div>
             <div class="profile-stat">
-              <b>175+</b>
-              <span>FACULTY SCHEDULED BY HIS SOLVER</span>
+              <b>180+</b>
+              <span>FACULTY IN ONE SESSION ON HIS INSTITUTIONAL SOLVER</span>
             </div>
             <div class="profile-stat">
               <b>#1</b>
@@ -300,7 +309,7 @@
           <p>
             Drawing on the canvas needs a pointer — a pen, a finger or a
             mouse. There is no keyboard equivalent for making a stroke, and
-            that is a real gap rather than an oversight. AR MAETHIST needs a camera
+            that is a real gap rather than an oversight. Sora Sketch needs a camera
             and a hand it can see. Imported PDF and slide pages are images, so
             their text is not readable by a screen reader.
           </p>

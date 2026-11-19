@@ -85,6 +85,10 @@
     { id: "undo", label: "Undo", icon: "lucide:undo-2", run: () => window.undo?.() }
   ];
 
+  // The MAETHIST mark at the centre, taken from the page's own footer logo so
+  // the path comes from Flask's url_for, not a guess.
+  const MARK = document.querySelector("img.footer-mark")?.getAttribute("src") || "/static/img/maethist-mark.png";
+
   let ring = null;
   let hold = null;
   let open = null;
@@ -99,7 +103,7 @@
     ring.setAttribute("aria-label", "Quick tools");
     ring.innerHTML = `
       <svg class="qa-progress" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" pathLength="1"/></svg>
-      <div class="qa-hub" aria-hidden="true"></div>
+      <div class="qa-hub" aria-hidden="true"><img class="qa-mark" src="${MARK}" alt="" width="34" height="34" decoding="async"></div>
       <div class="qa-slices"></div>`;
     document.body.appendChild(ring);
     ring.addEventListener("pointerdown", (event) => {

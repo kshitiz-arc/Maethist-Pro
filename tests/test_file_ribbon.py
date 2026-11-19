@@ -1,8 +1,8 @@
-"""The File ribbon and the .inkydoc container.
+"""The File ribbon and the .maedoc container.
 
 The ribbon is only worth having if every command on it actually runs, so these
 drive the real buttons in a real browser rather than calling the modules
-directly. The .inkydoc tests care about one thing above all: a document saved
+directly. The .maedoc tests care about one thing above all: a document saved
 and reopened must come back with its original intact and its ink still
 editable — otherwise it is an export, not a document format.
 """
@@ -294,7 +294,7 @@ class RibbonSurfaceTest(RibbonTestBase):
         self.assertTrue(blocked["exportPptx"]["disabled"])
         self.assertIn("Pages", blocked["exportPdf"]["note"])
         self.assertIn("PDF or deck", blocked["exportPptx"]["note"])
-        # .inkydoc always works: there is always a document to save.
+        # .maedoc always works: there is always a document to save.
         self.assertFalse(blocked["exportInkydoc"]["disabled"])
 
         enabled = {item["id"]: item["disabled"] for item in after}
@@ -330,7 +330,7 @@ class RibbonSurfaceTest(RibbonTestBase):
 class InkydocRoundTripTest(RibbonTestBase):
     """Save As, then Open: the format's whole reason for existing."""
 
-    def save_as_inkydoc(self, page, name="saved.inkydoc"):
+    def save_as_maedoc(self, page, name="saved.maedoc"):
         with page.expect_download(timeout=90000) as info:
             page.click('[data-command="exportInkydoc"]')
         target = self.directory / name
@@ -347,7 +347,7 @@ class InkydocRoundTripTest(RibbonTestBase):
                 self.open_editor(page)
                 self.import_pdf(page, source)
                 self.open_backstage(page, "export")
-                saved = self.save_as_inkydoc(page)
+                saved = self.save_as_maedoc(page)
             finally:
                 context.close()
                 browser.close()
@@ -358,13 +358,13 @@ class InkydocRoundTripTest(RibbonTestBase):
             names = archive.namelist()
             self.assertEqual(names[0], "mimetype", "the mimetype entry must come first")
             self.assertEqual(
-                archive.read("mimetype").decode(), "application/vnd.inkyscib.document"
+                archive.read("mimetype").decode(), "application/vnd.maethist.document"
             )
             self.assertIn("manifest.json", names)
             self.assertIn("document.json", names)
 
             manifest = json.loads(archive.read("manifest.json"))
-            self.assertEqual(manifest["format"], "inkydoc")
+            self.assertEqual(manifest["format"], "maedoc")
             self.assertEqual(manifest["version"], 1)
             self.assertEqual(manifest["mode"], "slides")
             self.assertEqual(manifest["pageCount"], 2)
@@ -397,7 +397,7 @@ class InkydocRoundTripTest(RibbonTestBase):
                 self.assertGreater(before["strokes"], 0, "the test needs ink on the page")
 
                 self.open_backstage(page, "export")
-                saved = self.save_as_inkydoc(page)
+                saved = self.save_as_maedoc(page)
 
                 # A fresh editor, so nothing can be left over in memory.
                 self.open_editor(page)
@@ -411,7 +411,7 @@ class InkydocRoundTripTest(RibbonTestBase):
                 )
                 reopened = page.evaluate(
                     """async (bytes) => {
-                      const file = new File([new Uint8Array(bytes)], 'saved.inkydoc');
+                      const file = new File([new Uint8Array(bytes)], 'saved.maedoc');
                       const manifest = await window.Inkyscib.Inkydoc.open(file);
                       return {
                         title: manifest.title,
@@ -448,14 +448,14 @@ class InkydocRoundTripTest(RibbonTestBase):
         """The container is a plain ZIP, and has to stay one.
 
         Written by Python's zipfile with deflate, read by the browser: if the
-        two ever disagree, .inkydoc has quietly become a private format.
+        two ever disagree, .maedoc has quietly become a private format.
         """
-        payload = self.directory / "external.inkydoc"
+        payload = self.directory / "external.maedoc"
         with zipfile.ZipFile(payload, "w", zipfile.ZIP_DEFLATED) as archive:
-            archive.writestr("mimetype", "application/vnd.inkyscib.document")
+            archive.writestr("mimetype", "application/vnd.maethist.document")
             archive.writestr(
                 "manifest.json",
-                json.dumps({"format": "inkydoc", "version": 1, "title": "From zipfile", "source": None}),
+                json.dumps({"format": "maedoc", "version": 1, "title": "From zipfile", "source": None}),
             )
             archive.writestr(
                 "document.json", json.dumps({"drawing": [], "notebook": None, "ppt": None})
@@ -467,7 +467,7 @@ class InkydocRoundTripTest(RibbonTestBase):
                 self.open_editor(page)
                 parsed = page.evaluate(
                     """async (bytes) => {
-                      const file = new File([new Uint8Array(bytes)], 'external.inkydoc');
+                      const file = new File([new Uint8Array(bytes)], 'external.maedoc');
                       const result = await window.Inkyscib.Inkydoc.parse(file);
                       return { title: result.manifest.title, hasDocument: !!result.document };
                     }""",
@@ -482,11 +482,11 @@ class InkydocRoundTripTest(RibbonTestBase):
         self.assertTrue(parsed["hasDocument"])
 
     def test_a_document_from_a_newer_version_is_refused_clearly(self):
-        payload = self.directory / "future.inkydoc"
+        payload = self.directory / "future.maedoc"
         with zipfile.ZipFile(payload, "w", zipfile.ZIP_DEFLATED) as archive:
-            archive.writestr("mimetype", "application/vnd.inkyscib.document")
+            archive.writestr("mimetype", "application/vnd.maethist.document")
             archive.writestr(
-                "manifest.json", json.dumps({"format": "inkydoc", "version": 99, "title": "Future"})
+                "manifest.json", json.dumps({"format": "maedoc", "version": 99, "title": "Future"})
             )
             archive.writestr("document.json", json.dumps({"drawing": []}))
 
@@ -496,7 +496,7 @@ class InkydocRoundTripTest(RibbonTestBase):
                 self.open_editor(page)
                 message = page.evaluate(
                     """async (bytes) => {
-                      const file = new File([new Uint8Array(bytes)], 'future.inkydoc');
+                      const file = new File([new Uint8Array(bytes)], 'future.maedoc');
                       try {
                         await window.Inkyscib.Inkydoc.parse(file);
                         return null;

@@ -31,7 +31,7 @@ first visit.
 - Import a PDF (a textbook, worksheet or question paper) and write on it. PDFs
   are converted in your browser, so the file stays on your device.
 - Import a PowerPoint (`.ppt`, `.pptx`) and annotate it slide by slide.
-- Export as vector PDF, PowerPoint, a 300 DPI PNG, or an editable `.inkydoc`.
+- Export as vector PDF, PowerPoint, a 300 DPI PNG, or an editable `.maedoc`.
 
 **Write and construct**
 - Pressure-aware pens: fineliner, fountain, brush, gel and calligraphy.
@@ -55,7 +55,7 @@ first visit.
 **Keep it safe**
 - Everything is stored in your own browser. There is no server copy of your
   work and no account to lose.
-- One-tap backup of your whole library as a `.inky` file, with a reminder when
+- One-tap backup of your whole library as a `.mae` file, with a reminder when
   you have gone too long without one.
 
 ## Privacy

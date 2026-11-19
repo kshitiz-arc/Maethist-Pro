@@ -2,7 +2,7 @@
  *
  * MAETHIST keeps every notebook in this browser and nowhere else. Clearing
  * site data, a reset tablet or a browser that evicts storage under pressure
- * deletes it, and nobody outside tech expects that. The .inky backup is the
+ * deletes it, and nobody outside tech expects that. The .mae backup is the
  * only copy that survives, so this nudges toward it:
  *
  *   - never backed up, and there has been work here for 2+ days, or

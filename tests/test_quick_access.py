@@ -135,6 +135,15 @@ class QuickAccessTests(unittest.TestCase):
         state = page.evaluate("() => ({ open: window.Inkyscib.QuickAccess.ringOpen(), paths: window.appState.paths.length, tool: window.appState.currentTool })")
         self.assertEqual(state, {"open": False, "paths": 0, "tool": "pen"})
 
+    def test_the_centre_is_the_maethist_mark(self):
+        page = self.open_page()
+        page.evaluate("() => window.Inkyscib.QuickAccess.openRingAt(600, 400)")
+        mark = page.evaluate("""() => { const img = document.querySelector('#quickRing .qa-hub img.qa-mark');
+          return img && { src: img.getAttribute('src'), ok: img.complete && img.naturalWidth > 0 }; }""")
+        self.assertIsNotNone(mark)
+        self.assertIn("maethist-mark", mark["src"])
+        page.wait_for_function("() => document.querySelector('#quickRing .qa-mark').naturalWidth > 0")
+
     def test_moving_or_a_second_finger_never_opens_it(self):
         page = self.open_page()
         page.evaluate("() => window.setTool('pen')")

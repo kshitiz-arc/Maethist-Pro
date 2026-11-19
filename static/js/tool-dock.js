@@ -41,7 +41,7 @@
   // footer (so it ran over the privacy links), the colour studio used the raw
   // viewport (so on a tablet it opened over the toolbar), and the File sheet
   // used 85vh from a top that had moved (so its last commands were off-screen).
-  const FREE_GAP = 8;
+  const FREE_GAP = 14;
   const FREE_BARS = [".toolbar", ".file-ribbon", "footer"];
 
   function freeArea() {
@@ -290,13 +290,13 @@
     const activeTool = getActiveTool();
 
     // Reaching for a different tool always opens its own controls -- but the
-    // tool that is merely in hand when the editor loads does not, below the
-    // dock. There the panel floats over the canvas, and opening it unasked
-    // covered the left third of a 960px tablet the moment it loaded, where a
-    // left-to-right writer starts. The dock is its own column beside the
-    // canvas and keeps showing its panel.
+    // tool that is merely in hand when the editor loads does not, at any
+    // width. Below the dock the panel floats over the canvas, and opening it
+    // unasked covered the left third of a 960px tablet. On a laptop the owner
+    // reported the same thing (2.7.0): "Start writing" landed with the Pen
+    // panel open. The pen is still the tool in hand; tap it for its controls.
     if (activeTool !== lastActiveTool) {
-      collapsed = !hasSynced && !useDock;
+      collapsed = !hasSynced;
       // ...and closes the help card, which otherwise keeps the dock and hides
       // the panel you just asked for. `collapsed` was already cleared here for
       // exactly this reason; helpOpen was missed.
