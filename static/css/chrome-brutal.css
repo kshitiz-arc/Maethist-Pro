@@ -72,17 +72,6 @@
   backdrop-filter: var(--frost-blur) !important;
 }
 
-/* A desktop with a fine pointer can afford frost on the bars too. */
-@media (hover: hover) and (pointer: fine) {
-  .chrome-rail .toolbar.is-topbar,
-  .chrome-rail .tool-rail,
-  .file-ribbon {
-    background: var(--frost-strong) !important;
-    -webkit-backdrop-filter: var(--frost-blur);
-    backdrop-filter: var(--frost-blur);
-  }
-}
-
 @media (prefers-reduced-transparency: reduce) {
   .file-backstage, .canvas-theme-pop, .pomo-panel, .planner-shell, .library-panel,
   .tool-help-sheet-panel, .clear-confirm-modal.active .clear-confirm-panel, .yt-player,

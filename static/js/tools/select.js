@@ -936,30 +936,6 @@
         return unionBounds(selectedIndices().map((index) => pathBounds(s.paths[index])));
     }
 
-    function companionEraserIndices(indices, bounds) {
-        const s = state();
-        if (!s || !Array.isArray(indices) || !indices.length || !bounds) return [];
-
-        const selectedSet = new Set(indices);
-        const searchBounds = expandBounds(bounds, worldSize(10));
-        const companions = [];
-
-        s.paths.forEach((path, index) => {
-            if (!isEraserMask(path) || selectedSet.has(index)) return;
-
-            // Eraser paths only affect ink drawn before them in the render order.
-            const canEraseSelectedInk = indices.some((selectedIndex) => selectedIndex < index);
-            if (!canEraseSelectedInk) return;
-
-            const eraserBounds = pathBounds(path);
-            if (boundsIntersect(searchBounds, eraserBounds)) {
-                companions.push(index);
-            }
-        });
-
-        return companions;
-    }
-
     function selectionHandles() {
         const indices = selectedIndices();
         const bounds = selectedBounds();

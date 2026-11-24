@@ -162,7 +162,6 @@
  * already exist rather than to a class, so no template markup moved.
  * ------------------------------------------------------------------ */
 
-.nav a,
 .site-foot a,
 .legal-strip a,
 .editor-legal a,
@@ -174,7 +173,6 @@
   text-decoration: none;
 }
 
-.nav a::after,
 .site-foot a::after,
 .legal-strip a::after,
 .editor-legal a::after,
@@ -195,8 +193,6 @@
   transition: transform var(--slow, 180ms) cubic-bezier(0.4, 1, 0.8, 1);
 }
 
-.nav a:hover::after,
-.nav a:focus-visible::after,
 .site-foot a:hover::after,
 .site-foot a:focus-visible::after,
 .legal-strip a:hover::after,
@@ -215,11 +211,9 @@
   transform-origin: 0% 50%;
 }
 
-/* The current page is not a hover target: its rule is simply there. */
-.nav a[aria-current="page"]::after {
-  transform: scale3d(1, 1, 1);
-  transform-origin: 0% 50%;
-}
+/* The header's nav items are pill buttons since v3, not text links: a drawn
+   underline across a pill's bottom edge read as a stray line (reported
+   2.8.2), so the nav has none. Only plain text links keep it. */
 
 /* These three previously toggled text-decoration on hover; the drawn line
    replaces it, so the underline does not double up. */
@@ -323,7 +317,6 @@
     opacity: 0 !important;
   }
 
-  .nav a::after,
   .site-foot a::after,
   .legal-strip a::after,
   .editor-legal a::after,

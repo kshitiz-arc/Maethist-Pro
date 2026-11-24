@@ -153,7 +153,7 @@ class EffectTests(unittest.TestCase):
                 "'.nb-cta .primary'), '::after').animationName"
             )
             underline = page.evaluate(
-                "() => getComputedStyle(document.querySelector('.nav a'),"
+                "() => getComputedStyle(document.querySelector('.site-foot a'),"
                 " '::after').transitionDuration"
             )
             page.goto(f"{self.base_url}/about", wait_until="load")

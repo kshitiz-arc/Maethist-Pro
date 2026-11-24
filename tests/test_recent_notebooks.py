@@ -77,6 +77,9 @@ class RecentNotebookTests(unittest.TestCase):
             """() => {
               const el = document.querySelector('.file-backstage');
               if (!el) return false;
+              // 2.8.1's grow-in animates the `scale` property, which the
+              // transform check below never sees: wait for every animation.
+              if (el.getAnimations().some((a) => a.playState === 'running')) return false;
               const t = getComputedStyle(el).transform;
               if (t === 'none') return true;
               // Exactly 1, not approximately: at scale 0.99995 a 44px row

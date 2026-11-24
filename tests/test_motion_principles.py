@@ -99,6 +99,43 @@ class MotionPrincipleTests(unittest.TestCase):
         self.assertTrue(state["cls"])
         self.assertLess(abs(state["ox"] - state["expected"]), 6, "the origin is the button, to the pixel or so")
 
+    def test_the_file_sheet_is_gone_after_it_closes(self):
+        """Reported (2.8.1): the sheet stayed painted on screen after closing,
+        because its grow-in animation held opacity 1 over the fade-out."""
+        page = self.open()
+        page.click('.file-ribbon-tab[data-ribbon-tab="file"]')
+        page.wait_for_selector(".file-backstage.is-open")
+        page.wait_for_timeout(400)
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(500)
+        state = page.evaluate("""() => { const b = document.querySelector('.file-backstage');
+          return { open: b.classList.contains('is-open'), opacity: getComputedStyle(b).opacity, anim: getComputedStyle(b).animationName }; }""")
+        self.assertFalse(state["open"])
+        self.assertEqual(state["opacity"], "0", state)
+        page.click('.file-ribbon-tab[data-ribbon-tab="tools"]')
+        page.wait_for_selector(".file-backstage.is-open")
+        page.wait_for_timeout(400)
+        self.assertEqual(page.evaluate("() => getComputedStyle(document.querySelector('.file-backstage')).opacity"), "1",
+                         "and it still opens")
+
+    def test_no_button_has_a_line_under_it(self):
+        """Reported (2.8.2): the nav pills drew a text-link underline across
+        their bottom edge, and the editor's home tile kept the browser's own."""
+        scan = """() => [...document.querySelectorAll('header .nav a, .file-ribbon-home')].filter((e) => e.offsetParent).map((e) => {
+          const after = getComputedStyle(e, '::after');
+          return { text: e.textContent.trim(), underline: getComputedStyle(e).textDecorationLine,
+                   line: after.content !== 'none' && after.content !== 'normal' && parseFloat(after.height) <= 4 }; })"""
+        page = self.open()
+        found = page.evaluate(scan)
+        page.goto(self.base_url + "/about", wait_until="domcontentloaded")
+        page.hover("header .nav a")
+        found += page.evaluate(scan)
+        self.assertTrue(found)
+        for item in found:
+            with self.subTest(item=item["text"]):
+                self.assertNotIn("underline", item["underline"])
+                self.assertFalse(item["line"])
+
     def test_search_rows_stagger_and_what_you_use_most_comes_first(self):
         page = self.open()
         for _ in range(3):

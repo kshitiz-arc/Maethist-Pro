@@ -775,3 +775,7 @@ body.menu-open .file-ribbon {
   pointer-events: none;
   transition: opacity 0.15s ease;
 }
+
+/* The home tile is a link; it is a button to look at, so no text underline
+   (reported 2.8.2: a line under the logo). */
+.file-ribbon-home, .file-ribbon-home:hover, .file-ribbon-home:focus-visible { text-decoration: none; }

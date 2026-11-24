@@ -940,7 +940,7 @@
       button.setAttribute("aria-expanded", "false");
     });
     scrim?.classList.remove("is-open");
-    backstage?.classList.remove("is-open");
+    backstage?.classList.remove("is-open", "mx-origin");
     backstage?.setAttribute("aria-hidden", "true");
     // aria-hidden alone is not enough: closed, this panel is only opacity:0,
     // so it stays laid out under the ribbon and its four buttons stayed in the

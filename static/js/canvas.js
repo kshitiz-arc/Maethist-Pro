@@ -49,8 +49,6 @@ let __backgroundLayerMeta = null;
 let __backgroundRevision = 0;
 let __renderFrame = null;
 
-const __patternCache = new Map();
-window.__patternCache = __patternCache;
 const __mediaImageCache = new Map();
 const __mediaImageCacheLimit = Number(navigator.deviceMemory || 4) <= 2 ? 10 : 24;
 
@@ -77,63 +75,6 @@ function invalidateCanvasDrawingCache() {
 function invalidateCanvasBackground() {
     __backgroundRevision += 1;
     __backgroundLayerMeta = null;
-}
-
-function __makeTile(pattern, theme) {
-    const tile = document.createElement("canvas");
-    const tctx = tile.getContext("2d");
-
-    const ink = theme === "light" ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.12)";
-
-    if (pattern === "dot") {
-        tile.width = 24; tile.height = 24;
-        tctx.fillStyle = ink;
-        tctx.beginPath();
-        tctx.arc(12, 12, 1, 0, Math.PI * 2);
-        tctx.fill();
-    }
-
-    if (pattern === "lines") {
-        tile.width = 120; tile.height = 32;
-        tctx.strokeStyle = ink;
-        tctx.lineWidth = 1;
-        tctx.beginPath();
-        tctx.moveTo(0, 31.5);
-        tctx.lineTo(tile.width, 31.5);
-        tctx.stroke();
-    }
-
-    if (pattern === "graph") {
-        tile.width = 28; tile.height = 28;
-        tctx.strokeStyle = ink;
-        tctx.lineWidth = 1;
-
-        tctx.beginPath();
-        tctx.moveTo(0, 0.5);
-        tctx.lineTo(tile.width, 0.5);
-        tctx.stroke();
-
-        tctx.beginPath();
-        tctx.moveTo(0.5, 0);
-        tctx.lineTo(0.5, tile.height);
-        tctx.stroke();
-    }
-
-    return tile;
-}
-
-function __getPatternFill(ctx) {
-    const root = document.documentElement;
-    const pattern = root.getAttribute("data-pattern") || "dot";
-    const theme = root.getAttribute("data-theme") || "dark";
-    const key = `${pattern}:${theme}`;
-
-    if (!__patternCache.has(key)) {
-        const tile = __makeTile(pattern, theme);
-        const pat = ctx.createPattern(tile, "repeat");
-        __patternCache.set(key, pat);
-    }
-    return __patternCache.get(key);
 }
 
 function __niceGridStep(worldStep, scale) {

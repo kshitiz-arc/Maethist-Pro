@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.8.2 — 2026-11-24
+
+### Fixed
+
+- **The File and Tools sheet stayed on screen after closing.** Its grow-in
+  animation (2.8.1) held it fully opaque over the fade-out. It now plays
+  only while the sheet is open.
+- **No more line under the buttons.** The header's Home, Features and About
+  pills still carried the underline from when they were plain text links: a
+  1px bar across the bottom of the current page's pill and on hover. The
+  editor's logo tile showed the browser's own link underline. Both are gone;
+  text links in the footer and legal pages keep their hover underline.
+
+### Removed (cleanup)
+
+- The tiled-pattern renderer in canvas.js (`__makeTile`, `__getPatternFill`
+  and its cache, also left on `window`): the grid has been drawn by
+  `__drawInfinitePattern` for some time and nothing called them.
+- An unused helper in the selection tool (`companionEraserIndices`).
+- CSS that later rules fully override: the frosted bars (replaced by solid
+  bars in 2.7.1), About's first name and lead-line styles, an unused
+  `.editor-footer` selector.
+
+
 ## 2.8.1 — 2026-11-24
 
 ### Motion and interaction principles

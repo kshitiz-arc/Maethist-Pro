@@ -152,7 +152,7 @@
 
 /* ---------- audit fixes ---------- */
 /* WCAG 2.2 target size (24px minimum): the footer links were 22px tall. */
-.footer-credit-link, .editor-footer a, footer a { display: inline-flex; align-items: center; min-height: 24px; }
+.footer-credit-link, footer a { display: inline-flex; align-items: center; min-height: 24px; }
 /* Every control shows where keyboard focus is; these three showed nothing. */
 .tool:focus-visible,
 .tool-panel-close:focus-visible,

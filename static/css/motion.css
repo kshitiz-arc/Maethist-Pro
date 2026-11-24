@@ -81,8 +81,12 @@ button:not(:disabled), [role="button"] {
 
 /* Origin awareness: grow out of the control that opened it, overshoot a
    little and settle (follow-through). */
-.mx-origin { transform-origin: var(--mx-ox, 50%) var(--mx-oy, 0); animation: mxOriginIn 260ms var(--ease-spring) both; }
-:is(.canvas-theme-pop, .file-backstage).mx-origin:not([hidden]) { animation: mxOriginIn 260ms var(--ease-spring) both; }
+/* Only while the surface is open: the animation holds its last frame
+   (opacity 1), so left on a closed sheet it kept the sheet painted on screen
+   after it closed (2.8.1, fixed in 2.8.2). */
+.mx-origin { transform-origin: var(--mx-ox, 50%) var(--mx-oy, 0); }
+.canvas-theme-pop.mx-origin:not([hidden]),
+.file-backstage.is-open.mx-origin { animation: mxOriginIn 260ms var(--ease-spring) both; }
 @keyframes mxOriginIn { from { opacity: 0; scale: 0.82; } 70% { opacity: 1; scale: 1.015; } to { opacity: 1; scale: 1; } }
 
 /* Peak-end: a job that finishes says so with a small, satisfying beat. */

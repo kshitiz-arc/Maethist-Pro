@@ -949,7 +949,6 @@ a.nb-tile:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--n
   .nb-article, .profile-tags span { transition: none; }
 }
 .nb-portfolio > div:last-child { display: grid; align-content: start; gap: 12px; }
-.nb-portfolio .profile-name { font-size: clamp(1.6rem, 3vw, 2.2rem); font-family: var(--display); font-weight: 800; letter-spacing: -0.03em; }
 .nb-portfolio .profile-role { display: block; min-height: 1.6em; }
 .nb-portfolio .profile-rotator { display: grid; height: 1.6em; line-height: 1.6em; font-size: var(--t-4); overflow: visible; }
 
@@ -1125,11 +1124,6 @@ a.nb-tile:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--n
   color: var(--nb-ink);
   text-wrap: balance;
 }
-.nb-lead span {
-  background: linear-gradient(transparent 62%, var(--brand-yellow) 62%, var(--brand-yellow) 92%, transparent 92%);
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-}
 .profile-bio em { font-style: italic; color: var(--nb-ink); }
 
 /* A strip of dark ruled paper with an orange margin, written in marker. */
@@ -1294,7 +1288,6 @@ a.card:active, a.nb-tile:not(.is-slab):active, a.panel:active {
   letter-spacing: -0.035em;
 }
 .nb-lead span {
-  background: none;
   position: relative;
   white-space: nowrap;
 }
