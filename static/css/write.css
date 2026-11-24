@@ -6534,3 +6534,6 @@ body.ar-dim #arVideo.active { opacity: 0.35; }
   letter-spacing: 0.06em;
 }
 .yt-ctrl-btn.yt-quality[aria-pressed="true"] { background: var(--brand-yellow, #FFD23F); color: #111111; border-color: #111111; }
+
+/* Rubber banding: a player pulled past the edge springs back (youtube.js). */
+.yt-player.yt-springing { transition: left 360ms var(--ease-spring), top 360ms var(--ease-spring) !important; }

@@ -40,8 +40,12 @@
 }
 .ui-tooltip[hidden] { display: none; }
 [data-theme="light"] .ui-tooltip { box-shadow: 3px 3px 0 var(--brand-yellow, #FFD23F); }
-.ui-tooltip.is-in { animation: uiTipIn 140ms var(--ease-out, ease-out) both; }
-@keyframes uiTipIn { from { opacity: 0; } to { opacity: 1; } }
+/* Origin awareness: it grows out of the side that faces its control. */
+.ui-tooltip.is-in { animation: uiTipIn 160ms var(--ease-spring, ease-out) both; }
+.ui-tooltip[data-side="bottom"] { transform-origin: 50% 0; }
+.ui-tooltip[data-side="top"] { transform-origin: 50% 100%; }
+.ui-tooltip[data-side="right"] { transform-origin: 0 50%; }
+@keyframes uiTipIn { from { opacity: 0; scale: 0.85; } to { opacity: 1; scale: 1; } }
 
 /* ---------- command search and keyboard sheet ---------- */
 .ui-palette {

@@ -92,7 +92,8 @@ body.rail-hidden.chrome-rail .tool-rail {
 /* Keyframes, not transitions: the ring comes out of display:none, where a
    transition has no "before" to start from and would just appear. */
 .qa-ring.is-open .qa-hub { opacity: 1; transform: none; pointer-events: auto; animation: qaHubPop 240ms var(--ease-spring, ease-out) both; }
-@keyframes qaHubPop { from { opacity: 0; transform: scale(0.3); } 60% { opacity: 1; transform: scale(1.12); } to { opacity: 1; transform: none; } }
+/* Anticipation then overshoot: the hub gathers before it lands. */
+@keyframes qaHubPop { from { opacity: 0; transform: scale(0.3); } 35% { opacity: 1; transform: scale(0.82); } 65% { transform: scale(1.14); } to { opacity: 1; transform: none; } }
 .qa-ring.is-open .qa-progress { opacity: 0; }
 
 .qa-slices { position: absolute; left: 0; top: 0; }
@@ -126,10 +127,20 @@ body.rail-hidden.chrome-rail .tool-rail {
   transition: transform 140ms var(--ease-out, ease-out), background-color 120ms ease-out;
 }
 @keyframes qaSlicePop {
-  from { opacity: 0; transform: translate(0, 0) scale(0.3) rotate(-30deg); }
-  70% { opacity: 1; transform: translate(calc(var(--x) * 1.08), calc(var(--y) * 1.08)) scale(1.06); }
+  from { opacity: 0; transform: translate(0, 0) scale(0.3); }
+  /* Arcs: through a point turned back along the curve, not in a line. */
+  45% { opacity: 1; transform: translate(var(--ax), var(--ay)) scale(0.85); }
+  /* Follow-through: past the rest point, then settle. */
+  75% { transform: translate(calc(var(--x) * 1.08), calc(var(--y) * 1.08)) scale(1.06); }
   to { opacity: 1; transform: translate(var(--x), var(--y)); }
 }
+/* Closing: back to the centre, interruptible because it is a transition. */
+.qa-ring.is-closing .qa-slice {
+  opacity: 0;
+  transform: translate(0, 0) scale(0.4);
+  transition: transform 140ms var(--ease-in, ease-in), opacity 120ms ease-in;
+}
+.qa-ring.is-closing .qa-hub { opacity: 0; transform: scale(0.4); transition: transform 140ms ease-in, opacity 120ms ease-in; }
 .qa-slice svg.icon { width: 22px; height: 22px; }
 .qa-label { font: 800 0.62rem / 1 var(--display); letter-spacing: 0.02em; }
 .qa-swatch { width: 24px; height: 24px; border: 2px solid #111111; border-radius: 50%; }

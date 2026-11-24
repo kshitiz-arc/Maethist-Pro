@@ -228,7 +228,12 @@ in an inline hint under the island and in the help sheet, never only in one of t
 
 ## Motion
 
-- **Approach (editor):** minimal-functional. Instruments do not bounce.
+- **Approach (editor, since 2.8.1):** physical and quick. Controls answer like
+  objects (they squash, stretch and settle), surfaces come from somewhere, and
+  sets arrive in order; the instruments themselves (the canvas, the ink, the
+  compass and protractor) never bounce. Supersedes "minimal-functional": the
+  owner asked for the principles below by name. See **Motion and interaction
+  principles**.
 - **Approach (marketing, v3.1):** expressive but quiet. Blocks rise in as they
   scroll into view, the demo window leans toward the pointer, a light follows
   the pointer across tiles, and the theme switch wipes out of the button.
@@ -243,6 +248,38 @@ in an inline hint under the island and in the help sheet, never only in one of t
   (`Inkyscib.Motion.themeWipe(change, fromElement)`), and dialog entrances.
 - **Never animate:** the ink. It must feel immediate, and it currently does.
 - Respect `prefers-reduced-motion: reduce` everywhere.
+
+### Motion and interaction principles
+
+Asked for by the owner, by name (2026-11-24). Each one has a rule for this
+product and a place it lives; the shared parts are `static/css/motion.css`
+and `static/js/motion.js` (`Inkyscib.Motion.stagger`, `.originFrom`,
+`.rubber`), loaded on every page. Two limits hold over all of them: **the ink
+is never animated**, and **every answer starts in the frame it was asked
+for**. Under `prefers-reduced-motion` every movement below stops; the state
+change it carried still happens.
+
+| Principle | The rule here | Where |
+|---|---|---|
+| **Timing** | Press 70ms, release 320ms, a surface 240-260ms, a set 28ms an item (capped at 12), a camera or drag spring 320-380ms. Nothing that answers a press waits. | `--dur-*` in tokens.css; motion.css |
+| **Slow in, slow out** | Arrivals on a long ease-out (`--ease-out`), anything that travels both ways on `--ease-in-out`, exits accelerate (`--ease-in`). Linear only for progress. | tokens.css |
+| **Anticipation** | A press squashes before anything happens; the quick ring's arc charges for 0.5s before it opens; its hub gathers (shrinks) before it lands. | `.mx-press`; quick-access.css |
+| **Squash and stretch** | A pressed button gets wider and shorter (mass kept), then taller past rest as it releases. On the `scale` property, so it never fights a button's own transform. | `.mx-press`, `mxRelease` |
+| **Follow-through** | Things that arrive go slightly past their rest and settle: ring slices, popovers, the sheet, a ticked box. Opacity and colour never overshoot. | `mxOriginIn`, `qaSlicePop`, `pbTick` |
+| **Arcs** | Ring slices sweep out on a curve (through a point turned back 40 degrees), not along a ray. | quick-access.js `--ax/--ay` |
+| **Staggering** | A set arrives in its order: the command search's rows, the File and Tools commands, a day's tasks (once per day shown, never on a re-render). | `Motion.stagger` |
+| **Origin awareness** | A surface grows out of the control that opened it: the Canvas popover from its button, the File/Tools sheet from its tab, a tooltip from the side facing its control, the quick ring from the pointer. | `Motion.originFrom`; ui-kit.css |
+| **Interruptible motion** | Movement a person can cut short is a transition, so it reverses from where it is: the press, the ring closing (pulled back in over 140ms; opening it again takes over). | motion.css; quick-access.js |
+| **Rubber banding** | A drag past a limit keeps following with growing resistance and springs back on release: the YouTube player at the screen edges. | `Motion.rubber`; youtube.js |
+| **Secondary action** | A main change carries a smaller one that confirms it: ticking a task pops the tick while the progress bar fills; the streak number jumps when it grows. | planner-brutal.css |
+| **Exaggeration** | Spent in a few places only, where a feeling is the point: the streak jump, "Day complete", a finished focus session, the homepage hook. Never on tools. | planner, pomodoro |
+| **Solid drawing** | One light, top-left: every hard shadow falls down and right, the same distance for the same depth (`--nb-shadow-*`), outlines the same weight per size. | tokens.css |
+| **Doherty threshold** | Under 400ms the app answers or says it is working: a press shows in the same frame; anything slower (a frame import, Image to text, an export) puts a named chip or status up at once, with Stop where it can. | ribbon progress, ocr.js |
+| **Fitts's law** | Targets at least 44px on touch; the most used things come to the pointer (the quick ring opens where you hold) or sit on an edge (the tool rail, the ribbon); the primary button is the largest in its surface. | DESIGN.md Spacing; quick-access.js |
+| **Hick's law** | Few choices at once: eight tools in the ring, seven presets at most, one search box over everything instead of more menus, advanced edits in their own section. | quick-access.js, ui-kit.js |
+| **Frequency of use** | What is used most is nearest: the ring holds the council's eight most-used tools; the command search lists what you run most first ("Frequent"), counted in this browser only (`inkyscib-command-usage`). | ui-kit.js |
+| **Von Restorff effect** | One thing in a surface is different, and it is the thing to do: one yellow primary per surface; a coloured chip only for meaning (blue topic, green focus, red when an exam is near). | planner-brutal.css, brutal.css |
+| **Peak-end rule** | Make the best moment and the last one good: the day completed, a focus session finished, a job's chip turning to a popped check when it is done, the Image to text card landing on the page. | motion.css `mxDonePop` |
 
 ### Boot and navigation
 
@@ -391,3 +428,4 @@ says so in the filename chip at `--ink-3` rather than behind an overlay.
 | 2026-11-19 | No tool panel opens on load, at any width | Owner request. Supersedes the dock's "keeps showing its panel" on a laptop. `static/js/tool-dock.js` |
 | 2026-11-19 | About's display faces: Bricolage Grotesque and Instrument Serif italic | Owner request for "super cool" type with motion, on About only. Self-hosted by `tools/vendor_fonts.py`. Motion is a 22ms letter stagger, off under reduced motion. |
 | 2026-11-19 | The Planner is neo-brutal, and is a study planner, not a calendar | Owner request; features from an LLM council (`docs/council/council-planner-2026-11-19.md`): focus from a task, exams with a revision spread, streak and this week, topic and notebook, backup. No accounts, push, AI plans or XP. Solid surfaces on the core tokens, scoped to `#plannerModal` in `static/css/planner-brutal.css`. |
+| 2026-11-24 | Nineteen named motion and interaction principles, each with a rule and a home | Owner request, by name. Supersedes "Instruments do not bounce" for controls and surfaces; the canvas, the ink and the instruments still never bounce, and every answer starts in the frame it was asked for. Table under Motion. `static/css/motion.css`, `static/js/motion.js` |

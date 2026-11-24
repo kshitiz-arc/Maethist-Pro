@@ -843,10 +843,18 @@
     const fragment = document.createDocumentFragment();
     records.forEach((record) => fragment.appendChild(buildTaskCard(record)));
     ui.taskList.replaceChildren(fragment);
+    // A new day's tasks arrive in order (DESIGN.md, staggering); a re-render
+    // of the same day, after a tick, does not replay it.
+    if (lastStaggeredDay !== selectedDate) {
+      lastStaggeredDay = selectedDate;
+      window.Inkyscib?.Motion?.stagger?.(ui.taskList);
+    }
     ui.emptyState.hidden = records.length > 0 || composerOpen;
     ui.taskList.hidden = records.length === 0;
     ui.addTaskBtn.hidden = composerOpen;
   }
+
+  let lastStaggeredDay = null;
 
   function buildTaskCard(record) {
     const task = record.task;
@@ -1229,6 +1237,13 @@
     scheduleReminderScan(250);
 
     if (!wasCompleted) {
+      // Secondary action: the tick pops while the bar fills.
+      const tick = ui.taskList.querySelector(`.planner-task-check[data-task-id="${CSS.escape(task.id)}"][data-occurrence-date="${occurrenceDate}"]`);
+      if (tick) {
+        tick.classList.remove('is-just-done');
+        void tick.offsetWidth;
+        tick.classList.add('is-just-done');
+      }
       const records = getOccurrencesForDate(selectedDate);
       const allDone = records.length && records.every((record) => isTaskCompleted(record.task, record.occurrenceDate));
       if (allDone) {
@@ -2611,6 +2626,12 @@
     ui.examEmpty.hidden = exams.length > 0;
 
     const streak = currentStreak();
+    if (ui.streakValue.textContent !== String(streak) && plannerOpen) {
+      // Exaggeration, kept to one place: the streak number jumps when it grows.
+      ui.streakValue.classList.remove('is-bumped');
+      void ui.streakValue.offsetWidth;
+      ui.streakValue.classList.add('is-bumped');
+    }
     ui.streakValue.textContent = String(streak);
     ui.streakMeta.textContent = streak === 1 ? 'day with something done' : 'days in a row with something done';
 

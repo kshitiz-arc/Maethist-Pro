@@ -237,6 +237,9 @@
     // overlapping by 237x195px on a 960px tablet.
     document.dispatchEvent(new CustomEvent("inkyscib:surface-open", { detail: { id: "canvas-theme" } }));
     placePopover();
+    // It grows out of the button that opened it (DESIGN.md, origin awareness).
+    // Measured once the popover has its final width and place.
+    window.requestAnimationFrame(() => window.Inkyscib?.Motion?.originFrom?.(pop, button));
     button.setAttribute("aria-expanded", "true");
     pop.querySelector('[data-canvas-preset][aria-checked="true"]')?.focus({ preventScroll: true });
   }

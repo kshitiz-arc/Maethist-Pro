@@ -1,5 +1,39 @@
 # Changelog
 
+## 2.8.1 — 2026-11-24
+
+### Motion and interaction principles
+
+Nineteen principles, asked for by name, each written into DESIGN.md with a
+rule for MAETHIST and where it lives. What you will notice:
+
+- **Every press has weight.** A button squashes into its shadow the moment
+  you touch it and stretches a little past rest as you let go (anticipation,
+  squash and stretch, follow-through). A quick second press interrupts it.
+- **Things come from somewhere.** The Canvas popover grows out of its
+  button, the File and Tools sheet out of its tab, a tooltip out of the side
+  facing its control (origin awareness).
+- **Sets arrive in order.** Search results, the File and Tools commands and
+  a day's tasks come in one after another (staggering).
+- **The quick ring** sweeps its tools out along an arc, its centre gathers
+  before it lands, and closing pulls them back in, which opening again can
+  interrupt.
+- **The YouTube player rubber-bands** when dragged past the edge of the
+  screen, and springs back.
+- **Ctrl+K learns.** What you run most is listed first, under Frequent
+  (frequency of use; counted in this browser only).
+- **Small rewards.** Ticking a task pops the tick while its bar fills, the
+  streak jumps when it grows, and a finished job's chip pops its check
+  (secondary action, exaggeration, peak-end).
+- The ink, the canvas and the instruments still never move by themselves,
+  and everything stops under reduced motion.
+
+### Fixed
+
+- Ctrl+K did nothing while a tool panel's field had focus (the compass
+  radius, for one): the field kept the key to itself.
+
+
 ## 2.8.0 — 2026-11-19
 
 ### The Planner, overhauled

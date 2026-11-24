@@ -1119,20 +1119,41 @@
     if (dragFrame === null) dragFrame = requestAnimationFrame(applyDrag);
   }
 
-  function applyDrag() {
+  // While dragging, past an edge the player rubber-bands (DESIGN.md): it
+  // keeps following with growing resistance, so the edge is felt. On release
+  // (final) it lands inside, and springs back if it was pulled past.
+  function applyDrag(final) {
     dragFrame = null;
     if (!dragState || !pendingDragPoint) return;
-    ytPlayer.style.left = `${clamp(pendingDragPoint.x - dragState.ox, 0, Math.max(0, window.innerWidth - dragState.width))}px`;
+    const maxLeft = Math.max(0, window.innerWidth - dragState.width);
     // Not above the chrome: dragged under the ribbon, the title bar -- the
     // only thing you can drag it back by -- would be out of reach.
     const topFloor = minPlayerTop(dragState.height);
-    ytPlayer.style.top = `${clamp(pendingDragPoint.y - dragState.oy, topFloor, Math.max(topFloor, window.innerHeight - dragState.height))}px`;
+    const maxTop = Math.max(topFloor, window.innerHeight - dragState.height);
+    const x = pendingDragPoint.x - dragState.ox;
+    const y = pendingDragPoint.y - dragState.oy;
+    const band = window.Inkyscib?.Motion?.rubber;
+    if (final === true || !band) {
+      ytPlayer.style.left = `${clamp(x, 0, maxLeft)}px`;
+      ytPlayer.style.top = `${clamp(y, topFloor, maxTop)}px`;
+      return;
+    }
+    ytPlayer.style.left = `${band(x, 0, maxLeft, 70)}px`;
+    ytPlayer.style.top = `${band(y, topFloor, maxTop, 70)}px`;
   }
 
   function endDrag() {
     if (!dragState) return;
     if (dragFrame !== null) cancelAnimationFrame(dragFrame);
-    applyDrag();
+    const wasPast = ytPlayer.style.left !== "" && (() => {
+      const r = ytPlayer.getBoundingClientRect();
+      return r.left < 0 || r.right > window.innerWidth || r.top < minPlayerTop(r.height) || r.bottom > window.innerHeight;
+    })();
+    if (wasPast && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      ytPlayer.classList.add("yt-springing");
+      window.setTimeout(() => ytPlayer.classList.remove("yt-springing"), 380);
+    }
+    applyDrag(true);
     dragState = null;
     pendingDragPoint = null;
     ytPlayer.classList.remove("yt-dragging");

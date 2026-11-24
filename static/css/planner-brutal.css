@@ -149,9 +149,12 @@
   border-radius: var(--pb-r);
   background: var(--surface);
   box-shadow: 4px 4px 0 var(--pb-shadow);
-  animation: pbCardIn 220ms var(--ease-spring, cubic-bezier(.34,1.56,.64,1)) both;
 }
-@keyframes pbCardIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+/* Cards arrive through the shared stagger (motion.css), once per day shown. */
+#plannerModal .planner-task-check.is-just-done { animation: pbTick 460ms var(--ease-spring, cubic-bezier(.34,1.56,.64,1)) both; }
+@keyframes pbTick { 0% { scale: 0.6; rotate: -12deg; } 55% { scale: 1.28; rotate: 6deg; } 100% { scale: 1; rotate: 0deg; } }
+.planner-big-number.is-bumped { display: inline-block; animation: pbBump 520ms var(--ease-spring, cubic-bezier(.34,1.56,.64,1)) both; }
+@keyframes pbBump { 0% { scale: 1; } 35% { scale: 1.45 0.8; } 65% { scale: 0.92 1.12; } 100% { scale: 1; } }
 #plannerModal .planner-task-card.is-complete { box-shadow: 2px 2px 0 var(--pb-shadow); opacity: 0.8; }
 #plannerModal .planner-task-card.is-complete .planner-task-title { text-decoration: line-through 2.5px; }
 #plannerModal .planner-task-check {
@@ -305,6 +308,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #plannerModal .planner-task-card { animation: none; }
+  #plannerModal .planner-task-check.is-just-done, .planner-big-number.is-bumped { animation: none; }
   #plannerModal :is(button) { transition: none; }
 }

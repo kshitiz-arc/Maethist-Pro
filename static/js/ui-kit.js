@@ -285,12 +285,34 @@
     });
   }
 
+  // Frequency of use (DESIGN.md): what you run most comes first. Counted in
+  // this browser only, like every other preference.
+  const USAGE_KEY = "inkyscib-command-usage";
+  function usage() {
+    try { return JSON.parse(localStorage.getItem(USAGE_KEY) || "{}") || {}; } catch (_) { return {}; }
+  }
+  function countUse(id) {
+    const counts = usage();
+    counts[id] = (counts[id] || 0) + 1;
+    try { localStorage.setItem(USAGE_KEY, JSON.stringify(counts)); } catch (_) { /* storage blocked */ }
+  }
+
   function renderList(query) {
+    const counts = usage();
+    const used = (item) => counts[item.id] || 0;
     shown = items
       .map((item) => ({ item, s: score(item, query) }))
       .filter((x) => x.s > 0)
-      .sort((a, b) => (query ? b.s - a.s : 0))
+      // A search ranks by match, nudged by use; no search puts the most used
+      // first, as a "Frequent" group of up to four, then everything in order.
+      .sort((a, b) => (query ? (b.s + Math.log2(1 + used(b.item)) * 40) - (a.s + Math.log2(1 + used(a.item)) * 40) : 0))
       .map((x) => x.item);
+    if (!query) {
+      const frequent = shown.filter((item) => used(item) > 0).sort((a, b) => used(b) - used(a)).slice(0, 4)
+        .map((item) => ({ ...item, group: "Frequent" }));
+      const ids = new Set(frequent.map((item) => item.id));
+      shown = frequent.concat(shown.filter((item) => !ids.has(item.id)));
+    }
     const list = $(".ui-palette-list", palette);
     if (!shown.length) {
       list.innerHTML = '<p class="ui-palette-empty">Nothing matches. Try a tool name, like "compass".</p>';
@@ -305,6 +327,7 @@
           ${kbd(item.key)}
         </div>`;
     }).join("");
+    window.Inkyscib?.Motion?.stagger?.(list);
     syncActive();
   }
 
@@ -320,6 +343,7 @@
   function runAt(index) {
     const item = shown[index];
     if (!item) return;
+    countUse(item.id);
     closePalette(false);
     // After the palette is gone, so a command that opens a sheet takes focus.
     setTimeout(() => item.run(), 0);
@@ -386,13 +410,19 @@
 
   // ---------- opening them ----------
 
-  document.addEventListener("keydown", (event) => {
+  // Ctrl+K is taken at the window, in the capture phase, ahead of every other
+  // handler: a tool panel's field (the compass radius, say) stops its keys
+  // from bubbling, and the shortcut must still work from there.
+  window.addEventListener("keydown", (event) => {
     if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === "k") {
       event.preventDefault();
+      event.stopPropagation();
       if (palette && !palette.hidden) closePalette();
       else openPalette();
-      return;
     }
+  }, true);
+
+  document.addEventListener("keydown", (event) => {
     if (event.ctrlKey || event.metaKey || event.altKey || typing(event.target)) return;
     if (document.querySelector(".img-sheet:not([hidden]), .ocr-overlay:not([hidden]), #commandPalette:not([hidden]), #shortcutSheet:not([hidden])")) return;
     if (event.key === "/") { event.preventDefault(); openPalette(); }

@@ -46,8 +46,87 @@
     transition.finished.finally(() => root.classList.remove("mx-theme-wipe"));
   }
 
+  // ---------- the press: anticipation, squash, stretch, follow-through ----------
+  //
+  // DESIGN.md, "Motion principles". On pointerdown a button squashes into its
+  // shadow at once (anticipation, and the Doherty threshold: the answer starts
+  // in the same frame). On release it stretches past its rest shape and
+  // settles (follow-through), on an arc of scale rather than a straight line.
+  // It uses the `scale` property, which composes with any `transform` the
+  // element already has, and a transition, so a quick re-press interrupts it
+  // mid-way instead of waiting for it to finish.
+  const PRESSABLE = "button, [role='button'], .file-ribbon-tab, a.nb-btn, a.cta, .nb-btn";
+  let pressed = null;
+
+  function pressStart(event) {
+    if (reduce.matches || event.button > 0) return;
+    const el = event.target.closest && event.target.closest(PRESSABLE);
+    if (!el || el.disabled || el.closest("[data-no-squash]") || el.matches("input, select, textarea")) return;
+    pressed = el;
+    el.classList.remove("mx-release");
+    el.classList.add("mx-press");
+  }
+
+  function pressEnd() {
+    const el = pressed;
+    pressed = null;
+    if (!el) return;
+    el.classList.remove("mx-press");
+    // Restart the release even when the previous one is still running.
+    void el.offsetWidth;
+    el.classList.add("mx-release");
+    window.setTimeout(() => el.classList.remove("mx-release"), 360);
+  }
+
+  document.addEventListener("pointerdown", pressStart, { passive: true, capture: true });
+  document.addEventListener("pointerup", pressEnd, { passive: true, capture: true });
+  document.addEventListener("pointercancel", pressEnd, { passive: true, capture: true });
+
+  // ---------- staggering ----------
+  //
+  // A set arrives one after another, 28ms apart, so the eye reads it as a
+  // set and follows its order. Capped at twelve, so a long list never makes
+  // the last row wait.
+  function stagger(container) {
+    if (!container) return;
+    const items = [...container.children];
+    items.forEach((item, i) => item.style.setProperty("--mx-i", String(Math.min(i, 12))));
+    container.classList.remove("mx-stagger");
+    void container.offsetWidth;
+    container.classList.add("mx-stagger");
+  }
+
+  // ---------- origin awareness ----------
+  //
+  // A surface grows out of the control that opened it, so the eye knows
+  // where it came from and where it will go back to.
+  function originFrom(surface, trigger) {
+    if (!surface || !trigger) return;
+    const s = surface.getBoundingClientRect();
+    const t = trigger.getBoundingClientRect();
+    if (!s.width || !t.width) return;
+    const x = t.left + t.width / 2 - s.left;
+    const y = t.top + t.height / 2 - s.top;
+    surface.style.setProperty("--mx-ox", Math.round(x) + "px");
+    surface.style.setProperty("--mx-oy", Math.round(y) + "px");
+    surface.classList.remove("mx-origin");
+    void surface.offsetWidth;
+    surface.classList.add("mx-origin");
+  }
+
+  // ---------- rubber banding ----------
+  //
+  // Past a limit, a drag keeps moving but with growing resistance, the way a
+  // phone's list stretches at its end, so the limit is felt rather than hit.
+  // `reach` is how far, in px, it can ever be pulled past the limit.
+  function rubber(value, lo, hi, reach = 90) {
+    if (value < lo) return lo - reach * (1 - 1 / ((lo - value) / reach * 0.55 + 1));
+    if (value > hi) return hi + reach * (1 - 1 / ((value - hi) / reach * 0.55 + 1));
+    return value;
+  }
+
   window.Inkyscib = window.Inkyscib || {};
-  window.Inkyscib.Motion = { themeWipe };
+  window.Inkyscib.Motion = { themeWipe, stagger, originFrom, rubber };
 
   // ---------- marketing pages only ----------
 

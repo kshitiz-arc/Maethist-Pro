@@ -61,7 +61,36 @@ button:not(:disabled), [role="button"] {
 /* The File sheet already fades on a class; give it the shared curve. */
 .file-backstage { transition-timing-function: var(--ease-out) !important; }
 
+/* ---------- motion principles (DESIGN.md) ---------- */
+
+/* The press. Squash on the way down (wider, shorter: the mass is kept),
+   stretch past rest on release, settle. The `scale` property composes with
+   any transform the element has. A transition, so it can be interrupted. */
+.mx-press { scale: 1.035 0.92; transition: scale 70ms var(--ease-out); }
+.mx-release { animation: mxRelease 320ms var(--ease-out) both; }
+@keyframes mxRelease {
+  0%   { scale: 1.035 0.92; }
+  38%  { scale: 0.97 1.06; }
+  70%  { scale: 1.01 0.99; }
+  100% { scale: 1 1; }
+}
+
+/* Staggering: a set arrives in order, 28ms apart. */
+.mx-stagger > * { animation: mxStagIn 300ms var(--ease-out) both; animation-delay: calc(var(--mx-i, 0) * 28ms); }
+@keyframes mxStagIn { from { opacity: 0; translate: 0 8px; } }
+
+/* Origin awareness: grow out of the control that opened it, overshoot a
+   little and settle (follow-through). */
+.mx-origin { transform-origin: var(--mx-ox, 50%) var(--mx-oy, 0); animation: mxOriginIn 260ms var(--ease-spring) both; }
+:is(.canvas-theme-pop, .file-backstage).mx-origin:not([hidden]) { animation: mxOriginIn 260ms var(--ease-spring) both; }
+@keyframes mxOriginIn { from { opacity: 0; scale: 0.82; } 70% { opacity: 1; scale: 1.015; } to { opacity: 1; scale: 1; } }
+
+/* Peak-end: a job that finishes says so with a small, satisfying beat. */
+.file-ribbon-progress[data-tone="done"] .file-ribbon-progress-spinner { animation: mxDonePop 420ms var(--ease-spring) both; }
+@keyframes mxDonePop { from { scale: 0.4; } 60% { scale: 1.25; } to { scale: 1; } }
+
 @media (prefers-reduced-motion: reduce) {
+  .mx-press, .mx-release, .mx-stagger > *, .mx-origin { animation: none !important; transition: none !important; scale: none !important; }
   @view-transition { navigation: none; }
   ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
   .canvas-theme-pop, .tool-help-sheet-panel, .clear-confirm-panel,

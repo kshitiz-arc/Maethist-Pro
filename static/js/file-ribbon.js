@@ -911,6 +911,13 @@
     backstage?.setAttribute("aria-hidden", "false");
     backstage?.removeAttribute("inert");
     document.dispatchEvent(new CustomEvent("inkyscib:surface-open", { detail: { id: "file-sheet" } }));
+    // Out of the tab that opened it, with its commands arriving in order
+    // (DESIGN.md: origin awareness, staggering).
+    const motion = window.Inkyscib?.Motion;
+    if (motion && backstage) {
+      motion.originFrom(backstage, lastTrigger);
+      new Set([...backstage.querySelectorAll(".file-command")].map((el) => el.parentElement)).forEach(motion.stagger);
+    }
 
     // Focus the first thing in the pane so the keyboard works immediately.
     window.requestAnimationFrame(() => {

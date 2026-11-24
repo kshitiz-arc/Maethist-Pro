@@ -123,9 +123,14 @@
       const angle = (index / items.length) * Math.PI * 2 - Math.PI / 2;
       const x = Math.cos(angle) * 96;
       const y = Math.sin(angle) * 96;
+      // Arcs (DESIGN.md): each slice sweeps out along a curve, through a point
+      // turned back 40 degrees at 55% of its reach, rather than in a line.
+      const back = angle - 0.7;
+      const ax = Math.cos(back) * 96 * 0.55;
+      const ay = Math.sin(back) * 96 * 0.55;
       const swatch = item.color ? `<span class="qa-swatch" style="background:${item.color}"></span>` : icon(item.icon);
       return `<button type="button" role="menuitem" class="qa-slice${item.active ? " is-active" : ""}" data-slice="${item.id}"
-        style="--x:${x.toFixed(1)}px; --y:${y.toFixed(1)}px; --i:${index}" aria-label="${item.label}">
+        style="--x:${x.toFixed(1)}px; --y:${y.toFixed(1)}px; --ax:${ax.toFixed(1)}px; --ay:${ay.toFixed(1)}px; --i:${index}" aria-label="${item.label}">
         ${swatch}<span class="qa-label">${item.label}</span></button>`;
     }).join("");
   }
@@ -213,6 +218,8 @@
     }
     if (typeof window.invalidateCanvasDrawingCache === "function") window.invalidateCanvasDrawingCache();
     if (typeof window.render === "function") window.render();
+    window.clearTimeout(closeTimer);
+    ring.classList.remove("is-closing");
     open = { pointerId: at.id, items: currentItems(), lifted: false };
     renderSlices(open.items);
     Object.assign(open, place(at.x, at.y));
@@ -229,11 +236,14 @@
   function sliceAt(x, y) {
     const el = document.elementFromPoint(x, y);
     const hit = el ? el.closest?.("#quickRing [data-slice]") : null;
-    if (hit || !open || open.cx == null) return hit;
+    if (!open || open.cx == null) return hit;
     const dx = x - open.cx;
     const dy = y - open.cy;
     const dist = Math.hypot(dx, dy);
-    if (dist < DEAD_ZONE || dist > 220) return null;
+    // Direction decides past the dead zone: while the slices are still
+    // sweeping out along their arcs, the one under the pointer is not
+    // always the one it points toward.
+    if (dist < DEAD_ZONE || dist > 220) return hit;
     const slices = ring.querySelectorAll("[data-slice]");
     const n = slices.length;
     const turn = (Math.atan2(dy, dx) + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
@@ -248,11 +258,26 @@
     if (result !== "stay") close();
   }
 
+  // Interruptible motion (DESIGN.md): closing pulls the slices back in over
+  // 140ms instead of vanishing, and a ring opened again meanwhile simply
+  // takes over from wherever they are.
+  let closeTimer = 0;
   function close() {
     open = null;
     if (!ring) return;
-    ring.classList.remove("is-open", "is-charging");
-    ring.hidden = true;
+    ring.classList.remove("is-charging");
+    if (ring.hidden || !ring.classList.contains("is-open")) {
+      ring.classList.remove("is-open");
+      ring.hidden = true;
+      return;
+    }
+    ring.classList.remove("is-open");
+    ring.classList.add("is-closing");
+    window.clearTimeout(closeTimer);
+    closeTimer = window.setTimeout(() => {
+      ring.classList.remove("is-closing");
+      if (!open) ring.hidden = true;
+    }, 150);
   }
 
   // Capture phase, ahead of the canvas's own handlers, which never see the

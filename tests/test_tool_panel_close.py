@@ -102,6 +102,12 @@ class ToolPanelCloseTests(unittest.TestCase):
                 )
 
                 button = page.locator(selector)
+                # The previous subtest pressed this same button; its release
+                # (motion.css, squash and stretch) scales the drawn box for
+                # 320ms. The target is the button at rest, so wait it out.
+                page.wait_for_function(
+                    "(s) => { const b = document.querySelector(s); return b && !b.classList.contains('mx-release') && !b.classList.contains('mx-press'); }",
+                    arg=selector)
                 box = button.bounding_box()
                 self.assertIsNotNone(box, f"{selector} is not rendered")
                 self.assertGreaterEqual(box["width"], 44, "below DESIGN.md's 44px minimum")
