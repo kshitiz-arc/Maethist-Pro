@@ -786,6 +786,14 @@
 
     function hitEditablePath(point) {
         const paths = state()?.paths || [];
+        // A point has first claim. It is the smallest target and is nearly
+        // always underneath: it is made before the lines drawn through it, so
+        // topmost-first handed every press on a vertex to its segment, and a
+        // vertex could not be dragged at all (2.9.2, live geometry).
+        for (let i = paths.length - 1; i >= 0; i--) {
+            const p = paths[i];
+            if (p?.tool === "construction" && p.geomType === "point" && hitPath(point, p, i)) return i;
+        }
         for (let i = paths.length - 1; i >= 0; i--) {
             if (hitPath(point, paths[i], i)) return i;
         }
@@ -1311,8 +1319,50 @@
             s.paths[entry.index] = updated;
         });
 
+        followMovedPoints(s, action);
         requestRedraw();
         return true;
+    }
+
+    // Live geometry (2.9.2): what is attached to a point follows it. A segment
+    // or line joined to a point keeps that end on it, and an arc or circle
+    // drawn about a centre keeps its centre there, so dragging a vertex
+    // reshapes the figure instead of tearing it. Lengths, angles and labels
+    // are drawn from the points, so they follow on their own.
+    // Each attached path is replaced by an updated copy, never edited in place:
+    // history snapshots may hold the old object, and an undo must restore it.
+    function followMovedPoints(s, action) {
+        const moved = new Map();
+        action.originalPaths.forEach((entry) => {
+            const p = s.paths[entry.index];
+            if (p && p.tool === "construction" && p.geomType === "point" && p.gid && p.points?.[0]) {
+                moved.set(p.gid, p.points[0]);
+            }
+        });
+        if (!moved.size) return;
+        const selected = new Set(action.indices || []);
+        for (let i = 0; i < s.paths.length; i += 1) {
+            if (selected.has(i)) continue;
+            const p = s.paths[i];
+            if (!p || !Array.isArray(p.points) || !p.points.length) continue;
+            const start = p.startPointId && moved.get(p.startPointId);
+            const end = p.endPointId && moved.get(p.endPointId);
+            const centre = p.centerId && moved.get(p.centerId);
+            if (!start && !end && !centre) continue;
+            // Its state before the drag, once, so one undo puts it back too.
+            action.followOriginals = action.followOriginals || new Map();
+            if (!action.followOriginals.has(i)) action.followOriginals.set(i, clonePath(p));
+            const points = p.points.map((q) => ({ ...q }));
+            if (start) Object.assign(points[0], { x: start.x, y: start.y });
+            if (end) Object.assign(points[points.length - 1], { x: end.x, y: end.y });
+            if (centre) Object.assign(points[0], { x: centre.x, y: centre.y });
+            s.paths[i] = { ...p, points };
+        }
+        // The drag swaps paths for updated copies, so the construction index
+        // (id -> path) would still point at the old ones: refresh it, or
+        // snapping and labels would see the figure where it used to be.
+        window.Inkyscib?.Construction?.rebuildIndex?.(true);
+        window.Inkyscib?.Construction?.invalidateIntersections?.();
     }
 
     function endAction() {
@@ -1362,6 +1412,10 @@
                 // Reconstruct the pre-move paths from the originals captured at drag start.
                 const before = typeof window.captureHistory === "function" ? window.captureHistory() : s.paths.slice();
                 (action.originalPaths || []).forEach(({ index, path }) => {
+                    if (index >= 0 && index < before.length) before[index] = path;
+                });
+                // And what followed a moved point (followMovedPoints).
+                (action.followOriginals || new Map()).forEach((path, index) => {
                     if (index >= 0 && index < before.length) before[index] = path;
                 });
                 window.commitHistory(before);

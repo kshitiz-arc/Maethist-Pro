@@ -33,13 +33,13 @@ class ReleaseTests(unittest.TestCase):
         cls.client = app.test_client()
 
     def test_the_version_agrees_with_the_version_file(self):
-        self.assertEqual(app_module.APP_VERSION, "2.9.1")
+        self.assertEqual(app_module.APP_VERSION, "2.9.2")
         self.assertEqual((ROOT / "VERSION").read_text().strip(), app_module.APP_VERSION)
 
     def test_the_health_check_answers_and_is_never_cached(self):
         response = self.client.get("/healthz")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json(), {"status": "ok", "version": "2.9.1"})
+        self.assertEqual(response.get_json(), {"status": "ok", "version": "2.9.2"})
         self.assertEqual(response.headers["Cache-Control"], "no-store")
 
     def test_production_refuses_to_start_without_a_secret_key(self):
@@ -114,7 +114,7 @@ class OfflineShellTests(unittest.TestCase):
 
     def test_the_cache_name_changes_when_an_asset_does(self):
         name = re.search(r'const CACHE = "([^"]+)"', self.source).group(1)
-        self.assertTrue(name.startswith("inkyscib-shell-2.9.1-"))
+        self.assertTrue(name.startswith("inkyscib-shell-2.9.2-"))
         with unittest.mock.patch.object(
             app_module, "offline_asset_urls", return_value=["/static/x.js?v=00000000"]
         ):

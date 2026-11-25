@@ -296,8 +296,15 @@
   function anchorLineEndpoints() {
     const construction = window.Inkyscib?.Construction;
     if (!construction?.materializeSnap) return;
-    construction.materializeSnap(lineStartSnap);
-    construction.materializeSnap(lineEndSnap);
+    const start = construction.materializeSnap(lineStartSnap);
+    const end = construction.materializeSnap(lineEndSnap);
+    // Remember which points the ends sit on: dragging one later carries the
+    // line with it (select.js, followMovedPoints).
+    const path = state()?.currentPath;
+    if (path && path.tool === "line") {
+      if (start?.gid) path.startPointId = start.gid;
+      if (end?.gid) path.endPointId = end.gid;
+    }
   }
 
   function clearConstructionSnaps() {

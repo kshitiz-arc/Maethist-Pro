@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.9.2 — 2026-11-26
+
+### Live geometry
+
+- **Drag a point and the figure follows.** A segment or line joined to a
+  point keeps that end on it, and an arc or circle drawn about a centre
+  keeps its centre there. So moving a vertex reshapes the construction
+  instead of tearing it apart. Lengths, angles and labels are drawn from
+  the points, so they update as you drag.
+- **Lines remember what they were drawn to.** A line started or ended on a
+  point, or on a crossing of two arcs (which becomes a point), now records
+  that point and follows it later.
+- **One undo puts the whole figure back**, the point and everything that
+  followed it.
+
+### Fixed
+
+- **A point could not be dragged at all.** Points are made before the lines
+  drawn through them, so the Select tool's topmost-first pick handed every
+  press on a vertex to its segment. Points now have first claim.
+- After a drag, the construction index still pointed at the pre-drag copies
+  of the moved paths, so snapping and labels saw the figure where it used
+  to be. It is refreshed as the drag runs.
+
+
 ## 2.9.1 — 2026-11-25
 
 ### Lesson replay

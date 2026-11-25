@@ -83,8 +83,8 @@ python -c "import os; os.environ.setdefault('SECRET_KEY','dev'); from app import
 python -m pytest tests/ -q
 ```
 
-**Baseline is 663 passed / 0 failed / 1 skipped, 2,385 subtests, about 16 minutes
-(2026-11-26, version 2.9.1).** Before that, 658 / 0 / 2,375 (2.9.0, counting a
+**Baseline is 665 passed / 0 failed / 1 skipped, 2,385 subtests, about 16 minutes
+(2026-11-26, version 2.9.2).** Before that, 663 / 0 / 2,385 (2.9.1). Before that, 658 / 0 / 2,375 (2.9.0, counting a
 YouTube speed test's 30s page-ready timeout under load as a straddle). Before that,
 653 / 0 / 2,365 (2.8.5). Before that, 649 / 0 / 2,365 (2.8.4, counting the
 render-latency view-jump test as a known timing straddle). Before that,
