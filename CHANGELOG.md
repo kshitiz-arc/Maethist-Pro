@@ -1,5 +1,52 @@
 # Changelog
 
+## 2.9.1 — 2026-11-25
+
+### Lesson replay
+
+Record a lesson as you write it, with your voice if you like, and play it
+back stroke by stroke in time with what you said. Explain a topic once, and
+every student can watch it again, at 1×, 1.5× or 2×, as often as they need.
+
+- **Tools, then Lessons** opens the sheet. Choose **Record with voice** or
+  **Record ink only**.
+  - A pill at the bottom shows the time, with **Stop and save** and a
+    discard button.
+  - Saved lessons are listed with their length and stroke count, to play
+    or delete.
+- **The player plays inside the editor**, so every stroke is drawn by the
+  real renderer: pen, shapes, lines, constructions. It starts from the page
+  as it was when you pressed Record, and draws each stroke point by point
+  as it was written.
+  - It has play and pause, a scrubber, the arrow keys to jump 5 seconds,
+    1×/1.5×/2× speed, and Esc to close.
+  - Closing it puts the page back exactly.
+- **It can never save over your page.** The page is saved just before the
+  player opens. Then every save is held, at the one function they all go
+  through, until it closes, so even a tab closed mid-lesson leaves your
+  page as it was. The canvas and the keyboard shortcuts are blocked while
+  a lesson plays.
+- **Everything stays on the device.** Lessons live in a new local
+  database, `inkyscib_lessons`. The voice is recorded by the browser and
+  saved with the lesson, never uploaded, and the microphone is only asked
+  for when you choose "with voice". To allow that, the site's permissions
+  policy now permits the microphone for this site only (it had blocked
+  it), as it already did the camera.
+- **Legal documents updated to match.**
+  - The privacy policy names the lessons database and explains the
+    microphone.
+  - The cookie table gains rows for `inkyscib_lessons` and for
+    `inkyscib_background`, which had been missing since 2.7.0.
+  - The privacy page's erase button clears lessons too.
+  - `LEGAL_UPDATED` is 2026-11-25.
+
+### Fixed
+
+- Write assist's tidy resamples a stroke when the pen lifts, and the new
+  points carried no time. Lessons rebuild that timing from the stroke's
+  length, so a tidied stroke still replays as one smooth movement.
+
+
 ## 2.9.0 — 2026-11-25
 
 ### Maths that answers back

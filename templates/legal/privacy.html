@@ -28,9 +28,20 @@
         IndexedDB (the database <code>inkyscib_cache</code>, whose
         <code>records</code> store holds your notebooks and preferences and
         whose <code>documents</code> store holds any PDF or deck you
-        imported), and a picture you choose as the canvas background, in the
-        database <code>inkyscib_background</code>. None of it is uploaded, and there is no
-        endpoint on the server that could receive it. If you clear your browser
+        imported), a picture you choose as the canvas background, in the
+        database <code>inkyscib_background</code>, and any lesson you record, in the
+        database <code>inkyscib_lessons</code>. None of it is uploaded, and there is no
+        endpoint on the server that could receive it.
+      </p>
+
+      <p>
+        <strong>The microphone.</strong> When you record a lesson "with voice",
+        your browser asks for the microphone. The sound is recorded by your
+        browser and saved with the lesson in <code>inkyscib_lessons</code>, on
+        your device. It is never sent to this server or to anyone else, and
+        nothing listens when you are not recording. "Record ink only" never
+        asks. The site's permissions policy allows the microphone and camera
+        for this site alone. If you clear your browser
         storage, it is gone, and we cannot bring it back.
       </p>
 

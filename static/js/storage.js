@@ -1167,6 +1167,10 @@ function scheduleDrawingSave() {
 }
 
 async function flushDrawingSave(options = {}) {
+    // A lesson playing (lesson.js) shows its own ink on the canvas. Writing
+    // that would replace the page, so no save of any kind runs meanwhile --
+    // the page was saved just before the player opened.
+    if (window.appState?.lessonPlayback) return null;
     const force = !!options.force;
     cancelScheduledDrawingSave();
 

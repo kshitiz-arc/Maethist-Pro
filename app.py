@@ -204,7 +204,7 @@ def add_static_version(endpoint, values):
     if token:
         values["v"] = token
 
-APP_VERSION = "2.9.0"
+APP_VERSION = "2.9.1"
 
 # Render sets RENDER=true on every service; INKYSCIB_ENV=production is the
 # switch for any other host. A random fallback is fine on a laptop, but under
@@ -1334,8 +1334,9 @@ def set_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
-    # Allow camera only for MAETHIST itself, block microphone
-    response.headers["Permissions-Policy"] = "camera=(self), microphone=(), geolocation=()"
+    # Camera (Sora Sketch) and microphone (a lesson's voice, 2.9.1) for
+    # MAETHIST itself only; neither is ever sent anywhere.
+    response.headers["Permissions-Policy"] = "camera=(self), microphone=(self), geolocation=()"
 
     # IMPORTANT:
     # Do NOT set X-Frame-Options, because it blocks iframe embedding.
@@ -1527,7 +1528,7 @@ def lab_ink():
     return render_template("lab_ink.html", config=config)
 
 
-LEGAL_UPDATED = "2026-11-19"
+LEGAL_UPDATED = "2026-11-25"
 
 
 @app.route("/legal/privacy")

@@ -59,7 +59,7 @@
     video: "tv-minimal-play", camera: "camera", guide: "map", open: "folder-open",
     save: "save", saveAs: "save-all", plus: "plus", pdf: "file-text", slides: "presentation",
     image: "image", package: "package", backup: "hard-drive-download", book: "book-open",
-    trash: "trash", rename: "pencil-line", ocr: "scan-text"
+    trash: "trash", rename: "pencil-line", ocr: "scan-text", lessons: "play"
   };
   const ICONS = {};
   Object.keys(ICON_REFS).forEach((key) => {
@@ -265,6 +265,16 @@
       run: async () => {
         close();
         clickExisting("imageInsertBtn");
+      }
+    },
+
+    lessons: {
+      title: "Lessons",
+      note: "Record what you write, with your voice if you like, and play it back stroke by stroke.",
+      icon: "lessons",
+      run: async () => {
+        close();
+        window.Inkyscib?.Lesson?.openSheet?.();
       }
     },
 
@@ -574,7 +584,7 @@
       icon: "tools",
       heading: "Extra tools",
       blurb: "The things that sit beside the drawing rather than on it. Each one opens over the canvas and closes again.",
-      commands: ["ocr", "planner", "pomodoro", "youtube", "arInky", "featureTour"]
+      commands: ["lessons", "ocr", "planner", "pomodoro", "youtube", "arInky", "featureTour"]
     },
     recent: {
       label: "Recent",
