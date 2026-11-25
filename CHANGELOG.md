@@ -1,5 +1,37 @@
 # Changelog
 
+## 2.8.4 — 2026-11-25
+
+### Changed
+
+- **No line from the ring's centre to a slice.** The glowing needle that
+  swung to the slice you point at is gone. The slice still grows and locks
+  on, and the readout under the ring still names it.
+- **Tool panels, tidied in the app's own style.** Every toggle and choice
+  button now uses one label style (Space Grotesk, sentence case) on one
+  line. Before, some chips were tiny heavy capitals that wrapped mid-name
+  ("NAME THE / ENDS", "SHOW / SWEEP") beside plain-text buttons. The More
+  cue is now a small chevron in the panel's corner instead of a labelled
+  pill on top of the controls, and it fades once you have scrolled the
+  panel, so it no longer sits over the bottom row while you work.
+  `static/css/panel-tidy.css`
+- **Easier to read, measured.**
+  - Hints were 9.76px; they are now 12px (the scale's smallest step) in one
+    style everywhere. One Compass hint had been plain black.
+  - "Off" toggle chips read at 4.13:1 on the light theme, under AA, and
+    looked disabled. They are now 6.96:1.
+  - Some number fields fell back to Arial with uneven digits. All now use
+    the mono with tabular figures, as the design rules ask.
+  - The tool's name is one step larger, so each panel has a clear top.
+
+### Fixed
+
+- **A double tap from Select no longer opens the search.** The double tap
+  that returns to the pen also opened the command search, a 2.7.1 addition
+  copied from ComfyUI. The double tap is the pen's alone now; Ctrl+K and
+  "/" still search.
+
+
 ## 2.8.3 — 2026-11-24
 
 ### The hold ring, faster and smoother

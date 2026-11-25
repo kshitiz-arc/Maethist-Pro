@@ -81,12 +81,16 @@ class UiKitTests(unittest.TestCase):
         self.assertGreater(scores[0], 0)
         self.assertEqual(scores[1], 0)
 
-    def test_double_click_on_empty_canvas_with_select_searches(self):
+    def test_a_double_tap_from_select_gives_the_pen_and_no_search(self):
+        """Reported (2.8.3): with Select, a double tap to get back to the pen
+        also opened the command search. The double tap is the pen's alone."""
         page = self.open()
         page.evaluate("() => { window.appState.paths = []; window.setTool('select'); window.render(); }")
         box = page.locator("#drawingCanvas").bounding_box()
         page.mouse.dblclick(box["x"] + 700, box["y"] + 450)
-        page.wait_for_selector("#commandPalette:not([hidden])")
+        page.wait_for_timeout(250)
+        state = page.evaluate("() => ({ tool: window.appState.currentTool, search: (() => { const el = document.getElementById('commandPalette'); return !!(el && !el.hidden); })() })")
+        self.assertEqual(state, {"tool": "pen", "search": False})
 
     def test_question_mark_opens_the_keyboard_sheet(self):
         page = self.open()

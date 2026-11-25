@@ -12,8 +12,8 @@
 //  * shadcn/ui Command (cmdk). Ctrl+K or "/" opens one search box over every
 //    tool and every File, Insert, Export and Tools command, each with its key.
 //    Arrows move, Enter runs.
-//  * ComfyUI's canvas. Double-click empty canvas with Select to search, and
-//    "?" for the keyboard sheet.
+//  * "?" for the keyboard sheet. (2.7.1 also borrowed ComfyUI's
+//    double-click-to-search; 2.8.4 took it out, see below.)
 (function () {
   "use strict";
 
@@ -429,15 +429,11 @@
     else if (event.key === "?") { event.preventDefault(); openSheet(); }
   });
 
-  // ComfyUI's double-click to search, on empty canvas with Select, where a
-  // double-click would otherwise do nothing.
-  document.addEventListener("dblclick", (event) => {
-    if (event.target?.id !== "drawingCanvas" || window.appState?.currentTool !== "select") return;
-    setTimeout(() => {
-      const picked = window.appState?.selection?.selectedIndices || [];
-      if (!picked.length) openPalette();
-    }, 0);
-  }, true);
+  // No double-click search. 2.7.1 opened this box on a double-click of empty
+  // canvas with Select, believing the gesture was free; it was not. A double
+  // tap on the canvas has long meant "back to the pen" (events.js,
+  // handleCanvasDoubleClick), so the owner got the pen and the search box at
+  // once (reported 2.8.3). The pen keeps the gesture; Ctrl+K and "/" search.
 
   window.Inkyscib = window.Inkyscib || {};
   window.Inkyscib.UiKit = {

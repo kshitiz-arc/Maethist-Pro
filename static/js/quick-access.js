@@ -132,7 +132,6 @@
       <div class="qa-burst" aria-hidden="true">${HUD.burst()}</div>
       <div class="qa-plate" aria-hidden="true">${HUD.plate}</div>
       <div class="qa-orbit" aria-hidden="true">${HUD.orbit}</div>
-      <div class="qa-aim" aria-hidden="true"></div>
       <div class="qa-charge" aria-hidden="true">
         <svg class="qa-progress" viewBox="0 0 100 100"><defs><linearGradient id="qaChargeGrad" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="#5CC8FF"/><stop offset="0.55" stop-color="#A78BFA"/><stop offset="1" stop-color="#FFD23F"/></linearGradient></defs>
@@ -181,24 +180,16 @@
     }).join("");
   }
 
-  // The needle swings to the slice pointed at, the short way round, and the
-  // readout names it; with nothing pointed at it names the tool in hand.
-  let aimAngle = -90;
+  // The readout names the slice pointed at; with nothing pointed at, the
+  // tool in hand. (2.8.4: the needle that also swung to it is gone, by request.)
   function aimAt(slice) {
     if (!ring) return;
     const readK = ring.querySelector(".qa-readout-k");
     const readV = ring.querySelector(".qa-readout-v");
     if (slice) {
-      let a = parseFloat(slice.style.getPropertyValue("--a")) || 0;
-      while (a - aimAngle > 180) a -= 360;
-      while (a - aimAngle < -180) a += 360;
-      aimAngle = a;
-      ring.style.setProperty("--qa-aim", a + "deg");
-      ring.classList.add("has-aim");
       if (readK) readK.textContent = "Pick";
       if (readV) readV.textContent = slice.getAttribute("aria-label") || "";
     } else {
-      ring.classList.remove("has-aim");
       const inHand = open?.items?.find((it) => it.active);
       if (readK) readK.textContent = "In hand";
       if (readV) readV.textContent = inHand ? inHand.label : "Quick tools";
@@ -313,7 +304,6 @@
     Object.assign(open, place(at.x, at.y));
     ring.hidden = false;
     ring.classList.remove("is-charging");
-    ring.classList.remove("has-aim");
     aimAt(null);
     ring.classList.add("is-open");
     // Hover easing waits until every slice has landed (quick-access.css).

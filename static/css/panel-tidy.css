@@ -1,0 +1,85 @@
+/* Tool panels, tidied (2.8.4). The app's own theme, unchanged: only the
+ * alignment the owner flagged. Loaded after chrome-brutal.css.
+ *   - One voice for every choice. Toggle chips were 0.62rem heavy capitals
+ *     that wrapped ("NAME THE / ENDS") beside 1rem plain-text buttons.
+ *   - No word breaks mid-word ("SHOW / SWEEP").
+ *   - The More chip is a chevron in the corner; the labelled pill sat on top
+ *     of the controls it pointed past. Its aria-label still says what it does. */
+
+.tool-options .geometry-toggle-grid span,
+.tool-options .tile-toggle-grid span,
+.tool-options .eraser-mode-btn,
+.tool-options .compass-btn,
+.tool-options .pen-style-btn,
+.tool-options .line-type-btn,
+.tool-options .triangle-type-btn,
+.tool-options .shape-style-option {
+  font-family: var(--display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-transform: none;
+  text-wrap: balance;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  hyphens: none;
+}
+
+/* The More chip: a 46px chevron circle, tucked into the panel's corner. */
+.tool-dock .sc-cue,
+.tool-options .sc-cue { padding-right: 2px; }
+.tool-dock .sc-more,
+.tool-options .sc-more {
+  justify-content: center;
+  width: 46px;
+  padding: 0;
+  box-shadow: 2px 2px 0 #111111;
+}
+.tool-dock .sc-more > span,
+.tool-options .sc-more > span { display: none; }
+.tool-dock .sc-more .sc-arrow,
+.tool-options .sc-more .sc-arrow { width: 20px; height: 20px; }
+
+/* Hints: one style everywhere, at the scale's smallest step. They were
+   9.76px, and one Compass hint was 11.2px in plain black. */
+.tool-options .geometry-control-hint,
+.tool-options .tile-hint,
+.tool-options .compass-label-hint,
+.tool-options .geometry-snap-hint {
+  color: var(--ink-2);
+  font-size: var(--t-1, 0.75rem);
+  line-height: 1.45;
+}
+
+/* An "off" chip is a choice, not a disabled control: it read at 4.13:1 on the
+   light theme, under AA, and looked greyed out. --ink-2 is 6.96:1. */
+.tool-options .geometry-toggle-grid input:not(:checked) + span,
+.tool-options .tile-toggle-grid input:not(:checked) + span { color: var(--ink-2); }
+
+/* Every number sits on tabular figures in the mono (DESIGN.md, Typography).
+   Some of these fields fell back to Arial with proportional digits. */
+.tool-options input[type="number"] {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The tool's name, one step up the scale, so the panel has a clear top. */
+.chrome-rail .tool-dock-kicker,
+.tool-options-title {
+  font-family: var(--display);
+  font-size: var(--t-4, 1.0625rem);
+  letter-spacing: -0.008em;
+}
+
+/* Once a panel has been scrolled at all, the cue has done its job: it fades,
+   rather than sitting over the controls at the bottom edge while you work.
+   It is back on a fresh panel, and gone at the end, as before. */
+.tool-dock .sc-scroller .sc-more,
+.tool-options.sc-scroller .sc-more { transition: opacity 160ms var(--ease-out, ease-out), transform 160ms var(--ease-out, ease-out); }
+.tool-dock .sc-scroller.sc-above .sc-more,
+.tool-options.sc-scroller.sc-above .sc-more { opacity: 0; transform: translateY(6px); pointer-events: none; }
+@media (prefers-reduced-motion: reduce) {
+  .tool-dock .sc-scroller .sc-more,
+  .tool-options.sc-scroller .sc-more { transition: none; }
+}

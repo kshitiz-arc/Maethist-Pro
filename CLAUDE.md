@@ -83,8 +83,10 @@ python -c "import os; os.environ.setdefault('SECRET_KEY','dev'); from app import
 python -m pytest tests/ -q
 ```
 
-**Baseline is 646 passed / 0 failed / 1 skipped, 2,352 subtests, about 15 minutes
-(2026-11-25, version 2.8.3).** Before that, 638 / 0 / 2,345 (2026-11-24, 2.8.2,
+**Baseline is 649 passed / 0 failed / 1 skipped, 2,365 subtests, about 14 minutes
+(2026-11-25, version 2.8.4), counting the render-latency view-jump test (failed
+once in the full run, passes alone) as a known timing straddle.** Before that,
+646 / 0 / 2,352 (2.8.3). Before that, 638 / 0 / 2,345 (2026-11-24, 2.8.2,
 counting `test_lift_smoothing_is_cheap` -- 2.30ms in the full run, under 2.0
 alone -- as the known timing straddle). Before that, 605 /
 0 / 2,285 (2026-11-19, version 2.7.0). Before that, 484 / 0 / 1,457 subtests (2026-11-15, version 2). Before that it was 497 passed / 1 failed, 906 subtests, about 10 minutes

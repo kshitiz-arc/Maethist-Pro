@@ -121,11 +121,9 @@ class QuickAccessTests(unittest.TestCase):
         # Line is the slice to the right; 50px that way is enough.
         self.fire(page, "pointermove", 650, 402)
         self.assertEqual(page.evaluate("() => document.querySelector('#quickRing .is-hover')?.dataset.slice"), "line")
-        aim = page.evaluate("""() => { const r = document.getElementById('quickRing');
-          return { on: r.classList.contains('has-aim'), angle: parseFloat(r.style.getPropertyValue('--qa-aim')),
-                   read: r.querySelector('.qa-readout-v').textContent }; }""")
-        self.assertTrue(aim["on"], "the needle shows")
-        self.assertEqual(aim["angle"] % 360, 0, "and points right, at Line")
+        aim = page.evaluate("""() => ({ needle: !!document.querySelector('#quickRing .qa-aim'),
+          read: document.querySelector('#quickRing .qa-readout-v').textContent })""")
+        self.assertFalse(aim["needle"], "no line from the centre to the slice (removed by request)")
         self.assertEqual(aim["read"], "Line", "the readout names it")
         self.fire(page, "pointerup", 650, 402)
         after = page.evaluate("() => ({ tool: window.appState.currentTool, open: window.Inkyscib.QuickAccess.ringOpen(), paths: window.appState.paths.length })")

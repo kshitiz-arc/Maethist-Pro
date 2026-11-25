@@ -66,8 +66,7 @@ body.rail-hidden.chrome-rail .tool-rail {
   /* Dark: a deep navy HUD disc, never a grey wash over paper. */
   --qa-glass: rgba(8, 14, 34, 0.7);
   --qa-glass-rim: rgba(92, 200, 255, 0.5);
-  --qa-aim: -90deg;
-}
+  }
 .qa-ring[hidden] { display: none; }
 /* The idle warm-up (quick-access.js): painted for two frames, unseen, untouchable. */
 .qa-ring.is-warming { opacity: 0.01; }
@@ -213,34 +212,6 @@ body.rail-hidden.chrome-rail .tool-rail {
 .qa-ring.is-open .qa-orbit-b { animation: qaSpin 6s linear infinite reverse; }
 @keyframes qaOrbitIn { from { opacity: 0; transform: scale(0.55) rotate(90deg); } to { opacity: 1; transform: none; } }
 
-/* ---- the aim: a needle from the hub to the slice it points at ---- */
-.qa-aim {
-  left: 0;
-  top: -2px;
-  width: 66px;
-  height: 4px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, transparent, var(--qa-hud) 35%, var(--qa-lock));
-  box-shadow: 0 0 12px var(--qa-hud), 0 0 4px var(--qa-lock);
-  transform-origin: 0 50%;
-  transform: rotate(var(--qa-aim)) translateX(30px) scaleX(0.2);
-  opacity: 0;
-}
-/* A bright tip where the needle meets the slice. */
-.qa-aim::after {
-  content: "";
-  position: absolute;
-  right: -3px;
-  top: -3px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 0 0 2px var(--qa-lock), 0 0 14px var(--qa-lock);
-}
-.qa-ring.is-settled .qa-aim { transition: transform 140ms cubic-bezier(.3, 1.4, .5, 1), opacity 100ms ease-out; }
-.qa-ring.is-open.has-aim .qa-aim { opacity: 1; transform: rotate(var(--qa-aim)) translateX(30px); }
-
 /* ---- the hub ---- */
 .qa-hub {
   left: -28px;
@@ -349,7 +320,6 @@ body.rail-hidden.chrome-rail .tool-rail {
 .qa-ring.is-closing .qa-plate,
 .qa-ring.is-closing .qa-orbit,
 .qa-ring.is-closing .qa-readout { opacity: 0; transform: scale(0.4); transition: transform 130ms ease-in, opacity 110ms ease-in; }
-.qa-ring.is-closing .qa-aim { opacity: 0; transition: opacity 80ms ease-in; }
 .qa-slice svg.icon { width: 22px; height: 22px; }
 .qa-label { font: 700 0.54rem / 1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
 .qa-swatch { width: 24px; height: 24px; border: 2px solid #111111; border-radius: 50%; }
@@ -402,7 +372,6 @@ body.rail-hidden.chrome-rail .tool-rail {
   .qa-ring.is-open .qa-ticks, .qa-ring.is-open .qa-sheen,
   .qa-ring.is-open .qa-orbit-a, .qa-ring.is-open .qa-orbit-b,
   .qa-ring.is-open .qa-hub-ring { animation: none; transition: none; }
-  .qa-ring .qa-aim { transition: none; }
 }
 
 .qa-mark { position: relative; z-index: 1; width: 34px; height: 34px; display: block; pointer-events: none; }
