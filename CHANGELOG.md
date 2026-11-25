@@ -1,5 +1,44 @@
 # Changelog
 
+## 2.9.0 — 2026-11-25
+
+### Maths that answers back
+
+Write a line of maths with the pen and pause. If it reads cleanly, a chip
+at the end of the line answers it:
+
+| You write | The chip says |
+|---|---|
+| `12 + 7 =` | = 19 |
+| `10 ÷ 4 =` | = 5/2 = 2.5 |
+| `5 + 3 = 9` | ✗ Not quite: 5 + 3 = 8 |
+| `6 x 4 = 24` | ✓ Correct |
+| `2x + 3 = 11` | x = 4 |
+| `2(x + 1) = x + 5` | x = 3 |
+| `x(x − 5) = −6` | x = 2 or x = 3 |
+
+- **All on the device, offline, in a few milliseconds.** No model, no
+  server, so it works on a budget tablet with no connection.
+  - The symbols with a clear shape (− = + x ÷ /) are read by their
+    geometry.
+  - Digits and brackets are read by the same $P matcher write assist
+    already used.
+  - The line is then parsed and solved: arithmetic, checking a sum,
+    linear and quadratic equations in x, brackets, and implicit
+    multiplication.
+- **It only speaks when it is sure.** Every symbol on the line has to be
+  read, the line has to parse as maths, and there must be an "=" to answer
+  or check. In testing, 3,000 random letter-like lines produced no chips at
+  all. Only the line you just wrote is read.
+- **An "x" between digits on a line that asks for an answer is a times
+  sign** (`3x4=` gives 12). Otherwise x is the unknown.
+- The pen panel has a **Maths answers** switch (On by default), saved with
+  the pen's settings. `static/js/ink-math.js`, `static/css/ink-math.css`
+
+Not yet: powers, decimals, fractions written one above the other, and
+graphing. Those are next.
+
+
 ## 2.8.5 — 2026-11-25
 
 ### Fixed

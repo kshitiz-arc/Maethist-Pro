@@ -1,0 +1,56 @@
+/* Maths that answers back (static/js/ink-math.js, 2.9.0): the answer chip
+ * at the end of a written line. The app's own chip language: ink outline,
+ * hard shadow, Space Grotesk; green for right, red for not quite. */
+.im-chip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 9970;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 4px 4px 12px;
+  border: 2px solid var(--ui-line, #111111);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--nb-shadow-c, #111111);
+  font: 700 1rem / 1 var(--display);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.im-chip[hidden] { display: none; }
+.im-chip.is-in { animation: imIn 220ms var(--ease-out, ease-out) both; }
+@keyframes imIn { from { opacity: 0; transform: translateX(-8px) scale(0.92); } to { opacity: 1; transform: none; } }
+.im-mark:empty { display: none; }
+.im-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #111111;
+  border-radius: 50%;
+  color: #111111;
+  font-size: 0.85rem;
+}
+.im-chip[data-kind="right"] .im-mark { background: var(--brand-green, #8BE28B); }
+.im-chip[data-kind="wrong"] .im-mark { background: var(--brand-red, #FF6B6B); }
+.im-chip[data-kind="value"],
+.im-chip[data-kind="solve"] { background: var(--brand-yellow, #FFD23F); color: #111111; border-color: #111111; }
+.im-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font: 700 1.1rem / 1 var(--display);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.im-close:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
+.im-close:focus-visible { outline: 3px solid var(--brand-blue, #5CC8FF); outline-offset: 1px; }
+@media (prefers-reduced-motion: reduce) { .im-chip.is-in { animation: none; } }

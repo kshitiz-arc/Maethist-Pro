@@ -62,6 +62,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/ocr.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/ui-kit.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/panel-tidy.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ink-math.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/motion.css') }}">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest', v='pwa-1') }}">
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/maethist-180.png', v='pwa-1') }}">
@@ -731,6 +732,17 @@
         <p class="geometry-control-hint" id="shapeAssistHint">
           <span aria-hidden="true">&#x2726;</span>
           <span id="shapeAssistHintText">Tidies what you meant: a wobbly square becomes a true square, straight to the page.</span>
+        </p>
+      </div>
+      <div class="tool-option-section">
+        <div class="tool-option-heading">Maths answers</div>
+        <div class="geometry-toggle-grid is-pair" role="group" aria-label="Maths answers">
+          <button class="eraser-mode-btn active" data-math-answers="on" type="button" aria-pressed="true">On</button>
+          <button class="eraser-mode-btn" data-math-answers="off" type="button" aria-pressed="false">Off</button>
+        </div>
+        <p class="geometry-control-hint">
+          <span aria-hidden="true">=</span>
+          Write a sum or an equation and pause: 12 + 7 =, 5 + 3 = 9, 2x + 3 = 11.
         </p>
       </div>
       <div class="tool-option-section">
@@ -1668,6 +1680,7 @@
   <script src="{{ url_for('static', filename='js/geometry.js', v='algebra-tiles-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/ink-recognize.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/handwriting.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/ink-math.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/manipulative-expr.js', v='algebra-tiles-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/manipulatives.js', v='algebra-tiles-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/tools/manipulative.js', v='algebra-tiles-1') }}" defer></script>
