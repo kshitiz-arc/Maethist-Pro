@@ -92,7 +92,7 @@ class QuickAccessTests(unittest.TestCase):
         page.evaluate("() => { window.setTool('pen'); window.appState.paths = []; }")
         self.assertEqual(page.evaluate("() => window.Inkyscib.QuickAccess.HOLD_MS"), 450)
         self.fire(page, "pointerdown", 600, 400)
-        page.wait_for_timeout(200)
+        page.wait_for_timeout(300)
         self.assertTrue(page.evaluate("() => document.getElementById('quickRing').classList.contains('is-charging')"),
                         "the hold is visible before it opens")
         page.wait_for_timeout(450)
@@ -147,6 +147,51 @@ class QuickAccessTests(unittest.TestCase):
         self.assertIsNotNone(mark)
         self.assertIn("maethist-mark", mark["src"])
         page.wait_for_function("() => document.querySelector('#quickRing .qa-mark').naturalWidth > 0")
+
+    # ---------- not while writing (reported 2.8.4) ----------
+
+    def stroke(self, page, x, y, pointer=7):
+        self.fire(page, "pointerdown", x, y, pointer)
+        for step in range(1, 6):
+            self.fire(page, "pointermove", x + step * 12, y + (step % 2) * 4, pointer)
+        self.fire(page, "pointerup", x + 60, y, pointer)
+
+    def test_a_pause_while_writing_does_not_open_it_but_a_real_hold_does(self):
+        page = self.open_page()
+        page.evaluate("() => window.setTool('pen')")
+        self.stroke(page, 400, 300)
+        # Straight on, the pen rests where the next letter starts: longer than
+        # the plain 0.55s touch hold, shorter than the hold while writing.
+        self.fire(page, "pointerdown", 480, 300)
+        page.wait_for_timeout(720)
+        self.assertFalse(page.evaluate("() => window.Inkyscib.QuickAccess.ringOpen()"),
+                         "a pause between letters is writing, not a request")
+        page.wait_for_timeout(450)
+        self.assertTrue(page.evaluate("() => window.Inkyscib.QuickAccess.ringOpen()"),
+                        "held on purpose, it still opens")
+
+    def test_each_kind_of_pointer_has_its_own_hold(self):
+        page = self.open_page()
+        holds = page.evaluate("() => ['mouse', 'touch', 'pen'].map((t) => window.Inkyscib.QuickAccess.holdFor(t))")
+        self.assertEqual(holds, [450, 550, 600])
+
+    def test_a_stylus_drifting_is_handwriting(self):
+        page = self.open_page()
+        page.evaluate("() => window.setTool('pen')")
+        page.evaluate("""() => { const c = document.getElementById('drawingCanvas'); const r = c.getBoundingClientRect();
+          const ev = (type, dx) => c.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: r.left + 600 + dx, clientY: r.top + 400,
+            pointerId: 11, isPrimary: true, pointerType: 'pen', button: 0, buttons: 1 }));
+          ev('pointerdown', 0); setTimeout(() => ev('pointermove', 8), 150); }""")
+        page.wait_for_timeout(900)
+        self.assertFalse(page.evaluate("() => window.Inkyscib.QuickAccess.ringOpen()"))
+
+    def test_a_brief_pause_never_flashes_the_charge(self):
+        page = self.open_page()
+        page.evaluate("() => window.setTool('pen')")
+        self.fire(page, "pointerdown", 600, 400)
+        page.wait_for_timeout(120)
+        self.assertTrue(page.evaluate("() => { const r = document.getElementById('quickRing'); return !r || r.hidden || !r.classList.contains('is-charging'); }"))
+        self.fire(page, "pointerup", 600, 400)
 
     def test_moving_or_a_second_finger_never_opens_it(self):
         page = self.open_page()

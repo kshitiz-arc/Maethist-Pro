@@ -20,10 +20,29 @@
 (() => {
   "use strict";
 
-  // 2.8.3: 0.7s felt slow. 0.45s is still well past a tap or a dot, and the
-  // charge shows from 80ms, so the hold is visible almost at once.
+  // How long a still press must last. 2.8.3 cut a flat 0.7s to 0.45s, and
+  // then a pause with the pen down mid-sentence opened the ring "in between"
+  // (reported 2.8.4). So the hold now reads what you are doing:
+  //   - a mouse 0.45s, a finger 0.55s, a stylus 0.6s (a stylus rests on the
+  //     page between words far more than a mouse button stays down);
+  //   - while writing -- a stroke lifted under WRITING_MS ago -- 0.35s more,
+  //     longer than any pause between letters or words;
+  //   - the charge only shows after the first third of the hold, so a short
+  //     pause never flashes it at all.
   const HOLD_MS = 450;
-  const SHOW_ARC_MS = 80;
+  const HOLD_BY_TYPE = { mouse: 450, touch: 550, pen: 600 };
+  const WRITING_MS = 1500;
+  const WRITING_EXTRA_MS = 350;
+  const SHOW_AT = 0.35;
+  // Stillness allowance: a stylus barely moves when held still, so drifting
+  // more than 6px is handwriting, not a hold.
+  const SLOP_BY_TYPE = { mouse: 10, touch: 12, pen: 6 };
+  let lastInkAt = -Infinity;
+
+  function holdFor(pointerType, now = performance.now()) {
+    const base = HOLD_BY_TYPE[pointerType] || HOLD_MS;
+    return now - lastInkAt < WRITING_MS ? base + WRITING_EXTRA_MS : base;
+  }
   // Past this distance from the centre, the direction of the pointer picks
   // the slice, so a short slide toward a tool is enough.
   const DEAD_ZONE = 30;
@@ -142,7 +161,6 @@
       <div class="qa-hub" aria-hidden="true">${HUD.hub}<img class="qa-mark" src="${MARK}" alt="" width="34" height="34" decoding="async"></div>
       <div class="qa-slices"></div>
       <div class="qa-readout" aria-hidden="true"><span class="qa-readout-k">In hand</span><span class="qa-readout-v"></span></div>`;
-    ring.style.setProperty("--qa-charge-ms", (HOLD_MS - SHOW_ARC_MS) + "ms");
     document.body.appendChild(ring);
     ring.addEventListener("pointerdown", (event) => {
       event.stopPropagation();
@@ -242,12 +260,16 @@
     if (NO_RING_TOOLS.has(s.currentTool)) return;
     if (!ring) build();
     cancelHold();
+    const wait = holdFor(event.pointerType);
+    const showAt = Math.round(wait * SHOW_AT);
+    // The charge fills exactly the part of the hold it is shown for.
+    ring.style.setProperty("--qa-charge-ms", (wait - showAt) + "ms");
     hold = {
       id: event.pointerId,
       x: event.clientX,
       y: event.clientY,
-      slop: event.pointerType === "touch" ? 12 : 10,
-      timer: window.setTimeout(fire, HOLD_MS),
+      slop: SLOP_BY_TYPE[event.pointerType] || 10,
+      timer: window.setTimeout(fire, wait),
       shown: window.setTimeout(() => {
         if (!hold) return;
         place(hold.x, hold.y);
@@ -258,7 +280,7 @@
           hold.items = currentItems();
           renderSlices(hold.items);
         }
-      }, SHOW_ARC_MS)
+      }, showAt)
     };
   }
 
@@ -410,6 +432,9 @@
   }, true);
 
   const lift = (event) => {
+    // Any press on the canvas that ends without the ring -- a stroke, a dot,
+    // a tap -- is writing, and makes the next hold a little longer.
+    if (!open && event.target?.id === "drawingCanvas") lastInkAt = performance.now();
     if (hold && event.pointerId === hold.id) cancelHold();
     if (open && event.pointerId === open.pointerId && !open.lifted) {
       open.lifted = true;
@@ -488,6 +513,8 @@
     choose,
     close,
     HOLD_MS,
+    holdFor: (pointerType) => holdFor(pointerType),
+    WRITING_MS,
     SLICES: SLICES.map((s) => s.id)
   };
 })();

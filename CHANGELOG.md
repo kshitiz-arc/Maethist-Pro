@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.8.5 — 2026-11-25
+
+### Fixed
+
+- **The ring no longer opens while you are writing.** With the hold at a
+  flat 0.45s, resting the pen between letters or words opened the ring in
+  the middle of a sentence. The hold now reads what you are doing:
+  - **While writing** (a stroke lifted in the last 1.5s), it takes 0.35s
+    longer than usual, longer than any pause between words.
+  - **By pointer:** a mouse 0.45s, a finger 0.55s, a stylus 0.6s.
+  - **No flash on short pauses:** the charge only appears after the first
+    third of the hold.
+  - **A stylus that drifts more than 6px** is handwriting, not a hold.
+
+  A deliberate hold still opens it, as before.
+
+
 ## 2.8.4 — 2026-11-25
 
 ### Changed
