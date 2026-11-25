@@ -3,7 +3,7 @@
 // 1. A button in the File ribbon hides the left tool rail completely (on a
 //    tablet, the tool row) and brings it back. The choice is remembered.
 //
-// 2. Press and hold still on the canvas for two seconds and a ring of the
+// 2. Press and hold still on the canvas (0.45s) and a ring of the
 //    most used features opens around the pointer. The eight were chosen by an
 //    LLM council (docs/council/): Pen, Pen colour, Line, Eraser, Select, Pan,
 //    Redo, Undo, clockwise from the top. Its rules are the council's too:
@@ -20,8 +20,10 @@
 (() => {
   "use strict";
 
-  const HOLD_MS = 700;
-  const SHOW_ARC_MS = 200;
+  // 2.8.3: 0.7s felt slow. 0.45s is still well past a tap or a dot, and the
+  // charge shows from 80ms, so the hold is visible almost at once.
+  const HOLD_MS = 450;
+  const SHOW_ARC_MS = 80;
   // Past this distance from the centre, the direction of the pointer picks
   // the slice, so a short slide toward a tool is enough.
   const DEAD_ZONE = 30;
@@ -89,6 +91,31 @@
   // the path comes from Flask's url_for, not a guess.
   const MARK = document.querySelector("img.footer-mark")?.getAttribute("src") || "/static/img/maethist-mark.png";
 
+  // The HUD pieces, as SVG: drawn once, then the compositor only turns or
+  // scales them (quick-access.css says why).
+  const C = 'viewBox="-1 -1 2 2"';
+  function rays() {
+    let out = "";
+    for (let i = 0; i < 28; i++) {
+      const a = (i / 28) * Math.PI * 2 + (i % 2 ? 0.05 : 0);
+      const r0 = 0.36 + (i % 3) * 0.04;
+      const r1 = r0 + 0.22 + ((i * 7) % 5) * 0.05;
+      const w = i % 4 === 0 ? 0.012 : 0.006;
+      out += `<line class="qa-ray${i % 3 === 0 ? " is-white" : ""}" stroke-width="${w}" x1="${(Math.cos(a) * r0).toFixed(3)}" y1="${(Math.sin(a) * r0).toFixed(3)}" x2="${(Math.cos(a) * r1).toFixed(3)}" y2="${(Math.sin(a) * r1).toFixed(3)}"/>`;
+    }
+    return `<svg ${C}>${out}</svg>`;
+  }
+  const HUD = {
+    burst: () => rays(),
+    plate: `<svg class="qa-ticks" viewBox="-140 -140 280 280"><circle class="qa-tick-fine" r="131" pathLength="360"/><circle class="qa-tick-long" r="131" pathLength="360"/></svg>
+      <svg class="qa-sheen" viewBox="-140 -140 280 280"><defs><linearGradient id="qaSheenGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0"/><stop offset="0.6" stop-color="#ffffff"/><stop offset="1" stop-color="#5CC8FF"/></linearGradient></defs>
+        <circle r="138" pathLength="360"/></svg>`,
+    orbit: `<svg class="qa-orbit-a" viewBox="-156 -156 312 312"><circle class="qa-arc-a" r="153" pathLength="360"/><circle class="qa-arc-b" r="153" pathLength="360"/></svg>
+      <svg class="qa-orbit-b" viewBox="-156 -156 312 312"><circle class="qa-track-b" r="144" pathLength="360"/><circle class="qa-sat" cx="0" cy="-144" r="3.5"/></svg>`,
+    hub: `<svg class="qa-hub-ring" viewBox="-40 -40 80 80"><circle class="qa-seg-lock" r="37" pathLength="360"/><circle class="qa-seg-hud" r="37" pathLength="360"/></svg>`
+  };
+
   let ring = null;
   let hold = null;
   let open = null;
@@ -102,14 +129,35 @@
     ring.setAttribute("role", "menu");
     ring.setAttribute("aria-label", "Quick tools");
     ring.innerHTML = `
-      <svg class="qa-progress" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" pathLength="1"/></svg>
-      <div class="qa-hub" aria-hidden="true"><img class="qa-mark" src="${MARK}" alt="" width="34" height="34" decoding="async"></div>
-      <div class="qa-slices"></div>`;
+      <div class="qa-burst" aria-hidden="true">${HUD.burst()}</div>
+      <div class="qa-plate" aria-hidden="true">${HUD.plate}</div>
+      <div class="qa-orbit" aria-hidden="true">${HUD.orbit}</div>
+      <div class="qa-aim" aria-hidden="true"></div>
+      <div class="qa-charge" aria-hidden="true">
+        <svg class="qa-progress" viewBox="0 0 100 100"><defs><linearGradient id="qaChargeGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#5CC8FF"/><stop offset="0.55" stop-color="#A78BFA"/><stop offset="1" stop-color="#FFD23F"/></linearGradient></defs>
+          <circle class="qa-track" cx="50" cy="50" r="46"/>
+          <circle class="qa-fill" cx="50" cy="50" r="40" pathLength="1"/></svg>
+        <div class="qa-brackets">${[0, 90, 180, 270].map((r) => `<i class="qa-bracket" style="--r:${r}deg"></i>`).join("")}</div>
+      </div>
+      <div class="qa-hub" aria-hidden="true">${HUD.hub}<img class="qa-mark" src="${MARK}" alt="" width="34" height="34" decoding="async"></div>
+      <div class="qa-slices"></div>
+      <div class="qa-readout" aria-hidden="true"><span class="qa-readout-k">In hand</span><span class="qa-readout-v"></span></div>`;
+    ring.style.setProperty("--qa-charge-ms", (HOLD_MS - SHOW_ARC_MS) + "ms");
     document.body.appendChild(ring);
     ring.addEventListener("pointerdown", (event) => {
       event.stopPropagation();
       const slice = event.target.closest("[data-slice]");
       if (!slice && !event.target.closest(".qa-hub")) close();
+    });
+    ring.addEventListener("pointerover", (event) => {
+      // A pointer other than the one that opened the ring (a mouse after a
+      // tap, a second pass) lights what it is over. :hover is not used: it
+      // stuck to whichever slice swept under a still cursor during the pop.
+      if (!open || (event.pointerId === open.pointerId && !open.lifted)) return;
+      const slice = event.target.closest("[data-slice]");
+      ring.querySelectorAll("[data-slice]").forEach((b) => b.classList.toggle("is-hover", b === slice));
+      aimAt(slice);
     });
     ring.addEventListener("click", (event) => {
       const slice = event.target.closest("[data-slice]");
@@ -123,16 +171,38 @@
       const angle = (index / items.length) * Math.PI * 2 - Math.PI / 2;
       const x = Math.cos(angle) * 96;
       const y = Math.sin(angle) * 96;
-      // Arcs (DESIGN.md): each slice sweeps out along a curve, through a point
-      // turned back 40 degrees at 55% of its reach, rather than in a line.
-      const back = angle - 0.7;
-      const ax = Math.cos(back) * 96 * 0.55;
-      const ay = Math.sin(back) * 96 * 0.55;
+      // Arcs (DESIGN.md): the CSS swings each slice out from 55 degrees back
+      // along the circle (--a is its angle), rather than in a line.
+      const a = (angle * 180) / Math.PI;
       const swatch = item.color ? `<span class="qa-swatch" style="background:${item.color}"></span>` : icon(item.icon);
       return `<button type="button" role="menuitem" class="qa-slice${item.active ? " is-active" : ""}" data-slice="${item.id}"
-        style="--x:${x.toFixed(1)}px; --y:${y.toFixed(1)}px; --ax:${ax.toFixed(1)}px; --ay:${ay.toFixed(1)}px; --i:${index}" aria-label="${item.label}">
+        style="--x:${x.toFixed(1)}px; --y:${y.toFixed(1)}px; --a:${a.toFixed(1)}deg; --i:${index}" aria-label="${item.label}">
         ${swatch}<span class="qa-label">${item.label}</span></button>`;
     }).join("");
+  }
+
+  // The needle swings to the slice pointed at, the short way round, and the
+  // readout names it; with nothing pointed at it names the tool in hand.
+  let aimAngle = -90;
+  function aimAt(slice) {
+    if (!ring) return;
+    const readK = ring.querySelector(".qa-readout-k");
+    const readV = ring.querySelector(".qa-readout-v");
+    if (slice) {
+      let a = parseFloat(slice.style.getPropertyValue("--a")) || 0;
+      while (a - aimAngle > 180) a -= 360;
+      while (a - aimAngle < -180) a += 360;
+      aimAngle = a;
+      ring.style.setProperty("--qa-aim", a + "deg");
+      ring.classList.add("has-aim");
+      if (readK) readK.textContent = "Pick";
+      if (readV) readV.textContent = slice.getAttribute("aria-label") || "";
+    } else {
+      ring.classList.remove("has-aim");
+      const inHand = open?.items?.find((it) => it.active);
+      if (readK) readK.textContent = "In hand";
+      if (readV) readV.textContent = inHand ? inHand.label : "Quick tools";
+    }
   }
 
   function currentItems() {
@@ -160,13 +230,16 @@
   function openColours() {
     open.items = colourItems();
     renderSlices(open.items);
+    ring.classList.remove("is-settled");
+    window.clearTimeout(settleTimer);
+    settleTimer = window.setTimeout(() => { if (open) ring.classList.add("is-settled"); }, 420);
     return "stay";
   }
 
   function place(x, y) {
-    const r = 150;
+    const r = 160;
     const cx = Math.max(r, Math.min(window.innerWidth - r, x));
-    const cy = Math.max(r, Math.min(window.innerHeight - r, y));
+    const cy = Math.max(r, Math.min(window.innerHeight - 186, y));
     ring.style.left = cx + "px";
     ring.style.top = cy + "px";
     return { cx, cy };
@@ -187,9 +260,13 @@
       shown: window.setTimeout(() => {
         if (!hold) return;
         place(hold.x, hold.y);
+        ring.classList.remove("is-open", "is-closing", "is-settled");
         ring.hidden = false;
         ring.classList.add("is-charging");
-        ring.classList.remove("is-open");
+        if (!open) {
+          hold.items = currentItems();
+          renderSlices(hold.items);
+        }
       }, SHOW_ARC_MS)
     };
   }
@@ -205,9 +282,20 @@
     }
   }
 
+  // Throwing away the press's dot means a canvas redraw. Done in the same
+  // task as the opening, it held up the pop's first frames; one frame later
+  // the dot hides under the hub for 16ms and nobody sees it.
+  function discardPressStroke() {
+    window.requestAnimationFrame(() => {
+      if (typeof window.invalidateCanvasDrawingCache === "function") window.invalidateCanvasDrawingCache();
+      if (typeof window.render === "function") window.render();
+    });
+  }
+
   function fire() {
     if (!hold) return;
     const at = { x: hold.x, y: hold.y, id: hold.id };
+    const drawn = hold.items;
     hold = null;
     // The press began a stroke; it is not one, so it leaves nothing behind.
     const s = state();
@@ -216,16 +304,20 @@
       s.currentPath = null;
       s.isPanning = false;
     }
-    if (typeof window.invalidateCanvasDrawingCache === "function") window.invalidateCanvasDrawingCache();
-    if (typeof window.render === "function") window.render();
+    discardPressStroke();
     window.clearTimeout(closeTimer);
-    ring.classList.remove("is-closing");
-    open = { pointerId: at.id, items: currentItems(), lifted: false };
-    renderSlices(open.items);
+    window.clearTimeout(settleTimer);
+    ring.classList.remove("is-closing", "is-settled");
+    open = { pointerId: at.id, items: drawn || currentItems(), lifted: false };
+    if (!drawn) renderSlices(open.items);
     Object.assign(open, place(at.x, at.y));
     ring.hidden = false;
     ring.classList.remove("is-charging");
+    ring.classList.remove("has-aim");
+    aimAt(null);
     ring.classList.add("is-open");
+    // Hover easing waits until every slice has landed (quick-access.css).
+    settleTimer = window.setTimeout(() => { if (open) ring.classList.add("is-settled"); }, 420);
     if (navigator.vibrate) {
       try { navigator.vibrate(15); } catch (_) { /* not allowed */ }
     }
@@ -262,10 +354,12 @@
   // 140ms instead of vanishing, and a ring opened again meanwhile simply
   // takes over from wherever they are.
   let closeTimer = 0;
+  let settleTimer = 0;
   function close() {
     open = null;
     if (!ring) return;
-    ring.classList.remove("is-charging");
+    window.clearTimeout(settleTimer);
+    ring.classList.remove("is-charging", "is-settled");
     if (ring.hidden || !ring.classList.contains("is-open")) {
       ring.classList.remove("is-open");
       ring.hidden = true;
@@ -316,6 +410,7 @@
       event.preventDefault();
       const slice = sliceAt(event.clientX, event.clientY);
       ring.querySelectorAll("[data-slice]").forEach((b) => b.classList.toggle("is-hover", b === slice));
+      aimAt(slice);
     }
   }, true);
 
@@ -350,7 +445,37 @@
 
   // ---------- start ----------
 
+  // The first open used to hitch for ~500ms: building the ring, decoding the
+  // mark, rasterising the HUD layers and compiling the blur all landed on the
+  // first pop. Do all of that once while the page is idle, off screen, so
+  // the first hold is as smooth as the hundredth.
+  function warm() {
+    if (open || hold) return;
+    if (!ring) build();
+    renderSlices(currentItems());
+    // On screen at 1% (quick-access.css): the browser skips rasterising
+    // layers parked off screen, which made an off-screen warm-up do nothing.
+    place(window.innerWidth / 2, window.innerHeight / 2);
+    ring.classList.add("is-charging", "is-warming");
+    ring.hidden = false;
+    const frame = (fn) => window.requestAnimationFrame(() => window.requestAnimationFrame(fn));
+    // The charge first, then the open ring: each has layers the other lacks.
+    frame(() => {
+      if (open || hold) return ring.classList.remove("is-warming");
+      ring.classList.remove("is-charging");
+      ring.classList.add("is-open");
+      frame(() => {
+        ring.classList.remove("is-warming");
+        if (open || hold) return;
+        ring.classList.remove("is-open");
+        ring.hidden = true;
+      });
+    });
+  }
+
   function start() {
+    const idle = window.requestIdleCallback || ((fn) => window.setTimeout(fn, 1200));
+    idle(() => warm(), { timeout: 2500 });
     if (!mountRailToggle()) {
       // The ribbon is built on DOMContentLoaded by file-ribbon.js; wait for it.
       let tries = 0;

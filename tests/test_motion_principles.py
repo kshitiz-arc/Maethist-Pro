@@ -162,12 +162,20 @@ class MotionPrincipleTests(unittest.TestCase):
     def test_ring_slices_take_an_arc_and_closing_can_be_interrupted(self):
         page = self.open()
         page.evaluate("() => { window.setTool('pen'); window.Inkyscib.QuickAccess.openRingAt(700, 450); }")
-        arc = page.evaluate("""() => [...document.querySelectorAll('#quickRing [data-slice]')].map((s) => {
-          const g = (k) => parseFloat(s.style.getPropertyValue(k)); return [g('--x'), g('--y'), g('--ax'), g('--ay')]; })""")
-        for x, y, ax, ay in arc:
-            # The midpoint is off the straight line from the centre to the slice.
-            cross = x * ay - y * ax
-            self.assertGreater(abs(cross), 1500)
+        # Each pop paused a quarter of the way in: the slice is still well
+        # back along the circle from where it lands, so it travels an arc.
+        arc = page.evaluate("""() => { const r = document.getElementById('quickRing').getBoundingClientRect();
+          return [...document.querySelectorAll('#quickRing [data-slice]')].map((s) => {
+            const a = s.getAnimations().find((x) => x.animationName === 'qaSlicePop');
+            const delay = a.effect.getTiming().delay;
+            a.pause(); a.currentTime = delay + 50;
+            const b = s.getBoundingClientRect();
+            const at = Math.atan2(b.y + b.height / 2 - r.y, b.x + b.width / 2 - r.x) * 180 / Math.PI;
+            const rest = parseFloat(s.style.getPropertyValue('--a'));
+            a.finish();
+            return ((rest - at) % 360 + 540) % 360 - 180; }); }""")
+        for behind in arc:
+            self.assertGreater(behind, 12, "the slice swings in along the circle, not out in a line")
         page.evaluate("() => window.Inkyscib.QuickAccess.close()")
         closing = page.evaluate("() => { const r = document.getElementById('quickRing'); return { hidden: r.hidden, closing: r.classList.contains('is-closing') }; }")
         self.assertEqual(closing, {"hidden": False, "closing": True}, "it leaves rather than vanishing")
@@ -175,6 +183,21 @@ class MotionPrincipleTests(unittest.TestCase):
         page.wait_for_timeout(200)
         reopened = page.evaluate("() => { const r = document.getElementById('quickRing'); return { hidden: r.hidden, open: r.classList.contains('is-open'), closing: r.classList.contains('is-closing') }; }")
         self.assertEqual(reopened, {"hidden": False, "open": True, "closing": False})
+
+    def test_a_landed_slice_still_grows_under_the_pointer(self):
+        """2.8.3: the pop held every slice at rest for good ("both" fill), so
+        the hover growth never showed; and a transition during the pop
+        overrode it. The fill is backwards now and hover eases in once
+        everything has landed."""
+        page = self.open()
+        page.evaluate("() => { window.setTool('pen'); window.Inkyscib.QuickAccess.openRingAt(700, 450); }")
+        early = page.evaluate("() => getComputedStyle(document.querySelector('#quickRing .qa-slice')).transitionDuration")
+        page.wait_for_function("() => document.getElementById('quickRing').classList.contains('is-settled')")
+        page.evaluate("() => document.querySelector('#quickRing [data-slice=\"line\"]').classList.add('is-hover')")
+        page.wait_for_timeout(250)
+        scale = page.evaluate("() => new DOMMatrixReadOnly(getComputedStyle(document.querySelector('#quickRing [data-slice=\"line\"]')).transform).a")
+        self.assertEqual(early.split(",")[0].strip(), "0s", "no transition fights the pop")
+        self.assertGreater(scale, 1.1)
 
     def test_rubber_band_resists_and_is_bounded(self):
         page = self.open()

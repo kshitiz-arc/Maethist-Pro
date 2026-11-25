@@ -39,6 +39,16 @@ body.rail-hidden.chrome-rail .tool-rail {
 }
 
 /* ---------- the hold ring ---------- */
+/* 2.8.3: a HUD lock-on. Asked for "smooth, advanced, technological, edgy,
+   anime". The hold charges a targeting reticle that spins in and closes;
+   on release it fires: a shockwave and speed lines burst out, a glass plate
+   with turning HUD rings blooms, the slices swing out on arcs and each lands
+   with an impact ring. Pointing at a slice swings a needle to it and the
+   readout names it.
+   Smoothness rules: every moving part animates only transform and opacity
+   on its own layer; one backdrop blur (the plate); each sweep is a single
+   spring, never a spring per keyframe; no transition runs during the pop
+   (a transition outranks an animation in the cascade). */
 .qa-ring {
   position: fixed;
   left: 0;
@@ -47,33 +57,192 @@ body.rail-hidden.chrome-rail .tool-rail {
   width: 0;
   height: 0;
   pointer-events: none;
+  --qa-r: 96px;
+  --qa-charge-ms: 370ms;
+  --qa-hud: var(--brand-blue, #5CC8FF);
+  --qa-hud-2: var(--brand-purple, #A78BFA);
+  --qa-lock: var(--brand-yellow, #FFD23F);
+  --qa-hot: var(--brand-red, #FF6B6B);
+  /* Dark: a deep navy HUD disc, never a grey wash over paper. */
+  --qa-glass: rgba(8, 14, 34, 0.7);
+  --qa-glass-rim: rgba(92, 200, 255, 0.5);
+  --qa-aim: -90deg;
 }
 .qa-ring[hidden] { display: none; }
-
-.qa-progress {
-  position: absolute;
-  left: -60px;
-  top: -60px;
-  width: 120px;
-  height: 120px;
-  transform: rotate(-90deg);
-  opacity: 0;
+/* The idle warm-up (quick-access.js): painted for two frames, unseen, untouchable. */
+.qa-ring.is-warming { opacity: 0.01; }
+.qa-ring.is-warming, .qa-ring.is-warming * { pointer-events: none !important; }
+[data-theme="light"] .qa-ring {
+  --qa-hud: color-mix(in srgb, var(--brand-blue, #5CC8FF) 62%, #111111);
+  --qa-hud-2: color-mix(in srgb, var(--brand-purple, #A78BFA) 72%, #111111);
+  --qa-glass: rgba(236, 244, 255, 0.5);
+  --qa-glass-rim: rgba(255, 255, 255, 0.85);
 }
-.qa-progress circle {
-  fill: rgba(255, 255, 255, 0.05);
-  stroke: var(--brand-yellow);
-  stroke-width: 6;
+.qa-ring > * { position: absolute; will-change: transform, opacity; }
+
+/* ---- the charge: a reticle that spins in and locks ---- */
+.qa-charge { left: -50px; top: -50px; width: 100px; height: 100px; opacity: 0; }
+.qa-charge::before {
+  content: "";
+  position: absolute;
+  inset: 16px;
+  border: 1px solid var(--qa-glass-rim);
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.55), var(--qa-glass) 64%);
+  -webkit-backdrop-filter: blur(6px) saturate(1.6);
+  backdrop-filter: blur(6px) saturate(1.6);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--qa-hud) 45%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+.qa-progress { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.qa-progress .qa-track {
+  fill: none;
+  stroke: var(--qa-hud);
+  stroke-width: 2;
+  stroke-dasharray: 2 5.2;
+  opacity: 0.55;
+}
+.qa-progress .qa-fill {
+  fill: none;
+  stroke: url(#qaChargeGrad);
+  stroke-width: 4;
   stroke-linecap: round;
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
 }
-/* The hold is 0.7s; the arc appears at 0.2s and fills the rest. */
-.qa-ring.is-charging .qa-progress { opacity: 1; transition: opacity 120ms ease-out; }
-.qa-ring.is-charging .qa-progress circle { animation: qaCharge 500ms linear forwards; }
-@keyframes qaCharge { to { stroke-dashoffset: 0; } }
-
-.qa-hub {
+.qa-brackets { position: absolute; inset: 0; }
+.qa-bracket {
   position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-top: 2.5px solid var(--qa-lock);
+  border-left: 2.5px solid var(--qa-lock);
+  transform: rotate(var(--r)) translate(-30px, -30px);
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--qa-lock) 70%, transparent));
+}
+.qa-ring.is-charging .qa-charge { opacity: 1; animation: qaChargeIn var(--qa-charge-ms) cubic-bezier(.5, 0, .75, 0) both; }
+.qa-ring.is-charging .qa-progress .qa-fill { animation: qaCharge var(--qa-charge-ms) cubic-bezier(.45, 0, .7, 1) forwards; }
+.qa-ring.is-charging .qa-progress .qa-track { animation: qaSpin 1.2s linear infinite reverse; transform-origin: 50% 50%; }
+/* The reticle starts wide and turned, and closes onto the point. */
+.qa-ring.is-charging .qa-brackets { animation: qaLockIn var(--qa-charge-ms) cubic-bezier(.6, 0, .3, 1) both; }
+@keyframes qaChargeIn { from { opacity: 0; transform: scale(0.6); } 25% { opacity: 1; transform: scale(1); } to { opacity: 1; transform: scale(0.92); } }
+@keyframes qaCharge { to { stroke-dashoffset: 0; } }
+@keyframes qaLockIn { from { opacity: 0; transform: rotate(-135deg) scale(1.9); } 30% { opacity: 1; } to { opacity: 1; transform: none; } }
+@keyframes qaSpin { to { transform: rotate(360deg); } }
+.qa-ring.is-open .qa-charge { animation: qaChargeOut 200ms cubic-bezier(.2, .7, .3, 1) forwards; }
+.qa-ring.is-open .qa-progress .qa-fill { stroke-dashoffset: 0; }
+@keyframes qaChargeOut { from { opacity: 1; transform: scale(0.92); } to { opacity: 0; transform: scale(1.6); } }
+
+/* ---- the fire: shockwave and speed lines ---- */
+.qa-burst { left: -170px; top: -170px; width: 340px; height: 340px; opacity: 0; pointer-events: none; }
+.qa-burst::after { content: ""; position: absolute; inset: 0; border-radius: 50%; }
+/* Speed lines: an SVG of rays (quick-access.js draws it), a flat image the
+   compositor only scales. A masked repeating conic did the same look and
+   cost a third of the frames on a software compositor. */
+.qa-burst svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; will-change: transform, opacity; }
+.qa-burst .qa-ray { stroke: color-mix(in srgb, var(--qa-hud) 85%, #ffffff); stroke-linecap: round; }
+.qa-burst .qa-ray.is-white { stroke: #ffffff; }
+.qa-burst::after {
+  inset: 30%;
+  border: 3px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 16px var(--qa-hud), inset 0 0 12px var(--qa-hud);
+}
+.qa-ring.is-open .qa-burst { animation: qaFlash 340ms linear both; }
+.qa-ring.is-open .qa-burst svg { animation: qaRays 340ms cubic-bezier(.1, .8, .3, 1) both; }
+.qa-ring.is-open .qa-burst::after { animation: qaShock 300ms cubic-bezier(.15, .8, .3, 1) both; }
+@keyframes qaFlash { from { opacity: 1; } 55% { opacity: 1; } to { opacity: 0; } }
+@keyframes qaRays { from { opacity: 0; transform: scale(0.35) rotate(-8deg); } 20% { opacity: 1; } to { opacity: 0; transform: scale(1.25) rotate(6deg); } }
+@keyframes qaShock { from { opacity: 1; transform: scale(0.4); } to { opacity: 0; transform: scale(2.1); } }
+
+/* ---- the plate: frosted glass with a turning tick ring ---- */
+.qa-plate {
+  left: -140px;
+  top: -140px;
+  width: 280px;
+  height: 280px;
+  border: 1px solid var(--qa-glass-rim);
+  border-radius: 50%;
+  background:
+    /* The track the slices ride on, at --qa-r (96 of 140). */
+    radial-gradient(circle, transparent 67.6%, color-mix(in srgb, var(--qa-hud) 45%, transparent) 68.1%, transparent 68.8%),
+    radial-gradient(circle, color-mix(in srgb, var(--qa-hud) 16%, transparent) 0, transparent 30%),
+    radial-gradient(circle, transparent 36%, color-mix(in srgb, var(--qa-hud) 10%, transparent) 72%, color-mix(in srgb, var(--qa-hud) 24%, transparent)),
+    var(--qa-glass);
+  -webkit-backdrop-filter: blur(14px) saturate(1.7);
+  backdrop-filter: blur(14px) saturate(1.7);
+  box-shadow: 0 24px 64px rgba(6, 8, 20, 0.34), 0 0 0 1px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 0 40px color-mix(in srgb, var(--qa-hud) 14%, transparent);
+  opacity: 0;
+  transform: scale(0.3);
+}
+/* Ticks round the rim (a long one every 45 degrees) and the opening sheen:
+   SVG circles drawn once with dash patterns, then only turned. */
+.qa-ticks, .qa-sheen { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; will-change: transform, opacity; }
+.qa-ticks circle { fill: none; stroke: var(--qa-hud); }
+.qa-ticks .qa-tick-fine { stroke-width: 6; stroke-dasharray: 0.7 6.8; opacity: 0.6; }
+.qa-ticks .qa-tick-long { stroke-width: 10; stroke-dasharray: 1.6 43.4; }
+.qa-sheen { opacity: 0; }
+.qa-sheen circle { fill: none; stroke: url(#qaSheenGrad); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 70 290; }
+.qa-ring.is-open .qa-plate { opacity: 1; transform: none; animation: qaPlateIn 280ms cubic-bezier(.22, 1.3, .36, 1) both; }
+.qa-ring.is-open .qa-ticks { animation: qaSpin 24s linear infinite; }
+.qa-ring.is-open .qa-sheen { animation: qaSheen 640ms cubic-bezier(.3, 0, .2, 1) 70ms both; }
+@keyframes qaPlateIn { from { opacity: 0; transform: scale(0.3) rotate(-40deg); } to { opacity: 1; transform: none; } }
+@keyframes qaSheen { from { opacity: 1; transform: rotate(-70deg); } 75% { opacity: 1; } to { opacity: 0; transform: rotate(290deg); } }
+
+/* ---- the orbit: arcs and a satellite outside the slices ---- */
+.qa-orbit {
+  left: -156px;
+  top: -156px;
+  width: 312px;
+  height: 312px;
+  border-radius: 50%;
+  opacity: 0;
+}
+.qa-orbit svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; will-change: transform; }
+.qa-orbit circle { fill: none; stroke-width: 2.5; }
+.qa-orbit .qa-arc-a { stroke: var(--qa-hud-2); stroke-dasharray: 52 128 22 158; }
+.qa-orbit .qa-arc-b { stroke: var(--qa-hud); stroke-dasharray: 30 330; stroke-dashoffset: -120; }
+.qa-orbit .qa-track-b { stroke: color-mix(in srgb, var(--qa-hud) 55%, transparent); stroke-width: 1; stroke-dasharray: 2 4; }
+.qa-orbit .qa-sat { fill: var(--qa-lock); stroke: none; }
+.qa-ring.is-open .qa-orbit { opacity: 1; animation: qaOrbitIn 360ms cubic-bezier(.2, 1.1, .3, 1) 50ms both; }
+.qa-ring.is-open .qa-orbit-a { animation: qaSpin 9s linear infinite; }
+.qa-ring.is-open .qa-orbit-b { animation: qaSpin 6s linear infinite reverse; }
+@keyframes qaOrbitIn { from { opacity: 0; transform: scale(0.55) rotate(90deg); } to { opacity: 1; transform: none; } }
+
+/* ---- the aim: a needle from the hub to the slice it points at ---- */
+.qa-aim {
+  left: 0;
+  top: -2px;
+  width: 66px;
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, transparent, var(--qa-hud) 35%, var(--qa-lock));
+  box-shadow: 0 0 12px var(--qa-hud), 0 0 4px var(--qa-lock);
+  transform-origin: 0 50%;
+  transform: rotate(var(--qa-aim)) translateX(30px) scaleX(0.2);
+  opacity: 0;
+}
+/* A bright tip where the needle meets the slice. */
+.qa-aim::after {
+  content: "";
+  position: absolute;
+  right: -3px;
+  top: -3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px var(--qa-lock), 0 0 14px var(--qa-lock);
+}
+.qa-ring.is-settled .qa-aim { transition: transform 140ms cubic-bezier(.3, 1.4, .5, 1), opacity 100ms ease-out; }
+.qa-ring.is-open.has-aim .qa-aim { opacity: 1; transform: rotate(var(--qa-aim)) translateX(30px); }
+
+/* ---- the hub ---- */
+.qa-hub {
   left: -28px;
   top: -28px;
   width: 56px;
@@ -85,77 +254,210 @@ body.rail-hidden.chrome-rail .tool-rail {
   display: grid;
   place-items: center;
   background: #F3F7FB;
-  box-shadow: 3px 3px 0 #111111;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.28), 0 0 20px color-mix(in srgb, var(--qa-hud) 55%, transparent);
   opacity: 0;
   transform: scale(0.4);
 }
+/* A segmented ring turning round the mark. */
+.qa-hub-ring { position: absolute; left: -12px; top: -12px; width: calc(100% + 24px); height: calc(100% + 24px); overflow: visible; will-change: transform; pointer-events: none; }
+.qa-hub-ring circle { fill: none; stroke-width: 3.5; }
+.qa-hub-ring .qa-seg-lock { stroke: var(--qa-lock); stroke-dasharray: 30 150; }
+.qa-hub-ring .qa-seg-hud { stroke: var(--qa-hud); stroke-dasharray: 60 120; stroke-dashoffset: -90; }
 /* Keyframes, not transitions: the ring comes out of display:none, where a
    transition has no "before" to start from and would just appear. */
-.qa-ring.is-open .qa-hub { opacity: 1; transform: none; pointer-events: auto; animation: qaHubPop 240ms var(--ease-spring, ease-out) both; }
-/* Anticipation then overshoot: the hub gathers before it lands. */
-@keyframes qaHubPop { from { opacity: 0; transform: scale(0.3); } 35% { opacity: 1; transform: scale(0.82); } 65% { transform: scale(1.14); } to { opacity: 1; transform: none; } }
-.qa-ring.is-open .qa-progress { opacity: 0; }
+.qa-ring.is-open .qa-hub { opacity: 1; transform: none; pointer-events: auto; animation: qaHubPop 260ms cubic-bezier(.3, 1.6, .5, 1) 20ms both; }
+.qa-ring.is-open .qa-hub-ring { animation: qaSpin 3.2s linear infinite; }
+@keyframes qaHubPop { from { opacity: 0; transform: scale(0.3) rotate(-90deg); } to { opacity: 1; transform: none; } }
 
-.qa-slices { position: absolute; left: 0; top: 0; }
+/* ---- the slices ---- */
+.qa-slices { left: 0; top: 0; }
+/* Each slice sits at angle --a on radius --qa-r. The transform is the same
+   list of functions at every state (turn, reach, turn back, size), so the
+   browser interpolates each one: the angle swings while the reach grows,
+   which is a true arc, not a straight line with a kink. */
 .qa-slice {
   position: absolute;
   left: -32px;
   top: -32px;
   display: grid;
   place-items: center;
-  gap: 1px;
+  align-content: center;
+  gap: 2px;
   width: 64px;
   height: 64px;
   padding: 4px 0 2px;
   border: 2px solid var(--ui-line, #111111);
   border-radius: 50%;
-  background: var(--frost-strong, var(--surface));
-  -webkit-backdrop-filter: var(--frost-blur);
-  backdrop-filter: var(--frost-blur);
+  background: linear-gradient(160deg,
+    color-mix(in srgb, var(--surface) 90%, #ffffff 10%),
+    color-mix(in srgb, var(--surface) 74%, transparent));
   color: var(--ink);
-  box-shadow: 3px 3px 0 var(--nb-shadow-c, #111111);
+  box-shadow: 3px 3px 0 var(--nb-shadow-c, #111111), inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 0 0 1px color-mix(in srgb, var(--qa-hud) 30%, transparent);
   cursor: pointer;
   pointer-events: none;
   opacity: 0;
-  transform: translate(0, 0) scale(0.4);
+  transform: rotate(var(--a)) translateX(0px) rotate(calc(-1 * var(--a))) scale(0.4);
+  will-change: transform, opacity;
 }
+.qa-slice::before,
+.qa-slice::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+/* Impact ring: each slice lands with a flash that spreads and fades. */
+.qa-slice::before { border: 2px solid var(--qa-hud); box-shadow: 0 0 12px var(--qa-hud); }
+/* Lock-on: dashed target ring that closes and turns on the pointed slice. */
+.qa-slice::after { inset: -8px; border: 2px dashed var(--qa-lock); }
 .qa-ring.is-open .qa-slice {
   pointer-events: auto;
   opacity: 1;
-  transform: translate(var(--x), var(--y));
-  animation: qaSlicePop 300ms var(--ease-spring, cubic-bezier(.34,1.56,.64,1)) calc(var(--i) * 22ms) both;
-  transition: transform 140ms var(--ease-out, ease-out), background-color 120ms ease-out;
+  transform: rotate(var(--a)) translateX(var(--qa-r)) rotate(calc(-1 * var(--a))) scale(1);
+  /* Backwards fill only: once a slice lands, the rule above holds it, so a
+     hover can still grow it (a "both" fill pinned it at rest for good). */
+  animation: qaSlicePop 240ms cubic-bezier(.28, 1.4, .5, 1) calc(60ms + var(--i) * 16ms) backwards;
 }
+.qa-ring.is-open .qa-slice::before { animation: qaImpact 320ms cubic-bezier(.1, .7, .3, 1) calc(190ms + var(--i) * 16ms) both; }
 @keyframes qaSlicePop {
-  from { opacity: 0; transform: translate(0, 0) scale(0.3); }
-  /* Arcs: through a point turned back along the curve, not in a line. */
-  45% { opacity: 1; transform: translate(var(--ax), var(--ay)) scale(0.85); }
-  /* Follow-through: past the rest point, then settle. */
-  75% { transform: translate(calc(var(--x) * 1.08), calc(var(--y) * 1.08)) scale(1.06); }
-  to { opacity: 1; transform: translate(var(--x), var(--y)); }
+  /* Arcs: each starts 70 degrees back along the circle, at the centre. */
+  from { opacity: 0; transform: rotate(calc(var(--a) - 70deg)) translateX(0px) rotate(calc(70deg - var(--a))) scale(0.35); }
+  35% { opacity: 1; }
+  /* Follow-through comes from the spring: past the rest angle, then back. */
+  to { opacity: 1; transform: rotate(var(--a)) translateX(var(--qa-r)) rotate(calc(-1 * var(--a))) scale(1); }
 }
+@keyframes qaImpact { from { opacity: 0.95; transform: scale(0.85); } to { opacity: 0; transform: scale(1.45); } }
+/* Transitions outrank a running animation in the cascade, so a transition
+   here during the pop hijacked its first 140ms (the old jitter). Hover
+   easing switches on only once every slice has landed. */
+.qa-ring.is-open.is-settled .qa-slice {
+  transition: transform 150ms cubic-bezier(.3, 1.5, .5, 1), background-color 120ms ease-out, box-shadow 120ms ease-out;
+}
+.qa-ring.is-settled .qa-slice::after { transition: opacity 120ms ease-out, transform 220ms cubic-bezier(.2, 1.2, .3, 1); transform: scale(1.35) rotate(-60deg); }
+.qa-ring.is-open .qa-slice.is-hover::after { opacity: 1; transform: none; animation: qaSpin 2.4s linear 220ms infinite; }
 /* Closing: back to the centre, interruptible because it is a transition. */
 .qa-ring.is-closing .qa-slice {
   opacity: 0;
-  transform: translate(0, 0) scale(0.4);
-  transition: transform 140ms var(--ease-in, ease-in), opacity 120ms ease-in;
+  transform: rotate(var(--a)) translateX(0px) rotate(calc(-1 * var(--a))) scale(0.4);
+  transition: transform 130ms var(--ease-in, ease-in), opacity 110ms ease-in;
 }
-.qa-ring.is-closing .qa-hub { opacity: 0; transform: scale(0.4); transition: transform 140ms ease-in, opacity 120ms ease-in; }
+.qa-ring.is-closing .qa-hub,
+.qa-ring.is-closing .qa-plate,
+.qa-ring.is-closing .qa-orbit,
+.qa-ring.is-closing .qa-readout { opacity: 0; transform: scale(0.4); transition: transform 130ms ease-in, opacity 110ms ease-in; }
+.qa-ring.is-closing .qa-aim { opacity: 0; transition: opacity 80ms ease-in; }
 .qa-slice svg.icon { width: 22px; height: 22px; }
-.qa-label { font: 800 0.62rem / 1 var(--display); letter-spacing: 0.02em; }
+.qa-label { font: 700 0.54rem / 1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
 .qa-swatch { width: 24px; height: 24px; border: 2px solid #111111; border-radius: 50%; }
-.qa-slice.is-active { background: var(--brand-yellow); color: #111111; border-color: #111111; }
-.qa-slice.is-hover, .qa-slice:hover, .qa-slice:focus-visible {
+.qa-slice.is-active { background: var(--qa-lock); color: #111111; border-color: #111111; }
+.qa-slice.is-hover, .qa-slice:focus-visible {
   background: var(--brand-blue);
   color: #111111;
   border-color: #111111;
   outline: none;
+  box-shadow: 3px 3px 0 #111111, 0 0 0 4px color-mix(in srgb, var(--brand-blue) 30%, transparent), 0 0 26px color-mix(in srgb, var(--brand-blue) 70%, transparent);
 }
-.qa-ring.is-open .qa-slice.is-hover { transform: translate(var(--x), var(--y)) scale(1.12); }
+.qa-ring.is-open .qa-slice.is-hover { transform: rotate(var(--a)) translateX(var(--qa-r)) rotate(calc(-1 * var(--a))) scale(1.16); }
+
+/* ---- the readout: what is in hand, then what you point at ---- */
+.qa-readout {
+  left: 0;
+  top: 150px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 10px;
+  border: 1px solid var(--qa-glass-rim);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  /* An angled HUD tag, cut at two corners. */
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  color: var(--ink);
+  font: 700 0.62rem / 1 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-50%);
+}
+.qa-readout-k { color: var(--qa-hud); }
+.qa-readout-k::after { content: " \25B8"; color: var(--qa-lock); }
+.qa-ring.is-open .qa-readout { opacity: 1; transform: translateX(-50%); animation: qaReadIn 260ms cubic-bezier(.2, 1.2, .3, 1) 150ms both; }
+@keyframes qaReadIn { from { opacity: 0; transform: translateX(-50%) translateY(-8px) scaleX(0.3); } to { opacity: 1; transform: translateX(-50%); } }
+.qa-ring.is-closing .qa-readout { transform: translateX(-50%) scale(0.6); }
 
 @media (prefers-reduced-motion: reduce) {
-  .qa-ring.is-charging .qa-progress circle { animation-duration: 0s; stroke-dashoffset: 0.5; }
-  .qa-ring.is-open .qa-slice, .qa-ring.is-open .qa-hub { animation: none; transition: none; }
+  .qa-ring.is-charging .qa-charge,
+  .qa-ring.is-charging .qa-brackets,
+  .qa-ring.is-charging .qa-progress .qa-track { animation: none; opacity: 1; }
+  .qa-ring.is-charging .qa-progress .qa-fill { animation-duration: 0s; stroke-dashoffset: 0.5; }
+  .qa-ring.is-open .qa-charge, .qa-ring.is-open .qa-burst { animation: none; opacity: 0; }
+  .qa-ring.is-open .qa-slice, .qa-ring.is-open .qa-hub, .qa-ring.is-open .qa-plate,
+  .qa-ring.is-open .qa-orbit, .qa-ring.is-open .qa-readout,
+  .qa-ring.is-open .qa-slice::before, .qa-ring.is-open .qa-slice.is-hover::after,
+  .qa-ring.is-open .qa-ticks, .qa-ring.is-open .qa-sheen,
+  .qa-ring.is-open .qa-orbit-a, .qa-ring.is-open .qa-orbit-b,
+  .qa-ring.is-open .qa-hub-ring { animation: none; transition: none; }
+  .qa-ring .qa-aim { transition: none; }
 }
 
-.qa-mark { width: 34px; height: 34px; display: block; pointer-events: none; }
+.qa-mark { position: relative; z-index: 1; width: 34px; height: 34px; display: block; pointer-events: none; }
+
+/* ---------- the smart eraser's chip (static/js/smart-eraser.js) ---------- */
+.se-chip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 9980;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  padding: 7px 8px 9px 12px;
+  border: 2px solid var(--ui-line, #111111);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(1.6);
+  backdrop-filter: blur(12px) saturate(1.6);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--nb-shadow-c, #111111), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  font: 700 var(--t-1, 0.8rem) / 1 var(--display);
+  pointer-events: none;
+}
+.se-chip[hidden] { display: none; }
+.se-chip.is-in { animation: seChipIn 200ms cubic-bezier(.3, 1.5, .5, 1) both; }
+@keyframes seChipIn { from { opacity: 0; transform: translateY(6px) scale(0.9); } to { opacity: 1; transform: none; } }
+.se-keep {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 2px solid #111111;
+  border-radius: 999px;
+  background: var(--brand-yellow, #FFD23F);
+  color: #111111;
+  font: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.se-chip:not(.is-countdown) .se-keep { display: none; }
+.se-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--brand-blue);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+}
+.se-chip.is-countdown .se-bar { animation: seDrain var(--se-ms, 1200ms) linear both; }
+@keyframes seDrain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.se-chip.is-done { background: color-mix(in srgb, var(--brand-blue) 70%, transparent); color: #111111; }
+.se-chip.is-kept { background: color-mix(in srgb, var(--brand-yellow) 70%, transparent); color: #111111; }
+@media (prefers-reduced-motion: reduce) {
+  .se-chip.is-in { animation: none; }
+  .se-chip.is-countdown .se-bar { animation: none; transform: scaleX(0.5); }
+}

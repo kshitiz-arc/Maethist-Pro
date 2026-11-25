@@ -296,7 +296,9 @@
     // reported the same thing (2.7.0): "Start writing" landed with the Pen
     // panel open. The pen is still the tool in hand; tap it for its controls.
     if (activeTool !== lastActiveTool) {
-      collapsed = !hasSynced;
+      // The smart eraser handing the pen back is not a reach for the pen:
+      // its panel stays shut (static/js/smart-eraser.js).
+      collapsed = !hasSynced || window.appState?.quietToolChange === true;
       // ...and closes the help card, which otherwise keeps the dock and hides
       // the panel you just asked for. `collapsed` was already cleared here for
       // exactly this reason; helpOpen was missed.

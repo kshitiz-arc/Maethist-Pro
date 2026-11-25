@@ -823,6 +823,16 @@
         </p>
       </div>
       <div class="tool-option-section">
+        <div class="tool-option-heading">After a quick fix</div>
+        <div class="geometry-toggle-grid is-pair" role="group" aria-label="After a quick fix">
+          <button class="eraser-mode-btn active" data-eraser-return="on" type="button" aria-pressed="true">Back to pen</button>
+          <button class="eraser-mode-btn" data-eraser-return="off" type="button" aria-pressed="false">Stay eraser</button>
+        </div>
+        <p class="geometry-control-hint">
+          Erase near your writing and pause: the pen comes back. Erase all over the page and the eraser stays.
+        </p>
+      </div>
+      <div class="tool-option-section">
         <label>
           <span>Size</span>
           <div class="tool-size-controls">
@@ -1689,6 +1699,7 @@
   <script src="{{ url_for('static', filename='js/canvas-picture.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/scroll-cue.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/quick-access.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/smart-eraser.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/ocr.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/ui-kit.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/tour.js') }}" defer></script>

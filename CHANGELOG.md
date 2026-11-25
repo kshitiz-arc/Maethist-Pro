@@ -1,5 +1,61 @@
 # Changelog
 
+## 2.8.3 — 2026-11-24
+
+### The hold ring, faster and smoother
+
+- **It opens in 0.45s instead of 0.7s**, and the charge shows from 80ms, so
+  the hold reads almost at once.
+- **No more jitter on the way out.** Three causes, all fixed: a spring
+  easing on every keyframe made each slice overshoot two or three times; a
+  transition on the open slices outranked the pop in the cascade and
+  hijacked its first 140ms; and eight backdrop blurs were redrawn every
+  frame. Now each slice is one spring from the centre to its place, moving
+  only transform and opacity, and there is a single blur.
+- **A new look: a HUD lock-on.** The flat yellow circle is gone. Holding
+  charges a glass orb inside a turning tick track, its rim filling blue to
+  violet to yellow while four yellow brackets spin in and close onto the
+  point. When it fires, a shockwave and anime speed lines burst out, and a
+  glass plate blooms behind the slices. The plate is deep navy on the dark
+  theme and frosted white on the light one. It has a turning tick ring, a
+  track the slices ride on, and a sheen that runs once round its rim.
+  Outside it, HUD arcs and a yellow satellite orbit in opposite directions,
+  and a segmented ring turns round the mark. Each slice lands with an
+  impact ring.
+- **Pointing is shown.** A glowing needle swings from the mark to the slice
+  you point at, always the short way round. That slice grows and locks on
+  with a turning dashed ring. A cut-corner readout under the ring says what
+  is in hand ("IN HAND ▸ PEN") and, while you point, what you would pick
+  ("PICK ▸ LINE").
+- **The first open is as smooth as the rest.** Building the ring and
+  preparing its layers used to cost about half a second on the first hold.
+  That now happens once while the page is idle. The HUD rings are SVG
+  drawn once and then only turned, which measured faster than masked
+  gradients, and the readout has no blur of its own.
+- **Slices swing out on true arcs.** They turn along the circle as they
+  grow out from the centre, not in a straight line with a bend.
+- **Hover grows a slice again.** The pop had pinned every slice at its
+  resting size for good, so the hover growth never showed. And a slice no
+  longer stays lit when it swept under a still cursor on the way out.
+- The slices are drawn while the charge runs, and the redraw that throws
+  away the press's dot waits one frame, so opening the ring does no other
+  work.
+
+### Smart eraser
+
+- **After a quick fix, the pen comes back on its own.** Pick the eraser
+  while writing (from the ring, the rail or E), erase, and pause for 1.2s:
+  the pen or highlighter you were using is back for your next stroke,
+  without its panel opening. A chip beside the erased spot counts the pause
+  down and has a **Keep eraser** button.
+- **Erasing all over the page keeps the eraser.** A stroke more than 30% of
+  the screen's diagonal from everything erased so far counts as a clean-up,
+  not a fix, and the eraser stays until you change tool. So does an eraser
+  picked from a tool other than the pen or highlighter.
+- The eraser panel has a switch for it, **Back to pen** or **Stay eraser**,
+  kept with the rest of the eraser's settings.
+
+
 ## 2.8.2 — 2026-11-24
 
 ### Fixed

@@ -90,12 +90,12 @@ class QuickAccessTests(unittest.TestCase):
     def test_a_still_press_opens_the_ring_and_leaves_no_mark(self):
         page = self.open_page()
         page.evaluate("() => { window.setTool('pen'); window.appState.paths = []; }")
-        self.assertEqual(page.evaluate("() => window.Inkyscib.QuickAccess.HOLD_MS"), 700)
+        self.assertEqual(page.evaluate("() => window.Inkyscib.QuickAccess.HOLD_MS"), 450)
         self.fire(page, "pointerdown", 600, 400)
-        page.wait_for_timeout(400)
+        page.wait_for_timeout(200)
         self.assertTrue(page.evaluate("() => document.getElementById('quickRing').classList.contains('is-charging')"),
                         "the hold is visible before it opens")
-        page.wait_for_timeout(500)
+        page.wait_for_timeout(450)
         state = page.evaluate("""() => ({ open: window.Inkyscib.QuickAccess.ringOpen(),
           slices: [...document.querySelectorAll('#quickRing [data-slice]')].map((s) => s.dataset.slice),
           labels: [...document.querySelectorAll('#quickRing .qa-label')].every((l) => l.textContent.trim().length > 0) })""")
@@ -114,13 +114,19 @@ class QuickAccessTests(unittest.TestCase):
         page = self.open_page()
         page.evaluate("() => { window.setTool('pen'); window.appState.paths = []; }")
         self.fire(page, "pointerdown", 600, 400)
-        page.wait_for_timeout(850)
+        page.wait_for_timeout(650)
         self.assertTrue(page.evaluate("() => window.Inkyscib.QuickAccess.ringOpen()"))
         self.assertTrue(page.evaluate("() => getComputedStyle(document.querySelector('#quickRing .qa-slice')).animationName.includes('qaSlicePop')"),
                         "the ring pops open rather than appearing")
         # Line is the slice to the right; 50px that way is enough.
         self.fire(page, "pointermove", 650, 402)
         self.assertEqual(page.evaluate("() => document.querySelector('#quickRing .is-hover')?.dataset.slice"), "line")
+        aim = page.evaluate("""() => { const r = document.getElementById('quickRing');
+          return { on: r.classList.contains('has-aim'), angle: parseFloat(r.style.getPropertyValue('--qa-aim')),
+                   read: r.querySelector('.qa-readout-v').textContent }; }""")
+        self.assertTrue(aim["on"], "the needle shows")
+        self.assertEqual(aim["angle"] % 360, 0, "and points right, at Line")
+        self.assertEqual(aim["read"], "Line", "the readout names it")
         self.fire(page, "pointerup", 650, 402)
         after = page.evaluate("() => ({ tool: window.appState.currentTool, open: window.Inkyscib.QuickAccess.ringOpen(), paths: window.appState.paths.length })")
         self.assertEqual(after, {"tool": "line", "open": False, "paths": 0})
