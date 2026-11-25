@@ -24,6 +24,57 @@ Every rule below follows from that one sentence.
 **Open tension:** the README currently tells a warm, personal story about being priced out
 of an iPad. That is a different voice from this positioning. One of the two needs to move.
 
+## The identity as it ships (read this first)
+
+*Written 2026-11-26, version 2.9.3. Reconciles this file with the app.*
+
+The sections below were written for **Blueprint** (drafting blue, one cyan
+accent, no gradients, no glows). The product moved on, by the owner's own
+requests, release by release: the marketing site, the File ribbon, the rail,
+the Planner, the tool panels and every chip and sheet are now **neo-brutal
+on the MAETHIST mark**. That is the identity. Where a rule below disagrees
+with this section, this section wins, and the rule is kept only as history.
+
+**Neo-brutal on the mark.**
+
+- **Ink outlines.** Every surface and control that floats carries a 2px
+  outline in `--ui-line` (near-black on light, warm white on dark).
+- **Hard offset shadows, no blur.** `3px 3px 0` for controls and chips,
+  `4px 4px 0` for bars and docks, `6px 6px 0` for sheets, in
+  `--nb-shadow-c` (black on light, the mark's purple on dark, because a black
+  shadow vanishes on a near-black page).
+- **The mark's five colours, each with one job.** Text on them is always
+  `#111111` (all measured above 6.8:1).
+  | Colour | Token | Job |
+  |---|---|---|
+  | Yellow | `--brand-yellow` | What is chosen or primary: the tool in hand, the main button, an answer (the maths chip). |
+  | Blue | `--brand-blue` | Focus and pointing: focus rings, the slice under the pointer. |
+  | Green | `--brand-green` | Right. A sum that checks. |
+  | Red | `--brand-red` | Wrong, destructive, or recording. |
+  | Purple | `--brand-purple` | The dark-theme shadow, and secondary accents. |
+- **Type.** Space Grotesk (`--display`) for titles, buttons and labels, in
+  sentence case; Archivo (`--sans`) for body; JetBrains Mono (`--mono`) for
+  every number, on tabular figures. Section headings in panels may be small
+  capitals; choices never are (2.8.4).
+- **Surfaces** are solid `--surface` over the canvas. Frost (`--frost-*`) is
+  for sheets that sit over the marketing pages, never over ink.
+- **Pill or rounded, never square.** Chips and buttons are pills (`999px`);
+  panels `16px`; sheets `20px`.
+
+**The one allowed exception: the hold ring.** It is a transient overlay that
+lives for a second around the pointer, so it may be glassier and more
+animated (the HUD lock-on, 2.8.3), with one blur at most. Nothing that stays
+on screen borrows from it. An attempt to dress the tool panels in a separate
+"luxury" palette (velvet, gilt, a serif) was reverted the same day at the
+owner's request (2.8.4): a second visual language is the thing this section
+exists to prevent.
+
+**When adding anything new**, take its parts from a surface that already
+ships: a chip from the maths chip (`static/css/ink-math.css`), a sheet from
+the Lessons sheet (`static/css/lesson.css`), a toggle pair from the tool
+panels (`.eraser-mode-btn` in a `.geometry-toggle-grid.is-pair`). Do not
+invent a `--yourfeature-*` palette (CLAUDE.md).
+
 ## Aesthetic Direction
 
 **Blueprint**, chosen by the owner on 2026-11-15 for version 2 over "Paper and ink" and
@@ -429,3 +480,4 @@ says so in the filename chip at `--ink-3` rather than behind an overlay.
 | 2026-11-19 | About's display faces: Bricolage Grotesque and Instrument Serif italic | Owner request for "super cool" type with motion, on About only. Self-hosted by `tools/vendor_fonts.py`. Motion is a 22ms letter stagger, off under reduced motion. |
 | 2026-11-19 | The Planner is neo-brutal, and is a study planner, not a calendar | Owner request; features from an LLM council (`docs/council/council-planner-2026-11-19.md`): focus from a task, exams with a revision spread, streak and this week, topic and notebook, backup. No accounts, push, AI plans or XP. Solid surfaces on the core tokens, scoped to `#plannerModal` in `static/css/planner-brutal.css`. |
 | 2026-11-24 | Nineteen named motion and interaction principles, each with a rule and a home | Owner request, by name. Supersedes "Instruments do not bounce" for controls and surfaces; the canvas, the ink and the instruments still never bounce, and every answer starts in the frame it was asked for. Table under Motion. `static/css/motion.css`, `static/js/motion.js` |
+| 2026-11-26 | The identity is neo-brutal on the MAETHIST mark; Blueprint is history | This file still described Blueprint while every surface had moved to ink outlines, hard shadows and the mark's five colours. Reconciled in "The identity as it ships": each brand colour has one job, the hold ring is the only glassy exception, and a second visual language is not allowed. |

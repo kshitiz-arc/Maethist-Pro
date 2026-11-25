@@ -501,5 +501,16 @@
   else start();
 
   window.Inkyscib = window.Inkyscib || {};
-  window.Inkyscib.InkMath = { readLine, answer, compile, consider, PAUSE_MS };
+  // Read and answer the given strokes (point arrays), as if just written.
+  function answerRuns(runs) {
+    if (!enabled()) return null;
+    const read = readLine(runs || []);
+    const said = read && answer(read.text);
+    if (!said) return null;
+    lastSaid = read.text + "|" + said.say;
+    showChip(said, read);
+    return said;
+  }
+
+  window.Inkyscib.InkMath = { readLine, answer, answerRuns, compile, consider, PAUSE_MS };
 })();

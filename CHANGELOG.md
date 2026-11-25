@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.9.3 — 2026-11-26
+
+### The first 30 seconds
+
+- **An empty canvas shows what makes it different.** Under "Draw anywhere
+  to start" sits one button, **See it answer maths**. It writes
+  `12 + 7 =` on the page, stroke by stroke, and the maths chip answers
+  "= 19".
+  - This is the real reader on real ink, not a picture of it.
+  - The demo's ink is never saved, and it leaves the moment you touch the
+    canvas, so your first stroke lands on a clean page.
+  - The button only appears while the page is empty.
+  - `static/js/first-run.js`
+
+### One identity
+
+- **DESIGN.md now describes the app as it ships.** It had still been
+  describing "Blueprint" (one cyan accent, no gradients) while every
+  surface had become neo-brutal. A new opening section, "The identity as it
+  ships", is now the rule:
+  - Ink outlines and hard shadows.
+  - The mark's five colours, each with one job: yellow for what is chosen,
+    blue for focus, green for right, red for wrong, destructive or
+    recording, and purple for the dark-theme shadow.
+  - Space Grotesk, Archivo and JetBrains Mono.
+  - The hold ring as the one glassy exception.
+  - No second visual language.
+
+
 ## 2.9.2 — 2026-11-26
 
 ### Live geometry
