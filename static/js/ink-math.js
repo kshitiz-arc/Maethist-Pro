@@ -24,7 +24,8 @@
   "use strict";
 
   const PAUSE_MS = 900;
-  const BURST_GAP_MS = 8000;
+  // How far from the last stroke (in line heights) other ink is looked at.
+  const NEAR_LINES = 3;
   const CHIP_MS = 12000;
 
   const s = () => window.appState;
@@ -116,7 +117,28 @@
         if ([...inLine].some((m) => raisedOver(k, m) || partOf(m))) { inLine.add(k); raised.add(k); grew = true; }
       }
     }
-    return strokes.filter((k) => inLine.has(k));
+    // Left to right from the last stroke, while the gaps stay under a few
+    // symbols wide: other writing further along the same row is not this line.
+    const row = [...inLine].sort((a, b) => a.minX - b.minX);
+    const at = row.indexOf(lastStroke);
+    const gap = Math.max(H * 2.5, 24);
+    let lo = at, hi = at;
+    let left = lastStroke.minX, right = lastStroke.maxX;
+    let moved = true;
+    while (moved) {
+      moved = false;
+      for (let i = 0; i < row.length; i += 1) {
+        if (i >= lo && i <= hi) continue;
+        const k = row[i];
+        if (k.maxX >= left - gap && k.minX <= right + gap) {
+          lo = Math.min(lo, i); hi = Math.max(hi, i);
+          left = Math.min(left, k.minX); right = Math.max(right, k.maxX);
+          moved = true;
+        }
+      }
+    }
+    const chain = new Set(row.filter((k) => k.maxX >= left && k.minX <= right));
+    return strokes.filter((k) => chain.has(k));
   }
 
   // Strokes that overlap left-to-right belong to one symbol: the two bars of
@@ -202,6 +224,37 @@
     return best && best.digit !== "1" ? best.digit : null;
   }
 
+  // The largest change of heading (degrees) across any 15% of a stroke's
+  // length either side of a point, on the stroke resampled evenly by length.
+  function sharpestTurn(points) {
+    const n = 40;
+    const lens = [0];
+    for (let i = 1; i < points.length; i += 1) lens.push(lens[i - 1] + Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y));
+    const total = lens[lens.length - 1];
+    if (!(total > 0)) return 0;
+    const even = [];
+    let j = 0;
+    for (let k = 0; k < n; k += 1) {
+      const at = (total * k) / (n - 1);
+      while (j < lens.length - 2 && lens[j + 1] < at) j += 1;
+      const span = lens[j + 1] - lens[j] || 1;
+      const t = Math.min(1, Math.max(0, (at - lens[j]) / span));
+      const a = points[j];
+      const b = points[Math.min(points.length - 1, j + 1)];
+      even.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+    }
+    const w = 6;
+    let worst = 0;
+    for (let i = w; i < n - w; i += 1) {
+      const h1 = Math.atan2(even[i].y - even[i - w].y, even[i].x - even[i - w].x);
+      const h2 = Math.atan2(even[i + w].y - even[i].y, even[i + w].x - even[i].x);
+      let d = Math.abs(h2 - h1);
+      if (d > Math.PI) d = 2 * Math.PI - d;
+      worst = Math.max(worst, (d * 180) / Math.PI);
+    }
+    return worst;
+  }
+
   // A bracket is one smooth bow: tall, narrow, curved, and turning back
   // sideways only once. A 3 or a 5 turns back several times.
   function isBracket(k, H) {
@@ -216,6 +269,11 @@
     const q3 = off(pts0[Math.floor(pts0.length * 0.75)]);
     const peak = Math.abs(k.bend) * k.chord;
     if (Math.min(q1, q3) < peak * 0.45) return false;
+    // A bow bends evenly; a narrow 7 has one sharp corner where its bar meets
+    // its leg, and read as ")" (2.10.1). Along the stroke, by length, compare
+    // the heading of the stretch before each point with the one after it: a
+    // half circle turns about 30 degrees across that window, a 7 well over 90.
+    if (sharpestTurn(k.points) > 80) return false;
     let turns = 0;
     let dir = 0;
     const pts = k.points;
@@ -623,7 +681,7 @@
 
   // ---------- watching the pen ----------
 
-  let recent = [];
+  let lastPath = null;
   let pauseTimer = 0;
   let chip = null;
   let chipTimer = 0;
@@ -635,20 +693,40 @@
     if (!st || st.currentTool !== "pen") return;
     const path = st.paths?.[st.paths.length - 1];
     if (!path || path.tool !== "pen" || !Array.isArray(path.points) || path.points.length < 2) return;
-    const now = Date.now();
-    if (recent.length && now - recent[recent.length - 1].at > BURST_GAP_MS) recent = [];
-    if (!recent.some((r) => r.path === path)) recent.push({ path, at: now });
-    recent = recent.slice(-40);
+    lastPath = path;
+  }
+
+  const readable = (p) => p && p.tool === "pen" && !p.mathGraph && !p.firstRunDemo &&
+    Array.isArray(p.points) && p.points.length >= 2;
+
+  // The ink around the last stroke, wherever it came from. Until 2.10.1 only
+  // strokes written within 8 seconds of each other were read together, so a
+  // pause to think before the "=" lost the start of the line and nothing was
+  // answered. Now the page itself is read: pen strokes at the last stroke's
+  // height, and sameLine and the left-to-right chain below pick the line.
+  function strokesNear(last, paths) {
+    const box = info(last.points);
+    const h = Math.max(10, box.h, box.w);
+    const top = box.minY - h * NEAR_LINES;
+    const bottom = box.maxY + h * NEAR_LINES;
+    const near = [];
+    for (let i = paths.length - 1, seen = 0; i >= 0 && seen < 600; i -= 1) {
+      const p = paths[i];
+      if (p === last || !readable(p)) continue;
+      seen += 1;
+      let minY = Infinity, maxY = -Infinity;
+      for (const q of p.points) { if (q.y < minY) minY = q.y; if (q.y > maxY) maxY = q.y; }
+      if (maxY >= top && minY <= bottom) near.unshift(p.points);
+    }
+    return [...near, last.points];
   }
 
   function consider() {
     if (!enabled()) return;
     const st = s();
-    // Strokes still on the page (an undo or an erase takes them out).
-    const live = new Set(st?.paths || []);
-    recent = recent.filter((r) => live.has(r.path));
-    if (recent.length < 2) return;
-    const read = readLine(recent.map((r) => r.path.points));
+    // The last stroke must still be on the page (an undo or an erase takes it out).
+    if (!readable(lastPath) || !(st?.paths || []).includes(lastPath)) return;
+    const read = readLine(strokesNear(lastPath, st.paths));
     if (!read) return;
     const said = answer(read.text);
     if (!said) return;
@@ -873,7 +951,7 @@
       pauseTimer = window.setTimeout(consider, PAUSE_MS);
     }, 30);
   });
-  document.addEventListener("toolChanged", () => { recent = []; });
+  document.addEventListener("toolChanged", () => { lastPath = null; });
 
   // ---------- the pen panel switch ----------
 

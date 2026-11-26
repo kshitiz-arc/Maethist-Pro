@@ -1,5 +1,39 @@
 # Changelog
 
+## 2.10.1 — 2026-11-26
+
+### Maths answers: fixed
+
+Four reasons a line of maths got no answer, each found by writing it the
+way people do rather than the way the tests did.
+
+- **A pause lost the line.** Only strokes written within 8 seconds of each
+  other were read together, so stopping to think before the `=` threw away
+  the start of the line. The reader now reads the ink on the page around
+  the last stroke, joining it left to right while the gaps stay small,
+  however long ago it was written.
+- **Common digit shapes read as nothing.** An open-topped 4, a 6 with a
+  straight stroke into its loop, and a 9 with a straight stem (in one
+  stroke or two) now read. One unreadable digit silences the whole line,
+  so this was the commonest failure.
+- **A narrow 7 read as `)`.** A 7 about half as wide as it is tall passed
+  the bracket test. A bracket bends evenly and a 7 has a sharp corner, so
+  a sharp corner now rules a bracket out.
+- **The quick ring ate slow, small strokes.** The hold that opens the ring
+  only checked how far the pen was from where it landed. A small digit
+  written slowly loops back near its start, so the ring fired mid-stroke
+  and threw the stroke away. The hold now also counts how far the pen has
+  travelled, in steps big enough that a hand's tremor adds nothing, so a
+  real hold still opens it.
+
+Measured on jittered synthetic handwriting: plain sums 297 of 300 read
+right with no misreads (290 with 7 misreads before); the new 4, 6 and 9
+shapes 35 to 40 of 40; 1,500 scribble lines still get no answer.
+
+`static/js/ink-math.js`, `static/js/ink-recognize.js`,
+`static/js/quick-access.js`
+
+
 ## 2.10.0 — 2026-11-26
 
 ### The live class board

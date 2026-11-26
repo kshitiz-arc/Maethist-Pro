@@ -180,6 +180,55 @@ class InkMathTests(unittest.TestCase):
         self.assertGreater(box, 560 + 40 * 3, "the chip sits after the writing, not over it")
         self.assertEqual(self.errors, [])
 
+    def test_a_pause_to_think_before_the_equals_still_answers(self):
+        """2.10.1: only strokes within 8s of each other were read together, so
+        stopping to think before the "=" lost the start of the line."""
+        page = self.open()
+        self.write(page, "12+7", 560, 300)
+        page.wait_for_timeout(9000)
+        self.write(page, "=", 560 + 20 + 12 + (30 + 12) * 3, 300)
+        page.wait_for_timeout(1300)
+        self.assertEqual(self.chip(page), {"read": "12+7=", "kind": "value", "say": "= 19"})
+
+    def test_small_writing_and_a_narrow_seven(self):
+        """2.10.1: a 7 narrower than about half its height read as ")"."""
+        page = self.open()
+        # A 7 as the editor stored it, written 24px tall with the mouse: 12px
+        # wide by 22 tall, so narrow enough to pass the bracket's shape test.
+        seven = [(0, 0), (2, 0.9), (3.2, 0.9), (5.1, 0.9), (6.5, 0.9), (7.4, 1), (8.3, 1), (9.2, 1.1), (10.1, 1.3),
+                 (10.9, 1.6), (11.5, 2), (11.5, 2), (11.9, 2.8), (11.9, 4), (11.4, 5.4), (10.8, 6.9), (10.2, 8.5),
+                 (9.5, 10.1), (8.8, 11.6), (8.2, 13), (7.6, 14.3), (7.1, 15.4), (6.6, 16.7), (5.6, 18.9), (4.9, 20.5), (4.1, 22.3)]
+        got = page.evaluate("""(seven) => {
+          const L = (x0, y0, x1, y1, n = 10) => Array.from({ length: n + 1 }, (_, i) => ({ x: x0 + (x1 - x0) * i / n, y: y0 + (y1 - y0) * i / n }));
+          const runs = [[...L(3.6, 4.8, 6, 0.5, 5), ...L(6, 0.5, 6, 23.5, 16)], L(29, 4.8, 29, 19.2), L(22, 12, 36, 12),
+            seven.map(([x, y]) => ({ x: x + 48, y: y + 0.8 })), L(72, 9, 86, 9), L(72, 15, 86, 15)];
+          return window.Inkyscib.InkMath.readLine(runs)?.text ?? null; }""", seven)
+        self.assertEqual(got, "1+7=", "it read 1+)= before 2.10.1")
+
+    def test_the_common_ways_to_write_4_6_and_9_are_read(self):
+        """2.10.1: an open 4, a 6 with a straight stroke into its loop, and a
+        9 with a straight stem (in one stroke or two) read as nothing."""
+        page = self.open()
+        got = page.evaluate("""() => {
+          const PI = Math.PI, S = 40;
+          const L = (x0, y0, x1, y1, n = 10) => Array.from({ length: n + 1 }, (_, i) => [x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n]);
+          const A = (cx, cy, rx, ry, a, b, n = 20) => Array.from({ length: n + 1 }, (_, i) => [cx + Math.cos(a + (b - a) * i / n) * rx, cy + Math.sin(a + (b - a) * i / n) * ry]);
+          const forms = {
+            "4 open": [[...L(0.24, 0.04, 0.18, 0.58, 8), ...L(0.18, 0.58, 0.88, 0.58)], L(0.68, 0.08, 0.68, 0.98)],
+            "6 straight": [[...L(0.66, 0.06, 0.32, 0.48), ...A(0.5, 0.7, 0.24, 0.26, PI, 3 * PI)]],
+            "9 straight": [[...A(0.47, 0.27, 0.28, 0.25, 0, -2 * PI), ...L(0.75, 0.27, 0.73, 0.98)]],
+            "9 two strokes": [A(0.47, 0.27, 0.28, 0.25, 0, -2 * PI), L(0.75, 0.12, 0.74, 0.98)],
+          };
+          const plus = [L(0.5, 0.2, 0.5, 0.8), L(0.2, 0.5, 0.8, 0.5)], eq = [L(0.2, 0.38, 0.8, 0.38), L(0.2, 0.62, 0.8, 0.62)];
+          const out = {};
+          for (const [name, g] of Object.entries(forms)) {
+            const runs = []; let cx = 0;
+            for (const part of [g, plus, g, eq]) { for (const st of part) runs.push(st.map(([x, y]) => ({ x: cx + x * S * 0.75, y: y * S }))); cx += S * 0.75 + 12; }
+            out[name] = window.Inkyscib.InkMath.readLine(runs)?.text ?? null;
+          }
+          return out; }""")
+        self.assertEqual(got, {"4 open": "4+4=", "6 straight": "6+6=", "9 straight": "9+9=", "9 two strokes": "9+9="})
+
     def test_a_wrong_sum_is_marked_with_the_right_one(self):
         page = self.open()
         self.write(page, "5+3=9", 560, 300)

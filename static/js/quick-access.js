@@ -269,6 +269,13 @@
       x: event.clientX,
       y: event.clientY,
       slop: SLOP_BY_TYPE[event.pointerType] || 10,
+      // How far the pointer has travelled, not just how far it now is from
+      // where it landed: a small digit written slowly loops back near its
+      // start, stayed "inside the slop" for the whole hold, and the ring
+      // fired and threw the stroke away (2.10.1).
+      travel: 0,
+      lastX: event.clientX,
+      lastY: event.clientY,
       timer: window.setTimeout(fire, wait),
       shown: window.setTimeout(() => {
         if (!hold) return;
@@ -414,7 +421,15 @@
 
   document.addEventListener("pointermove", (event) => {
     if (hold && event.pointerId === hold.id) {
-      if (Math.hypot(event.clientX - hold.x, event.clientY - hold.y) > hold.slop) cancelHold();
+      // Counted in steps of 3px or more, so a hand's tremor while holding
+      // still (under a pixel per event, but many events) adds nothing.
+      const step = Math.hypot(event.clientX - hold.lastX, event.clientY - hold.lastY);
+      if (step >= 3) {
+        hold.travel += step;
+        hold.lastX = event.clientX;
+        hold.lastY = event.clientY;
+      }
+      if (hold.travel > hold.slop || Math.hypot(event.clientX - hold.x, event.clientY - hold.y) > hold.slop) cancelHold();
       return;
     }
     if (open && event.pointerId === open.pointerId && !open.lifted) {

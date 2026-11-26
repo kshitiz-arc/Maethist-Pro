@@ -185,6 +185,24 @@ class QuickAccessTests(unittest.TestCase):
         page.wait_for_timeout(900)
         self.assertFalse(page.evaluate("() => window.Inkyscib.QuickAccess.ringOpen()"))
 
+    def test_a_small_digit_written_slowly_is_handwriting(self):
+        """2.10.1: the hold only checked how far the pen was from where it
+        landed. A small, slow 1 or 2 loops back near its start, stayed inside
+        that distance for the whole hold, and the ring fired and ate it."""
+        page = self.open_page()
+        page.evaluate("() => { window.setTool('pen'); window.appState.paths = []; }")
+        # A 5px circle traced over 900ms: never more than 5px from the start
+        # (the stylus allowance is 6), but 30px of real movement.
+        page.evaluate("""() => new Promise((done) => { const c = document.getElementById('drawingCanvas'); const r = c.getBoundingClientRect();
+          const ev = (type, x, y) => c.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: r.left + x, clientY: r.top + y,
+            pointerId: 12, isPrimary: true, pointerType: 'pen', button: 0, buttons: type === 'pointerup' ? 0 : 1, pressure: 0.5 }));
+          ev('pointerdown', 600, 400); let i = 0;
+          const t = setInterval(() => { i += 1; const a = i / 24 * Math.PI * 2;
+            ev('pointermove', 600 + 2.5 - Math.cos(a) * 2.5, 400 + Math.sin(a) * 2.5);
+            if (i >= 24) { clearInterval(t); ev('pointerup', 600, 400); setTimeout(done, 100); } }, 38); })""")
+        self.assertFalse(page.evaluate("() => window.Inkyscib.QuickAccess.ringOpen()"))
+        self.assertEqual(page.evaluate("() => window.appState.paths.length"), 1, "the stroke is kept")
+
     def test_a_brief_pause_never_flashes_the_charge(self):
         page = self.open_page()
         page.evaluate("() => window.setTool('pen')")
