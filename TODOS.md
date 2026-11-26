@@ -876,3 +876,23 @@ the banner, the audit chain and both monthly consent chores.
   canvas popover, the player, the page switcher) no longer overlap anything.
 - **`test_lift_smoothing_is_cheap`** is unchanged and still the one marginal
   timing budget (items 17 and 18).
+
+## 21. Live board: what was left (2026-11-26, 2.10.0)
+
+- **Imported PDF pages and slides are not shared.** The board sends ink, lines,
+  shapes, constructions, tiles and placed pictures, and the page colour. A PDF
+  page is a large image per page; sending it once per page (downscaled, like a
+  placed picture, keyed by page) is the obvious next step. The sheet and the
+  privacy policy both say it is not sent, so either change them with it.
+- **One process only.** Boards live in `live_board.py`'s memory. A second
+  gunicorn worker, or a second instance, would split the boards. If the app
+  ever scales out, move the store to something shared (Redis), and re-read the
+  privacy policy's "memory only, never on disk".
+- **No viewer count.** Deliberate: nothing about who watches is kept. A count
+  of polls in the last few seconds would be anonymous and is cheap if a teacher
+  asks for it.
+- **Not tried on a real classroom network.** Polling is 350ms while the tab is
+  shown, 4s while hidden; 30 phones behind one school address is about 90 small
+  requests a second, which is why the poll limit (`live.poll`, 12,000 a minute per
+  network) is a flood guard, not a budget.
+

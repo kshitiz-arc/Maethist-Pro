@@ -1,5 +1,46 @@
 # Changelog
 
+## 2.10.0 — 2026-11-26
+
+### The live class board
+
+- **Teach from your page; the class follows on their phones.** Tools, then
+  **Live board**, starts a board with a six-letter code and a QR code. Anyone
+  who scans it, or opens `/live` and types the code, sees your page as you
+  write, stroke by stroke, while the pen is still moving.
+- **No accounts, nothing to install.** The code is the address. Only the tab
+  that started the board can write to it, using a key the server keeps only
+  as a hash. A reload in that tab carries on with the same board.
+- **What the class sees.**
+  - Ink, lines, shapes, constructions, algebra tiles and placed pictures,
+    drawn by the editor's own drawing code, so they look exactly as they do
+    for you. Erasing and undo reach them too.
+  - Your page colour, light or dark.
+  - The ink in your view, framed to fill their screen and easing as you write.
+    A student can pinch, drag or scroll to look closer, and **Follow teacher**
+    hands the view back.
+  - **Save picture** keeps a PNG of the board.
+  - When you end the board, their page says "Class ended".
+- **Light on the network.** Only the strokes that changed are sent, a few
+  times a second. A student who joins late or drops off the network for a
+  minute catches up in one request.
+- **Private by design.** The board is held in the server's memory, never on
+  disk. It is deleted when you end it (after ten minutes, so the class sees
+  "Class ended"), after two hours with no writing, or on a restart. Watching
+  sends only the code. The privacy policy, the cookies page (a new session
+  key, `inkyscib_live`), the terms and `docs/legal/` describe all of it.
+- **Not yet shared:** imported PDF pages and slides (TODOS item 21).
+
+`live_board.py`, `qr_svg.py`, `static/js/live-board.js`,
+`static/js/live-view.js`, `static/css/live-board.css`, `templates/live.html`
+
+### A QR code, made here
+
+`qr_svg.py` is a small QR encoder (ISO 18004 versions 1 to 10, error
+correction M), written rather than added as a dependency. Its codes are
+checked by decoding them with OpenCV in `tests/test_live_board.py`.
+
+
 ## 2.9.4 — 2026-11-26
 
 ### Maths answers: powers, decimals and graphs

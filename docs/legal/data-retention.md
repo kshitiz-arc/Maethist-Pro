@@ -15,6 +15,7 @@ promise, so each row below names the mechanism that actually expires it.
 | Notes, drawings, notebooks, preferences | Until the visitor clears them | The visitor's own browser; *Erase everything* on `/legal/privacy` | Their choice, not ours |
 | An imported PDF or deck | The length of one request | `tempfile.TemporaryDirectory` (`app.py:2274`, `:2333`, `:2732`) | Yes — the context manager deletes on success and on exception |
 | Lecture search results | 10 minutes | In-memory cache in `app.py` | Yes |
+| A live board (2.10.0) | Until the teacher ends it, then 10 minutes; or 2 hours after the last write; or a restart | `_sweep` in `live_board.py`, memory only | Yes (pinned by `tests/test_live_board.py`) |
 | Web-server access logs | 30 days | The hosting platform's log retention setting | **Configure it.** Nothing in this repo can |
 | Consent audit chain | 24 months | `tools/prune_consent_log.py` | **Only if scheduled.** See below |
 | Google Analytics event data | 2 months | GA4 console setting | **Configure it.** See `docs/legal/subprocessors.md` |

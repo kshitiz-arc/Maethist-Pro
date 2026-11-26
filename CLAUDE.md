@@ -34,6 +34,11 @@ that the pages load, so a new asset type needs adding to `_OFFLINE_SUFFIXES`.
 `OFFLINE_SHELL=off` is its remote off switch (`templates/sw-off.js`).
 `docs/V2-REVIEW.md` is the launch review, with the measurements.
 
+**Live boards need one server process.** `live_board.py` keeps each board in memory
+(by design: nothing a class shares touches disk), so `WEB_CONCURRENCY` must stay 1;
+scale with `GUNICORN_THREADS`. Students poll rather than hold a connection, because a
+class of 30 on a held connection each would eat all 8 gthread threads.
+
 Image to text (`ocr_engine.py`, `/api/ocr`) is optional per server. Without
 `requirements-ocr.txt` it reports itself unavailable and the tool says so on
 opening; `render.yaml` installs only `requirements.txt`, so production has it
@@ -83,8 +88,9 @@ python -c "import os; os.environ.setdefault('SECRET_KEY','dev'); from app import
 python -m pytest tests/ -q
 ```
 
-**Baseline is 668 passed / 0 failed / 1 skipped, 2,392 subtests, about 16 minutes
-(2026-11-26, version 2.9.3).** Before that, 665 / 0 / 2,385 (2.9.2). Before that, 663 / 0 / 2,385 (2.9.1). Before that, 658 / 0 / 2,375 (2.9.0, counting a
+**Baseline is 684 passed / 0 failed / 1 skipped, 2,415 subtests, about 16 minutes
+(2026-11-26, version 2.10.0; one rate-limit coverage failure in that run was fixed and
+its file re-run).** Before that, 668 / 0 / 2,392 (2.9.3). Before that, 665 / 0 / 2,385 (2.9.2). Before that, 663 / 0 / 2,385 (2.9.1). Before that, 658 / 0 / 2,375 (2.9.0, counting a
 YouTube speed test's 30s page-ready timeout under load as a straddle). Before that,
 653 / 0 / 2,365 (2.8.5). Before that, 649 / 0 / 2,365 (2.8.4, counting the
 render-latency view-jump test as a known timing straddle). Before that,

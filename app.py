@@ -204,7 +204,7 @@ def add_static_version(endpoint, values):
     if token:
         values["v"] = token
 
-APP_VERSION = "2.9.4"
+APP_VERSION = "2.10.0"
 
 # Render sets RENDER=true on every service; INKYSCIB_ENV=production is the
 # switch for any other host. A random fallback is fine on a laptop, but under
@@ -1516,6 +1516,12 @@ INKLAB_WORKER_SCRIPTS = (
 )
 
 
+# The live class board: /live/<code> and its small API (live_board.py).
+from live_board import live as live_blueprint  # noqa: E402
+
+app.register_blueprint(live_blueprint)
+
+
 @app.route("/lab/ink")
 def lab_ink():
     config = {
@@ -1528,7 +1534,7 @@ def lab_ink():
     return render_template("lab_ink.html", config=config)
 
 
-LEGAL_UPDATED = "2026-11-25"
+LEGAL_UPDATED = "2026-11-26"
 
 
 @app.route("/legal/privacy")
@@ -1568,6 +1574,15 @@ def terms():
 
 RATE_LIMITS = {
     # endpoint name: (requests, per seconds)
+    # The live class board (live_board.py). Starting one is rare; a teacher's
+    # page writes about four times a second while drawing. Students' polls
+    # share one school address, so theirs is a flood guard only: about 60
+    # open tabs polling three times a second.
+    "live.create": (10, 60),
+    "live.push": (1200, 60),
+    "live.poll": (12000, 60),
+    "live.end": (30, 60),
+    "live.qr": (60, 60),
     "youtube_search": (30, 60),
     "youtube_storyboard": (60, 60),
     "youtube_prepare": (20, 60),
@@ -1908,6 +1923,7 @@ def robots_txt():
         "Disallow: /api/",
         "Disallow: /stats",
         "Disallow: /lab/",
+        "Disallow: /live",
         "",
         f"Sitemap: {site_url('/sitemap.xml')}",
         "",

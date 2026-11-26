@@ -5,6 +5,8 @@ bind = f"0.0.0.0:{os.environ.get('PORT', '10000')}"
 
 # Threads, not processes: the in-memory YouTube search cache is per process,
 # and a free instance has about 512 MB, which PyMuPDF can fill on its own.
+# One process: live boards (live_board.py) are held in this process's memory,
+# so a second worker would not see them. Scale with threads instead.
 workers = int(os.environ.get("WEB_CONCURRENCY", "1"))
 threads = int(os.environ.get("GUNICORN_THREADS", "8"))
 worker_class = "gthread"

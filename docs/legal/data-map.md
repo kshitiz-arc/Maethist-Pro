@@ -20,7 +20,7 @@ nothing that points at a person.
 
 | # | Data | Where it goes | Stored where | Who else sees it | Legal basis | Retention |
 |---|---|---|---|---|---|---|
-| 1 | Notes, drawings, pages, notebooks, saved video moments, preferences | Never leaves the device | The visitor's `localStorage` and IndexedDB (`inkyscib_cache` v2: the `records` and `documents` object stores) | Nobody. There is no endpoint that could receive it | Not our processing — we are not a controller of data we never receive | Until the visitor clears it, or presses *Erase everything* on `/legal/privacy` |
+| 1 | Notes, drawings, pages, notebooks, saved video moments, preferences | Never leaves the device (except a page shared on a live board, row below) | The visitor's `localStorage` and IndexedDB (`inkyscib_cache` v2: the `records` and `documents` object stores) | Nobody. There is no endpoint that could receive it | Not our processing — we are not a controller of data we never receive | Until the visitor clears it, or presses *Erase everything* on `/legal/privacy` |
 | 2 | An imported PDF or PowerPoint | `POST /api/ppt/import`, `/api/pdf/import`, `/api/pdf/export`, `/api/ppt/export/*` | A `tempfile.TemporaryDirectory` (`app.py:2274`, `:2333`, `:2732`), deleted when the request ends, including on failure | Nobody | Art. 6(1)(b) — performing the conversion the visitor asked for | Seconds. Pinned by `tests/test_privacy_server.py::UploadLifetimeTests` |
 | 3 | Lecture search words | `GET /api/youtube/search` → YouTube, server-to-server | Process memory, a ten-minute cache keyed by the query | Google, as the search terms only — **not** the visitor's IP, because the server asks on their behalf | Art. 6(1)(b) | 10 minutes, in memory |
 | 4 | Web-server access logs | stderr / the platform's log sink | Wherever the host keeps logs | The hosting provider | Art. 6(1)(f) — keeping the service up | 30 days (host setting). **IP, email and filenames are rewritten before the record reaches any handler** (`logging_filters.py`) |
@@ -81,6 +81,17 @@ exists. Google and the hosting provider are **processors/third parties** as set 
 
 This was in the code before 2.7.0 and missing from the policy; the privacy
 page's third-party table now lists it.
+
+## Live board (added 2.10.0)
+
+| Data | Where it goes | Stored where | Who else sees it | Legal basis | Retention |
+|---|---|---|---|---|---|
+| The ink (and placed pictures) on a teacher's page, the part in view, the page colour, while a live board runs | `POST /api/live/<code>` from the teacher's tab; `GET /api/live/<code>` by anyone with the code | This server process's memory only (`live_board.py`), never disk | Whoever opens the code | Art. 6(1)(b), the sharing the teacher asked for | Until the teacher ends it (then 10 minutes for "class ended"), 2 hours after the last write, or a restart |
+| A hash of the board's write key | Same | Same | Nobody | Same | Same |
+| The board's code and write key, in the teacher's tab | `sessionStorage` `inkyscib_live` | The teacher's browser | Nobody | Essential | Until the board ends or the tab closes |
+
+A student's request carries only the code and the version it last saw; nothing
+about who watches is stored. Imported PDF pages and slides are not sent.
 
 ## Picture background (added 2.7.0)
 

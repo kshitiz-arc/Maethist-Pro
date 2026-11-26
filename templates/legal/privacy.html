@@ -8,7 +8,8 @@
 
       <p>
         MAETHIST has no accounts, no sign-up and no server-side copy of your
-        work. That makes this document short, and it makes most of it a list of
+        work. (The one exception you choose: a live board you start is held in
+        the server's memory while it runs, so your class can follow it.) That makes this document short, and it makes most of it a list of
         things that do not happen. Each paragraph below describes the code as it
         runs today.
       </p>
@@ -84,6 +85,20 @@
           once), and passes it to your browser, where it is stored. Only
           the few seconds of video around that moment are read, and nothing is
           written to disk. Nothing about which video you watched is recorded.
+        </li>
+        <li>
+          <strong>A live board, while it is on.</strong> When a teacher starts
+          a live board (Tools, then Live board), the ink on their page, the part
+          of the page in view and the page colour are sent to this server a few
+          times a second, so the class can follow at <code>/live/</code> and a
+          six-letter code. Pictures placed on the page are sent too; imported
+          PDF pages and slides are not. The server keeps the board in its
+          memory only, never on disk, and deletes it when the teacher ends it
+          (after ten minutes, so a student's page can say the class has ended),
+          after two hours with no writing, or when the server restarts
+          (<code>live_board.py</code>). Anyone with the code can watch, so treat
+          it like a classroom whiteboard. Watching sends nothing but the code:
+          no name, no account, and nothing about who is watching is kept.
         </li>
       </ul>
 
@@ -230,6 +245,10 @@
               <td>30 minutes</td>
             </tr>
             <tr>
+              <td>A live board in the server's memory</td>
+              <td>Until the teacher ends it (then 10 minutes), or 2 hours after the last stroke, or a server restart</td>
+            </tr>
+            <tr>
               <td>Web server logs</td>
               <td>30 days, already stripped of identifiers</td>
             </tr>
@@ -358,6 +377,12 @@
         here does any of those things. In the United States, COPPA applies to
         children under 13; we knowingly collect nothing from anyone, which
         includes them.
+      </p>
+
+      <p>
+        A student following a live board sends only the board's code. They
+        are not asked for a name, they need no account, and the server does
+        not record who watched.
       </p>
 
       <h2>Complaints</h2>

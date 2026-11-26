@@ -144,6 +144,7 @@ class SitemapTests(unittest.TestCase):
             "/healthz",   # the host's health check, JSON
             "/sw.js",     # the offline service worker, a script
             "/stats",     # the owner's visit counter, behind a password
+            "/live",      # the live board join page: private boards, noindex, Disallowed
         }
         page_routes = {
             str(rule)

@@ -59,7 +59,7 @@
     video: "tv-minimal-play", camera: "camera", guide: "map", open: "folder-open",
     save: "save", saveAs: "save-all", plus: "plus", pdf: "file-text", slides: "presentation",
     image: "image", package: "package", backup: "hard-drive-download", book: "book-open",
-    trash: "trash", rename: "pencil-line", ocr: "scan-text", lessons: "play"
+    trash: "trash", rename: "pencil-line", ocr: "scan-text", lessons: "play", liveboard: "presentation"
   };
   const ICONS = {};
   Object.keys(ICON_REFS).forEach((key) => {
@@ -265,6 +265,16 @@
       run: async () => {
         close();
         clickExisting("imageInsertBtn");
+      }
+    },
+
+    liveboard: {
+      title: "Live board",
+      note: "Your class follows this page live on their phones: a QR code, no accounts.",
+      icon: "liveboard",
+      run: async () => {
+        close();
+        window.Inkyscib?.LiveBoard?.openSheet?.();
       }
     },
 
@@ -584,7 +594,7 @@
       icon: "tools",
       heading: "Extra tools",
       blurb: "The things that sit beside the drawing rather than on it. Each one opens over the canvas and closes again.",
-      commands: ["lessons", "ocr", "planner", "pomodoro", "youtube", "arInky", "featureTour"]
+      commands: ["liveboard", "lessons", "ocr", "planner", "pomodoro", "youtube", "arInky", "featureTour"]
     },
     recent: {
       label: "Recent",
