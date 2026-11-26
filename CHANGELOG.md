@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.9.4 — 2026-11-26
+
+### Maths answers: powers, decimals and graphs
+
+- **Powers.** A small digit or x written raised after a symbol is read as
+  a power: `x² = 9` answers "x = -3 or x = 3", `2¹⁰ =` answers "= 1024",
+  and `3² + 4² = 5²` is marked correct.
+- **Decimals.** A dot written low between two digits is a decimal point.
+  `2.5 × 4 =` answers "= 10", and a question asked in decimals is answered
+  in decimals (`0.1 + 0.2 =` gives "= 0.3", not 3/10).
+- **Higher powers.** Cubics and quartics, up to x⁶, are solved too:
+  `x³ - 6x² + 11x - 6 = 0` gives "x = 1, 2 or 3", and a repeated root
+  such as `(x - 1)²(x + 2) = 0` is still found. Roots that are not whole
+  numbers or small fractions are given to three places, marked ≈.
+- **Graphs.** Write `y = ...` and pause: the chip shows the line read back
+  ("y = x² + 2x") with a **Draw graph** button. It draws the graph under
+  your line in ink: axes, ticks, numbers written in strokes, and the
+  curve, at the same scale both ways when that fits so slopes look like
+  slopes. It is ordinary pen ink, so it saves, exports, erases and
+  selects like your writing, and one undo takes the whole graph off.
+- **y is read** in two strokes (a short arm into a long one) or in one.
+
+Measured on jittered synthetic handwriting: plain sums read exactly as
+well as in 2.9.3 (290 of 300 either way), lines with powers 288 of 300,
+and 1,500 random scribble lines still get no answer at all.
+
+`static/js/ink-math.js`, `static/css/ink-math.css`
+
+
 ## 2.9.3 — 2026-11-26
 
 ### The first 30 seconds

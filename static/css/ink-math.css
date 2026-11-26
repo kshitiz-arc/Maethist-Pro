@@ -37,7 +37,8 @@
 .im-chip[data-kind="right"] .im-mark { background: var(--brand-green, #8BE28B); }
 .im-chip[data-kind="wrong"] .im-mark { background: var(--brand-red, #FF6B6B); }
 .im-chip[data-kind="value"],
-.im-chip[data-kind="solve"] { background: var(--brand-yellow, #FFD23F); color: #111111; border-color: #111111; }
+.im-chip[data-kind="solve"],
+.im-chip[data-kind="graph"] { background: var(--brand-yellow, #FFD23F); color: #111111; border-color: #111111; }
 .im-close {
   display: grid;
   place-items: center;
@@ -53,4 +54,22 @@
 }
 .im-close:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
 .im-close:focus-visible { outline: 3px solid var(--brand-blue, #5CC8FF); outline-offset: 1px; }
-@media (prefers-reduced-motion: reduce) { .im-chip.is-in { animation: none; } }
+/* "Draw graph" (2.9.4): the chip's one action, a pill inside the pill. */
+.im-act {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 2px solid #111111;
+  border-radius: 999px;
+  background: var(--surface, #ffffff);
+  color: var(--ink, #111111);
+  box-shadow: 2px 2px 0 #111111;
+  font: 700 0.85rem / 1 var(--display);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.im-act[hidden] { display: none; }
+.im-act:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 #111111; }
+.im-act:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 #111111; }
+.im-act:focus-visible { outline: 3px solid var(--brand-blue, #5CC8FF); outline-offset: 2px; }
+@media (pointer: coarse) { .im-act, .im-close { min-height: 44px; min-width: 44px; } }
+@media (prefers-reduced-motion: reduce) { .im-chip.is-in { animation: none; } .im-act:hover, .im-act:active { transform: none; } }

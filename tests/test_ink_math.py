@@ -42,6 +42,10 @@ GLYPHS = {
     "+": [L(0.5, 0.2, 0.5, 0.8), L(0.2, 0.5, 0.8, 0.5)],
     "=": [L(0.2, 0.38, 0.8, 0.38), L(0.2, 0.62, 0.8, 0.62)],
     "x": [L(0.25, 0.35, 0.75, 0.85), L(0.75, 0.35, 0.25, 0.85)],
+    "4": [L(0.62, 0.02, 0.12, 0.66, 12) + L(0.12, 0.66, 0.9, 0.66, 10), L(0.66, 0.3, 0.66, 0.98, 10)],
+    # y in two strokes: a short arm into the middle of a long stem below it.
+    "y": [L(0.2, 0.35, 0.5, 0.68), L(0.8, 0.35, 0.3, 1.2, 14)],
+    ".": [L(0.45, 0.92, 0.5, 0.96, 2)],
 }
 
 
@@ -77,17 +81,24 @@ class InkMathTests(unittest.TestCase):
         return page
 
     def write(self, page, text, x, y, size=40):
+        """Write text in ink. "^" raises the next symbol, small, as a power."""
         cx = x
+        raise_next = False
         for ch in text:
-            w = size * 0.5 if ch == "1" else size * 0.75
+            if ch == "^":
+                raise_next = True
+                continue
+            h, top = (size * 0.5, y - size * 0.22) if raise_next else (size, y)
+            raise_next = False
+            w = h * 0.5 if ch == "1" else h * (0.3 if ch == "." else 0.75)
             for stroke in GLYPHS[ch]:
-                pts = [(cx + px * w, y + py * size) for px, py in stroke]
+                pts = [(cx + px * w, top + py * h) for px, py in stroke]
                 page.mouse.move(*pts[0])
                 page.mouse.down()
                 for point in pts[1:]:
                     page.mouse.move(*point)
                 page.mouse.up()
-            cx += w + 12
+            cx += w + (6 if ch == "." or h < size else 12)
 
     def chip(self, page):
         return page.evaluate("""() => { const c = document.getElementById('inkMathChip');
@@ -103,8 +114,57 @@ class InkMathTests(unittest.TestCase):
         }
         got = page.evaluate("(cs) => Object.fromEntries(cs.map((c) => [c, window.Inkyscib.InkMath.answer(c)?.say ?? null]))", list(cases))
         self.assertEqual(got, cases)
-        silent = page.evaluate("() => ['hello', '1+2', '=5', 'x=4', 'x^2=4', ''].map((c) => window.Inkyscib.InkMath.answer(c))")
-        self.assertEqual(silent, [None] * 6, "nothing to say, so nothing is said")
+        silent = page.evaluate("() => ['hello', '1+2', '=5', 'x=4', 'y=', 'x=xy', ''].map((c) => window.Inkyscib.InkMath.answer(c))")
+        self.assertEqual(silent, [None] * 7, "nothing to say, so nothing is said")
+
+    def test_powers_decimals_and_higher_degrees(self):
+        page = self.open()
+        cases = {
+            "x^2=9": "x = -3 or x = 3", "2^10=": "= 1024", "3^2+4^2=5^2": "Correct",
+            "0.1+0.2=": "= 0.3", "2.5x4=": "= 10", "1.5+1.5=4": "Not quite: 1.5 + 1.5 = 3",
+            "x^3-6x^2+11x-6=0": "x = 1, 2 or 3", "(x-1)^2(x+2)=0": "x = -2 or x = 1",
+            "x^2+1=0": "No real x", "x^3=2": "x ≈ 1.26", "x^4=16": "x = -2 or x = 2",
+            "1/x=4": "x = 1/4",
+        }
+        got = page.evaluate("(cs) => Object.fromEntries(cs.map((c) => [c, window.Inkyscib.InkMath.answer(c)?.say ?? null]))", list(cases))
+        self.assertEqual(got, cases)
+        graph = page.evaluate("() => { const a = window.Inkyscib.InkMath.answer('y=x^2-4'); return [a.kind, a.say]; }")
+        self.assertEqual(graph, ["graph", "y = x² - 4"])
+
+    def test_written_powers_and_decimals_are_read(self):
+        page = self.open()
+        self.write(page, "x^2=4", 560, 300)
+        page.wait_for_timeout(1300)
+        self.assertEqual(self.chip(page), {"read": "x^2=4", "kind": "solve", "say": "x = -2 or x = 2"})
+        self.write(page, "2.5x4=", 560, 450)
+        page.wait_for_timeout(1300)
+        self.assertEqual(self.chip(page), {"read": "2.5x4=", "kind": "value", "say": "= 10"})
+        self.assertEqual(self.errors, [])
+
+    def test_a_written_y_line_offers_a_graph_drawn_in_ink(self):
+        page = self.open()
+        self.write(page, "y=2x+1", 480, 220)
+        page.wait_for_timeout(1300)
+        self.assertEqual(self.chip(page), {"read": "y=2x+1", "kind": "graph", "say": "y = 2x + 1"})
+        before = page.evaluate("() => window.appState.paths.length")
+        page.click("#inkMathChip .im-act")
+        page.wait_for_timeout(150)
+        added = page.evaluate("""() => { const g = window.appState.paths.filter((p) => p.mathGraph);
+          return { n: g.length, ids: new Set(g.map((p) => p.mathGraph)).size,
+                   pen: g.every((p) => p.tool === 'pen' && p.points.length >= 2) }; }""")
+        self.assertGreater(added["n"], 10, "axes, ticks, numbers and the curve")
+        self.assertEqual(added["ids"], 1)
+        self.assertTrue(added["pen"], "ordinary ink, so it saves, exports and erases like writing")
+        self.assertTrue(page.evaluate("() => document.getElementById('inkMathChip').hidden"))
+        # Slope 2 at equal scales is -2 on a y-down page.
+        slope = page.evaluate("""() => { const curve = window.appState.paths.filter((p) => p.mathGraph && p.color !== '#8a8f98');
+          const pts = curve.flatMap((p) => p.points); const a = pts[0], b = pts[pts.length - 1];
+          return (b.y - a.y) / (b.x - a.x); }""")
+        self.assertAlmostEqual(slope, -2, delta=0.05)
+        page.keyboard.press("Control+z")
+        page.wait_for_timeout(150)
+        self.assertEqual(page.evaluate("() => window.appState.paths.length"), before, "one undo takes the whole graph off")
+        self.assertEqual(self.errors, [])
 
     def test_written_maths_is_answered_at_the_end_of_its_line(self):
         page = self.open()
