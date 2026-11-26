@@ -137,4 +137,5 @@ A 4K video frame needs real CPU. On Render's free plan the first frame from a
 
 ## Licence
 
-[MIT](LICENSE). Created by [@kshitizarc](https://www.linkedin.com/in/kshitiz47/).
+All rights reserved: see [LICENSE](LICENSE). The source is public to read, not to copy,
+modify, host or redistribute. Versions before 2026-11-26 were MIT. Created by [@kshitizarc](https://www.linkedin.com/in/kshitiz47/).

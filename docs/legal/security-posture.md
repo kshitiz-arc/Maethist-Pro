@@ -12,7 +12,7 @@ Written 2026-09-20.
 
 **SOC 2 Type II and ISO 27001 are audited certifications, not code.** They need an external
 auditor, three to twelve months of collected evidence, and recurring fees. No commit
-produces one. A free, solo, MIT-licensed project with no enterprise customers has nobody to
+produces one. A free, solo, source-available project with no enterprise customers has nobody to
 show a report to, so pursuing either now would be spending money to answer a question
 nobody has asked.
 

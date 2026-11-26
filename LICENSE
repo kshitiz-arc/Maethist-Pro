@@ -1,21 +1,40 @@
-MIT License
+MAETHIST Proprietary Licence
 
-Copyright (c) 2025-2026 Kshitiz Kumar Sinha
+Copyright (c) 2025-2026 Kshitiz Kumar Sinha. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This repository is published so that its source can be read. Publishing it
+does not license it. Unless you have the copyright holder's prior written
+permission, you may not, in whole or in part:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+  1. copy, reproduce or redistribute the source code, assets or documentation;
+  2. modify, adapt, translate or create derivative works from them;
+  3. host, deploy, run or offer them as a service, or embed them in any
+     product, website or application;
+  4. sell, sublicense, lease or otherwise make them available to anyone; or
+  5. use them, or any part of them, to train or improve a machine-learning
+     model.
+
+You may view the source on the platform where the copyright holder publishes
+it, and you may use the MAETHIST website as its Terms of Use allow. Forking
+this repository on GitHub is permitted only as far as GitHub's Terms of
+Service require, and a fork grants no further right than viewing.
+
+The name "MAETHIST", its logo and the site's copy are not licensed for any use.
+
+Third-party components (the icon sets in static/icons/, the fonts in
+static/fonts/, the files in static/js/vendor/, and code ported from
+VengeanceUI) remain under their own licences, which are kept beside them and
+listed in README.md. Nothing here restricts what those licences allow.
+
+Versions of this software published before 2026-11-26 were released under the
+MIT licence, and copies obtained under it keep that licence. This licence
+applies to every version from 2026-11-26 onward.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE.
+
+For permission or licensing enquiries, contact the copyright holder through
+https://github.com/kshitiz-arc.

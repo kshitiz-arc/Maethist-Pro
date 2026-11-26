@@ -31,7 +31,7 @@ Quote these rather than inferring the terms from the marketing copy.
 - Storage: local-first. Drawings and preferences live in the browser
   (localStorage and IndexedDB); the server sees a file only during a PDF or
   PowerPoint import or export.
-- Licence: MIT.
+- Licence: proprietary, all rights reserved. The source is public to read; copying, modifying, hosting or training on it is not permitted.
 - Import and export: PDF in and out, PowerPoint (.ppt/.pptx) in and out.
 - Works offline once loaded, on any modern browser.
 
