@@ -181,34 +181,6 @@
       transition: opacity 180ms ease-out, visibility 0s;
     }
 
-    /* The first 30 seconds (first-run.js): one button under the hint that
-       shows the canvas answering maths. Only on an empty canvas. */
-    .first-run-try {
-      position: absolute;
-      left: 50%;
-      top: calc(50% + 34px);
-      z-index: 3;
-      min-height: 44px;
-      padding: 0 18px;
-      border: 2px solid #111111;
-      border-radius: 999px;
-      background: var(--brand-yellow, #FFD23F);
-      color: #111111;
-      box-shadow: 3px 3px 0 #111111;
-      font: 700 var(--t-2) / 1 var(--display);
-      cursor: pointer;
-      transform: translateX(-50%);
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 180ms ease-out, visibility 0s linear 180ms;
-    }
-    body.canvas-empty .first-run-try {
-      opacity: 1;
-      visibility: visible;
-      transition: opacity 180ms ease-out, visibility 0s;
-    }
-    .first-run-try:focus-visible { outline: 3px solid var(--brand-blue, #5CC8FF); outline-offset: 2px; }
-    @media (prefers-reduced-motion: reduce) { .first-run-try { transition: none; } }
 
     @media (prefers-reduced-motion: reduce) {
       #emptyHint {
@@ -1713,7 +1685,6 @@
   <script src="{{ url_for('static', filename='js/handwriting.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/ink-math.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/lesson.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/first-run.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/live-board.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/manipulative-expr.js', v='algebra-tiles-1') }}" defer></script>
   <script src="{{ url_for('static', filename='js/manipulatives.js', v='algebra-tiles-1') }}" defer></script>

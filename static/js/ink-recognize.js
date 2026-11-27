@@ -1365,16 +1365,26 @@
    * matter most, and run from several starts because the greedy walk is not
    * symmetric in where it begins.
    */
-  function cloudDistance(from, to, start) {
+  function cloudDistance(from, to, start, bound = Infinity) {
     const matched = new Array(from.length).fill(false);
     let sum = 0;
     let i = start;
     do {
+      // Already worse than the best match found: the rest cannot rescue it
+      // (every term is non-negative), so stop. $P's own early abandoning.
+      if (sum >= bound) return sum;
       let best = Infinity;
       let index = -1;
+      const px = from[i].x;
+      const py = from[i].y;
       for (let j = 0; j < to.length; j += 1) {
         if (matched[j]) continue;
-        const d = distance(from[i], to[j]);
+        // Math.sqrt of the sum, not Math.hypot: the same distance, and this
+        // inner loop runs about a million times a line, where hypot's extra
+        // care with overflow cost ten times as much (2.10.2).
+        const dx = to[j].x - px;
+        const dy = to[j].y - py;
+        const d = Math.sqrt(dx * dx + dy * dy);
         if (d < best) {
           best = d;
           index = j;
@@ -1388,12 +1398,13 @@
     return sum;
   }
 
-  function greedyMatch(candidate, template) {
+  function greedyMatch(candidate, template, bound = Infinity) {
     if (candidate.length !== template.length) return Infinity;
     const step = Math.max(1, Math.floor(Math.pow(candidate.length, 0.5)));
-    let best = Infinity;
+    let best = bound;
     for (let i = 0; i < candidate.length; i += step) {
-      best = Math.min(best, cloudDistance(candidate, template, i), cloudDistance(template, candidate, i));
+      best = Math.min(best, cloudDistance(candidate, template, i, best));
+      best = Math.min(best, cloudDistance(template, candidate, i, best));
     }
     return best;
   }
@@ -1428,12 +1439,21 @@
     if (!candidate || candidate.length !== DIGIT.SAMPLES) return null;
 
     // Best score per digit, so three 1-variants do not outvote a single 7.
+    //
+    // Only the best two digits decide the answer (the score and the margin),
+    // so a template already further away than the current runner-up is
+    // abandoned early: its own digit can no longer reach the top two. The
+    // best two come out exactly as a full match would give them (2.10.2).
     const byName = new Map();
+    const nearest = new Map();
     for (const template of templates()) {
-      const score = Math.max(0, (2 - greedyMatch(candidate, template.points)) / 2);
-      const previous = byName.get(template.name);
-      if (previous === undefined || score > previous) byName.set(template.name, score);
+      const sorted = [...nearest.values()].sort((a, b) => a - b);
+      const bound = sorted.length >= 2 ? sorted[1] : Infinity;
+      const d = greedyMatch(candidate, template.points, bound);
+      const previous = nearest.get(template.name);
+      if (previous === undefined || d < previous) nearest.set(template.name, d);
     }
+    for (const [name, d] of nearest) byName.set(name, Math.max(0, (2 - d) / 2));
 
     const ranked = [...byName.entries()].sort((a, b) => b[1] - a[1]);
     if (!ranked.length) return null;

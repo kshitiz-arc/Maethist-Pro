@@ -60,7 +60,7 @@
       path.rotation, path.width, path.height, path.x, path.y].join("|");
   }
 
-  const shared = (path) => path && !path.firstRunDemo && Array.isArray(path.points);
+  const shared = (path) => path && Array.isArray(path.points);
 
   function view() {
     const st = s();

@@ -1,5 +1,48 @@
 # Changelog
 
+## 2.10.2 — 2026-11-27
+
+### Maths answers, eleven times faster
+
+Reading a line froze the page for longer than anyone noticed: about 300ms
+for `12 + 7 =` on a budget tablet, 720ms for a long line, on every pause.
+Start writing again in that moment and the strokes lagged. Now:
+
+| On a budget tablet (4x slower CPU) | Before | Now |
+|---|---|---|
+| Reading `12 + 7 =` | 300 ms | 27 ms |
+| Reading it again on the next pause | 300 ms | 0.05 ms |
+| A 19-symbol line | 720 ms | 112 ms |
+
+Readings are exactly what they were (the same 297 of 300 on the
+handwriting benchmark). Three changes, none of them a rewrite:
+
+- **The distance in the digit matcher** is `Math.sqrt` of the sum rather
+  than `Math.hypot`, which is far slower and ran about a million times a
+  line. That alone was most of it.
+- **Early abandoning.** A comparison stops once it is worse than the best
+  so far, and a shape already further away than the runner-up is dropped:
+  only the best two decide the answer, and they come out the same.
+- **Nothing is read twice.** Each symbol's reading is kept against its
+  strokes, so a pause reads only what is new.
+
+`static/js/ink-recognize.js`, `static/js/ink-math.js`
+
+### Removed: "See it answer maths"
+
+The first-run button that wrote `12 + 7 =` on an empty page is gone, at
+the owner's request. It took the pen away from whoever pressed it and
+rebuilt the page's list of strokes when it cleared its ink.
+
+### Switching tools
+
+`tests/test_tool_switching.py` walks the rail, the shortcuts, the quick
+ring, strokes, pauses (the smart eraser handing the pen back), double
+clicks and Escape at random, on a laptop and on a 960px tablet, and checks
+after every step that the rail, the tool in hand and the next stroke agree.
+600 random steps found nothing wrong.
+
+
 ## 2.10.1 — 2026-11-26
 
 ### Maths answers: fixed

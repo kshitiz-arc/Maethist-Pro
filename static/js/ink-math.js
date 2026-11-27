@@ -208,7 +208,26 @@
   // Handwritten digits run narrower than the reader's templates, so each is
   // also tried stretched sideways, and the most confident reading wins. A 1
   // reads best as drawn, so it is never stretched into something else.
+  // The line is read again on every pause, but its earlier symbols have not
+  // changed, so each one's reading is kept against its strokes' points
+  // (2.10.2). The key includes every stroke's ends and length, so a stroke
+  // that is moved or edited in place is simply read afresh.
+  const digitCache = new WeakMap();
+  const digitKey = (ks) => ks.map((k) => `${k.points.length}:${k.first.x},${k.first.y}:${k.last.x},${k.last.y}`).join("|");
+
   function readDigit(ks) {
+    const owner = ks[0].points;
+    const key = digitKey(ks);
+    let seen = digitCache.get(owner);
+    if (seen && seen.has(key)) return seen.get(key);
+    const result = readDigitFresh(ks);
+    if (!seen) { seen = new Map(); digitCache.set(owner, seen); }
+    if (seen.size > 8) seen.clear();
+    seen.set(key, result);
+    return result;
+  }
+
+  function readDigitFresh(ks) {
     const R = window.Inkyscib?.InkRecognize;
     if (!R?.recognizeDigit) return null;
     const minX = Math.min(...ks.map((k) => k.minX));
@@ -220,6 +239,8 @@
       const r = R.recognizeDigit(runs);
       if (r && (!best || r.score > best.score)) best = r;
       if (stretch === 1 && r && r.digit === "1") return "1";
+      // A clear winner as drawn needs no stretching (2.10.2: a third of the work).
+      if (stretch === 1 && r && r.margin > 0.12) return r.digit;
     }
     return best && best.digit !== "1" ? best.digit : null;
   }
@@ -696,7 +717,7 @@
     lastPath = path;
   }
 
-  const readable = (p) => p && p.tool === "pen" && !p.mathGraph && !p.firstRunDemo &&
+  const readable = (p) => p && p.tool === "pen" && !p.mathGraph &&
     Array.isArray(p.points) && p.points.length >= 2;
 
   // The ink around the last stroke, wherever it came from. Until 2.10.1 only
@@ -980,16 +1001,6 @@
   else start();
 
   window.Inkyscib = window.Inkyscib || {};
-  // Read and answer the given strokes (point arrays), as if just written.
-  function answerRuns(runs) {
-    if (!enabled()) return null;
-    const read = readLine(runs || []);
-    const said = read && answer(read.text);
-    if (!said) return null;
-    lastSaid = read.text + "|" + said.say;
-    showChip(said, read);
-    return said;
-  }
 
-  window.Inkyscib.InkMath = { readLine, answer, answerRuns, compile, consider, drawGraph, graphStrokes, realRoots, PAUSE_MS };
+  window.Inkyscib.InkMath = { readLine, answer, compile, consider, drawGraph, graphStrokes, realRoots, PAUSE_MS };
 })();

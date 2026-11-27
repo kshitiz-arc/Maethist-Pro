@@ -217,8 +217,6 @@ function compactMediaEdit(edit) {
 }
 
 function compactPath(path) {
-    // The first-run demo's ink (first-run.js) is shown, never kept.
-    if (path?.firstRunDemo) return null;
     if (!path || !Array.isArray(path.points)) return null;
 
     // An inserted picture is only as trustworthy as its data URL: an oversized
